@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"nh-be/utils"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -11,32 +12,59 @@ func LoginHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginDto
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.Set("message", "Invalid request format")
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			utils.MakeErrorResponse(
+				c, 
+				http.StatusBadRequest, 
+				"Invalid request format", 
+				err.Error(),
+			)
 			return
 		}
 
 		user, err := s.Login(c.Request.Context(), req.Email, req.Password)
 		if err != nil {
-			c.Set("message", "Invalid email or password")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			utils.MakeErrorResponse(
+				c, 
+				http.StatusUnauthorized, 
+				"Invalid email or password", 
+				err.Error(),
+			)
 			return
 		}
 
 		sess := sessions.Default(c)
 		sess.Set("user_id", user.ID.String())
 		if err := sess.Save(); err != nil {
-			c.Set("message", "Session save failed")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			utils.MakeErrorResponse(
+				c, 
+				http.StatusInternalServerError, 
+				"Session save failed", 
+				err.Error(),
+			)
 			return
 		}
 
 		resp := LoginResponseDto{
 			ID:    user.ID,
+			Username: user.Username,
 			Email: user.Email,
 			Role:  user.Role,
 		}
-		c.Set("message", "User logged in successfully")
-		c.JSON(http.StatusOK, resp)
+		utils.MakeSuccessResponse(c, "User logged in successfully", resp)	
+	}
+}
+
+func LogoutHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if err := s.Logout(c); err != nil {
+			utils.MakeErrorResponse(
+				c, 
+				http.StatusInternalServerError, 
+				"Failed to logout", 
+				err.Error(),
+			)
+			return
+		}
+		utils.MakeSuccessResponse(c, "User logged out successfully", nil)
 	}
 }

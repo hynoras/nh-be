@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"nh-be/config"
-	"nh-be/internal/middleware"
 	"nh-be/internal/user"
 	"nh-be/router"
 
@@ -46,10 +45,14 @@ func main() {
 		secret = "noheir_secret" // fallback for local dev
 	}
 	store := cookie.NewStore([]byte(secret))
+	store.Options(sessions.Options{
+		MaxAge:   60 * 60,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
 	r.Use(sessions.Sessions("noheir_session", store))
-
-	// Global middleware
-	r.Use(middleware.ResponseFormatter())
 
 	// Simple test route
 	r.GET("/ping", func(c *gin.Context) {
@@ -63,13 +66,13 @@ func main() {
 
 	// HTTP server
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8000",
 		Handler: r,
 	}
 
 	// Run server in goroutine
 	go func() {
-		log.Println("🚀 Server is running on http://localhost:8080")
+		log.Println("🚀 Server is running on http://localhost:8000")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("❌ Failed to start server: %v", err)
 		}

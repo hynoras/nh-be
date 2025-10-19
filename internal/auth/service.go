@@ -7,10 +7,14 @@ import (
 	"nh-be/utils"
 
 	"nh-be/internal/user"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 )
 
 type Service interface {
   Login(ctx context.Context, email, password string) (*user.User, error)
+  Logout(c *gin.Context) error
 }
 
 type service struct {
@@ -33,4 +37,10 @@ func (s *service) Login(ctx context.Context, email, password string) (*user.User
     return nil, errors.New("invalid credentials")
   }
   return u, nil
+}
+
+func (s *service) Logout(c *gin.Context) error {
+  sess := sessions.Default(c)
+  sess.Clear()
+  return sess.Save()
 }

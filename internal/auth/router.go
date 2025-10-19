@@ -13,5 +13,6 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	authService := NewService(userRepo)
 
 	authGroup.POST("/login", LoginHandler(authService))
+	authGroup.POST("/logout", LogoutHandler(authService))
 	// authGroup.POST("/register", RegisterHandler(service))
 }
