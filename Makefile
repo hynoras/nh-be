@@ -1,5 +1,8 @@
 # Run your Gin app with hot reload (Air)
 dev:
+	@echo "🔪 Killing any process on port 8080..."
+	-@lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+	@echo "🚀 Starting Air..."
 	go build -o tmp/noheir ./cmd/main.go
 	air
 
