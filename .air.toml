@@ -1,0 +1,36 @@
+# .air.toml
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Command to build your app binary
+  full_bin = "go build -o tmp/noheir ./cmd/main.go"
+
+  # Binary output
+  bin = "tmp/noheir"
+  # Command to run your app binary
+  cmd = "tmp/noheir"
+  
+  # Watch directories for changes
+  include_dir = ["cmd", "internal", "config", "router", "utils"]
+  # Exclude directories/files that don't need watching
+  exclude_dir = ["tmp", "vendor", "node_modules", ".git"]
+  # File types to watch
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  delay = 1000
+  kill_signal = "SIGTERM"
+  log = "build-errors.log"
+
+[color]
+  main = "yellow"
+  watcher = "cyan"
+  build = "green"
+  runner = "magenta"
+  app = "white"
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true
