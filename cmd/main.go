@@ -11,6 +11,7 @@ import (
 
 	"nh-be/config"
 	"nh-be/internal/middleware"
+	"nh-be/internal/user"
 	"nh-be/router"
 
 	"github.com/gin-contrib/sessions"
@@ -27,6 +28,7 @@ func main() {
 
 	// Initialize database
 	db := config.ConnectDatabase()
+	db.AutoMigrate(&user.User{})
 	sqlDB, _ := db.DB()
 	defer func() {
 		if sqlDB != nil {
@@ -74,7 +76,7 @@ func main() {
 	}()
 
 	// Wait for interrupt signal
-	quit := make(chan os.Signal, 1)
+	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("🛑 Shutting down server gracefully...")
