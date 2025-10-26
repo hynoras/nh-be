@@ -27,7 +27,7 @@ func ConnectDatabase() *gorm.DB {
 	pass := os.Getenv("DB_PASSWORD")
 
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%d sslmode=require target_session_attrs=read-write prefer_simple_protocol=true TimeZone=Asia/Ho_Chi_Minh",
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=require target_session_attrs=read-write TimeZone=Asia/Ho_Chi_Minh",
 		host, user, pass, dbname, port,
 	)
 

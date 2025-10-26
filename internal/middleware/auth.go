@@ -12,7 +12,11 @@ func RequireAuth() gin.HandlerFunc {
     sess := sessions.Default(c)
     userID := sess.Get("user_id")
     if userID == nil {
-      c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+      c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+        "success": false,
+        "error": "unauthorized",
+        "message": "Unauthorized",
+      })
       return
     }
     c.Next()

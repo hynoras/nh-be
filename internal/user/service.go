@@ -2,10 +2,13 @@ package user
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Service interface {
   GetAllUsers(ctx context.Context) ([]User, error)
+  GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
 }
 
 type service struct {
@@ -22,4 +25,12 @@ func (s *service) GetAllUsers(ctx context.Context) ([]User, error) {
     	return nil, err
   	}
   return users, nil
+}
+
+func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

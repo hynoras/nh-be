@@ -52,7 +52,7 @@ func main() {
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 	})
-	r.Use(sessions.Sessions("noheir_session", store))
+	r.Use(sessions.Sessions("auth_session", store))
 
 	// Simple test route
 	r.GET("/ping", func(c *gin.Context) {

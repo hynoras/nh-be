@@ -11,4 +11,6 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	userService := NewService(userRepo)
 
 	usersGroup.GET("", GetAllUsersHandler(userService))
+	usersGroup.GET("/:id", GetUserByIDHandler(userService))
+	usersGroup.GET("/me", GetMeHandler(userService))
 }

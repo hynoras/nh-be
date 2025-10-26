@@ -44,11 +44,17 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
+		// Get the session ID from the session store
+
 		resp := LoginResponseDto{
-			ID:    user.ID,
-			Username: user.Username,
-			Email: user.Email,
-			Role:  user.Role,
+			User: UserResponseDto{
+				ID: user.ID,
+				Username: user.Username,
+				Email: user.Email,
+				Role: user.Role,
+				CreatedAt: user.CreatedAt,
+				UpdatedAt: user.UpdatedAt,
+			},
 		}
 		utils.MakeSuccessResponse(c, "User logged in successfully", resp)	
 	}
