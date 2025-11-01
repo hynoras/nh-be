@@ -13,6 +13,7 @@ import (
 	"nh-be/internal/user"
 	"nh-be/router"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,15 @@ func main() {
 
 	// Create router
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+    	AllowOrigins:     []string{"http://localhost:3000"}, // Specify allowed origins
+    	AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+    	AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+    	ExposeHeaders:    []string{"Content-Length"}, // Headers the client can access
+    	AllowCredentials: true,
+    	MaxAge:           12 * time.Hour, 
+    }))
 
 	// Initialize session store
 	secret := os.Getenv("SESSION_SECRET")
