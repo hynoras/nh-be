@@ -53,7 +53,7 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
     return err
   }
   if oldPassword == nil {
-    return errors.New("user not found")
+    return  errors.New("user not found")
   }
 
   if changePasswordDto.NewPassword != changePasswordDto.ConfirmPassword {
@@ -65,7 +65,7 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
     return err
   }
 
-  if utils.CheckPasswordHash(*oldPassword, newHashedPassword) {
+  if utils.CheckPasswordHash(changePasswordDto.NewPassword, *oldPassword) {
     return errors.New("new password is the same as the old password")
   }
 

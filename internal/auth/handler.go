@@ -91,7 +91,7 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 
 		err = s.ChangePassword(c.Request.Context(), userID, req)
 		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user password", err.Error())
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Failed to update user password", err.Error())
 			return
 		}
 		utils.MakeSuccessResponse(c, "User password changed successfully", nil)
