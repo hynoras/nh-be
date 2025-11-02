@@ -43,6 +43,7 @@ func (s *service) CreateUser(ctx context.Context, user *User) error {
 	userDto := &User{
 		Username: user.Username,
 		Email: user.Email,
+		Password: user.Password,
 		Role: user.Role,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
