@@ -25,10 +25,6 @@ func NewRepository(db *gorm.DB) Repository {
   return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, u *User) error {
-  return r.db.WithContext(ctx).Create(u).Error
-}
-
 func (r *repository) FindAll(ctx context.Context, search string) ([]User, error) {
   var users []User
   result := r.db.WithContext(ctx).Where("username LIKE ?", "%"+search+"%").Find(&users)
@@ -60,6 +56,10 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) 
     return nil, result.Error
   }
   return &u, nil
+}
+
+func (r *repository) Create(ctx context.Context, u *User) error {
+  return r.db.WithContext(ctx).Create(u).Error
 }
 
 func (r *repository) Update(ctx context.Context, id uuid.UUID, u *User) error {
