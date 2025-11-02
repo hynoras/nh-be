@@ -14,6 +14,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	// API version 1 group
 	v1 := r.Group("/api/v1")
 	
+	
 	// Register auth routes (public)
 	auth.RegisterRoutes(v1, db)
 	
