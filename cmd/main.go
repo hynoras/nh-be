@@ -76,13 +76,13 @@ func main() {
 
 	// HTTP server
 	srv := &http.Server{
-		Addr:    ":8000",
+		Addr:    ":8080",
 		Handler: r,
 	}
 
 	// Run server in goroutine
 	go func() {
-		log.Println("🚀 Server is running on http://localhost:8000")
+		log.Println("🚀 Server is running on http://localhost:8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("❌ Failed to start server: %v", err)
 		}
