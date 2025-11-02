@@ -1,7 +1,6 @@
 package config
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -9,13 +8,16 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func ConnectDatabase() *sql.DB {
+// ConnectDatabase initializes a GORM DB connection
+func ConnectDatabase() *gorm.DB {
 	// Load .env
 	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: No .env file found")
+		log.Println("⚠️  Warning: No .env file found")
 	}
 
 	host := os.Getenv("DB_HOST")
@@ -24,27 +26,29 @@ func ConnectDatabase() *sql.DB {
 	dbname := os.Getenv("DB_NAME")
 	pass := os.Getenv("DB_PASSWORD")
 
-	psqlSetup := fmt.Sprintf(
-		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
-		host, port, user, dbname, pass,
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=require target_session_attrs=read-write TimeZone=Asia/Ho_Chi_Minh",
+		host, user, pass, dbname, port,
 	)
 
-	db, err := sql.Open("postgres", psqlSetup)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn), // Info for debugging, Warn for cleaner logs
+	})
 	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
+		log.Fatalf("❌ Failed to connect to database: %v", err)
 	}
 
-	// Test connection
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Cannot connect to database: %v", err)
+	// Setup connection pool
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("❌ Failed to get sql.DB from gorm.DB: %v", err)
 	}
 
-	// Connection pool
-	db.SetMaxIdleConns(10)
-	db.SetMaxOpenConns(100)
-	db.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	log.Println("✅ Successfully connected to database!")
+	log.Println("✅ Successfully connected to PostgreSQL via GORM!")
 
 	return db
 }
