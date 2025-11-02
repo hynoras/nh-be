@@ -11,7 +11,8 @@ import (
 
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		users, err := s.GetAllUsers(c.Request.Context())
+		search := c.Query("search")
+		users, err := s.GetAllUsers(c.Request.Context(), search)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", err.Error())
 			return
@@ -33,7 +34,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 
 func GetUserByIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := uuid.Parse(c.Param("id"))
+		userID, err := utils.ParseStringToUUID(c.Param("id"))
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
 			return
@@ -89,5 +90,35 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			UpdatedAt: user.UpdatedAt,
 		}
 		utils.MakeSuccessResponse(c, "User fetched successfully", userResp)
+	}
+}
+
+func UpdateUserHander(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := utils.ParseStringToUUID(c.Param("id"))
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
+			return
+		}
+
+		var req UpdateUserDto
+		if err := c.ShouldBindJSON(&req); err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
+			return
+		}
+
+		
+		userReq := &User{
+			Username: req.Username,
+			Email: req.Email,
+			Role: req.Role,
+		}
+
+		err = s.UpdateUser(c.Request.Context(), userID, userReq)
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", err.Error())
+			return
+		}
+		utils.MakeSuccessResponse(c, "User updated successfully", nil)
 	}
 }

@@ -9,11 +9,11 @@ import (
 
 type Repository interface {
   Create(ctx context.Context, u *User) error
-  FindAll (ctx context.Context) ([]User, error)
+  FindAll (ctx context.Context, search string) ([]User, error)
   FindByEmail(ctx context.Context, email string) (*User, error)
   FindByUsername(ctx context.Context, username string) (*User, error)
   FindByID(ctx context.Context, id uuid.UUID) (*User, error)
-  Update(ctx context.Context, u *User) error
+  Update(ctx context.Context, id uuid.UUID, u *User) error
   Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -29,9 +29,9 @@ func (r *repository) Create(ctx context.Context, u *User) error {
   return r.db.WithContext(ctx).Create(u).Error
 }
 
-func (r *repository) FindAll(ctx context.Context) ([]User, error) {
+func (r *repository) FindAll(ctx context.Context, search string) ([]User, error) {
   var users []User
-  result := r.db.WithContext(ctx).Find(&users)
+  result := r.db.WithContext(ctx).Where("username LIKE ?", "%"+search+"%").Find(&users)
   return users, result.Error
 }
 
@@ -62,8 +62,8 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) 
   return &u, nil
 }
 
-func (r *repository) Update(ctx context.Context, u *User) error {
-  return r.db.WithContext(ctx).Save(u).Error
+func (r *repository) Update(ctx context.Context, id uuid.UUID, u *User) error {
+  return r.db.WithContext(ctx).Where("id = ?", id).Save(u).Error
 }
 
 func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {

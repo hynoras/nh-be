@@ -10,3 +10,9 @@ type UserResponseDto struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type UpdateUserDto struct {
+	Username string `json:"username,omitempty"`
+	Email string `json:"email,omitempty"`
+	Role string `json:"role,omitempty"`
+}
