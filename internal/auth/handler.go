@@ -74,3 +74,26 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 		utils.MakeSuccessResponse(c, "User logged out successfully", nil)
 	}
 }
+
+func ChangePasswordHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := utils.ParseStringToUUID(c.Param("id"))
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
+			return
+		}
+
+		var req ChangePasswordDto
+		if err := c.ShouldBindJSON(&req); err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
+			return
+		}
+
+		err = s.ChangePassword(c.Request.Context(), userID, req)
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user password", err.Error())
+			return
+		}
+		utils.MakeSuccessResponse(c, "User password changed successfully", nil)
+	}
+}

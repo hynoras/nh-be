@@ -14,5 +14,5 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 
 	authGroup.POST("/login", LoginHandler(authService))
 	authGroup.POST("/logout", LogoutHandler(authService))
-	// authGroup.POST("/register", RegisterHandler(service))
+	authGroup.PUT("change-password/:id", ChangePasswordHandler((authService)))
 }

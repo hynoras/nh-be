@@ -22,3 +22,8 @@ type UserResponseDto struct {
 type LoginResponseDto struct {
 	User UserResponseDto `json:"user"`
 }
+
+type ChangePasswordDto struct {
+	NewPassword string `json:"new_password" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+}

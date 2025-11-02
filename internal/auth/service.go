@@ -10,11 +10,13 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Service interface {
   Login(ctx context.Context, email, password string) (*user.User, error)
   Logout(c *gin.Context) error
+  ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 }
 
 type service struct {
@@ -43,4 +45,37 @@ func (s *service) Logout(c *gin.Context) error {
   sess := sessions.Default(c)
   sess.Clear()
   return sess.Save()
+}
+
+func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error {
+  oldPassword, err := s.userRepo.FindPasswordById(ctx, id)
+  if err != nil {
+    return err
+  }
+  if oldPassword == nil {
+    return errors.New("user not found")
+  }
+
+  if changePasswordDto.NewPassword != changePasswordDto.ConfirmPassword {
+    return errors.New("new password and confirm password do not match")
+  }
+
+  newHashedPassword, err := utils.HashPassword(changePasswordDto.NewPassword)
+  if err != nil {
+    return err
+  }
+
+  if utils.CheckPasswordHash(*oldPassword, newHashedPassword) {
+    return errors.New("new password is the same as the old password")
+  }
+
+  err = s.userRepo.Update(ctx, id, &user.User{
+    Password: newHashedPassword,
+  })
+
+  if err != nil {
+    return err
+  }
+
+  return nil
 }
