@@ -29,7 +29,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 				UpdatedAt: user.UpdatedAt,
 			}
 		}
-		utils.MakeSuccessResponse(c, "Users fetched successfully", users)
+		utils.MakeSuccessResponse(c, "Users fetched successfully", userResp)
 	}
 }
 
