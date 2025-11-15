@@ -23,7 +23,7 @@ import (
 func main() {
 	// Load .env early
 	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️  Warning: No .env file found")
+		log.Println("Warning: No .env file found")
 	}
 
 	// Initialize database
@@ -33,7 +33,7 @@ func main() {
 	defer func() {
 		if sqlDB != nil {
 			sqlDB.Close()
-			log.Println("🗃️  Database connection closed")
+			log.Println("Database connection closed")
 		}
 	}()
 
@@ -82,9 +82,9 @@ func main() {
 
 	// Run server in goroutine
 	go func() {
-		log.Println("🚀 Server is running on http://localhost:8080")
+		log.Println("Server is running on http://localhost:8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("❌ Failed to start server: %v", err)
+			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
@@ -92,15 +92,15 @@ func main() {
 	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("🛑 Shutting down server gracefully...")
+	log.Println("Shutting down server gracefully...")
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("❌ Server forced to shutdown: %v", err)
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("✅ Server exited cleanly")
+	log.Println("Server exited cleanly")
 }
