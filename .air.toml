@@ -5,6 +5,10 @@ tmp_dir = "tmp"
 
 [build]
   # Command to build your app binary
+  pre_cmd = [
+    "pkill -f 'tmp/noheir' 2>/dev/null || true",
+    "sleep 0.5"
+  ]
   full_bin = "go build -o tmp/noheir ./cmd/main.go"
 
   # Binary output
@@ -18,7 +22,7 @@ tmp_dir = "tmp"
   exclude_dir = ["tmp", "vendor", "node_modules", ".git"]
   # File types to watch
   include_ext = ["go", "tpl", "tmpl", "html"]
-  delay = 1000
+  delay = 1500
   kill_signal = "SIGTERM"
   log = "build-errors.log"
 
@@ -32,5 +36,4 @@ tmp_dir = "tmp"
 [log]
   time = true
 
-[misc]
-  clean_on_exit = true
+
