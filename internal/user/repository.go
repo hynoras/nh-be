@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"nh-be/utils"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -9,7 +10,7 @@ import (
 
 type Repository interface {
   Create(ctx context.Context, u *User) error
-  FindAll (ctx context.Context, search string) ([]User, error)
+  FindAll (ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error)
   FindByEmail(ctx context.Context, email string) (*User, error)
   FindByUsername(ctx context.Context, username string) (*User, error)
   FindByID(ctx context.Context, id uuid.UUID) (*User, error)
@@ -26,10 +27,17 @@ func NewRepository(db *gorm.DB) Repository {
   return &repository{db: db}
 }
 
-func (r *repository) FindAll(ctx context.Context, search string) ([]User, error) {
+func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error) {
   var users []User
-  result := r.db.WithContext(ctx).Where("username LIKE ?", "%"+search+"%").Find(&users)
-  return users, result.Error
+  query := r.db.WithContext(ctx).Where("username LIKE ?", "%"+search+"%")
+  if role != "" {
+    query = query.Where("role = ?", role)
+  }
+  var length int64
+  query.Find(&users).Count(&length)
+
+  result := query.Scopes(utils.Paginate(offset, limit)).Find(&users)
+  return users, length, result.Error
 }
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {

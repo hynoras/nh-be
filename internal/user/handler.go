@@ -3,6 +3,7 @@ package user
 import (
 	"net/http"
 	"nh-be/utils"
+	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,35 @@ import (
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
-		users, err := s.GetAllUsers(c.Request.Context(), search)
+		role := c.Query("role")
+
+		page := c.Query("page")
+		pageSize := c.Query("page_size")
+		
+		var pageInt int
+		var err error
+		if page == "" {
+			pageInt = 1
+		} else {
+			pageInt, err = strconv.Atoi(page)
+			if err != nil {
+				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid page", err.Error())
+				return
+			}
+		}
+
+		var pageSizeInt int
+		if pageSize == "" {
+			pageSizeInt = 10
+		} else {
+			pageSizeInt, err = strconv.Atoi(pageSize)
+			if err != nil {
+				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid page size", err.Error())
+				return
+			}
+		}
+		
+		users, length, err := s.GetAllUsers(c.Request.Context(), search, role, pageInt, pageSizeInt)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", err.Error())
 			return
@@ -29,7 +58,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 				UpdatedAt: user.UpdatedAt,
 			}
 		}
-		utils.MakeSuccessResponse(c, "Users fetched successfully", userResp)
+		utils.MakeSuccessResponse(c, "Users fetched successfully", userResp, length)
 	}
 }
 
