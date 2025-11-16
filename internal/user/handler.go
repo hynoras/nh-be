@@ -17,7 +17,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		role := c.Query("role")
 
 		page := c.Query("page")
-		pageSize := c.Query("page_size")
+		pageSize := c.Query("pageSize")
 		
 		var pageInt int
 		var err error
