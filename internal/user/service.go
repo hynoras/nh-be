@@ -2,9 +2,16 @@ package user
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+var (
+	ErrDuplicateUsername = errors.New("username already exists")
+	ErrDuplicateEmail    = errors.New("email already exists")
 )
 
 type Service interface {
@@ -40,6 +47,24 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) 
 }
 
 func (s *service) CreateUser(ctx context.Context, user *User) error {
+	// Check for duplicate username
+	existingUser, err := s.userRepo.FindByUsername(ctx, user.Username)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return ErrDuplicateUsername
+	}
+
+	// Check for duplicate email
+	existingUser, err = s.userRepo.FindByEmail(ctx, user.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return ErrDuplicateEmail
+	}
+
 	userDto := &User{
 		Username: user.Username,
 		Email: user.Email,
@@ -49,7 +74,7 @@ func (s *service) CreateUser(ctx context.Context, user *User) error {
 		UpdatedAt: time.Now(),
 	}
 	
-	err := s.userRepo.Create(ctx, userDto)
+	err = s.userRepo.Create(ctx, userDto)
 	if err != nil {
 		return err
 	}

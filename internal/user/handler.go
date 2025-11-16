@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"net/http"
 	"nh-be/utils"
 	"strconv"
@@ -130,10 +131,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
 			return
 		}
-		if req.Password != req.ConfirmPassword {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Password and confirm password do not match", "")
-			return
-		}
+
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to hash password", err.Error())
@@ -149,6 +147,10 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 
 		err = s.CreateUser(c.Request.Context(), userReq)
 		if err != nil {
+			if errors.Is(err, ErrDuplicateUsername) || errors.Is(err, ErrDuplicateEmail) {
+				utils.MakeErrorResponse(c, http.StatusBadRequest, err.Error(), err.Error())
+				return
+			}
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", err.Error())
 			return
 		}
