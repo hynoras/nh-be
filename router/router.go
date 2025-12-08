@@ -3,6 +3,7 @@ package router
 import (
 	"nh-be/internal/auth"
 	"nh-be/internal/middleware"
+	"nh-be/internal/permission"
 	"nh-be/internal/user"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	
 	// Register protected user routes
 	user.RegisterRoutes(protected, db)
+	permission.RegisterRoutes(protected, db)
 	
 	// Add other protected route registrations here as needed
 	// product.RegisterRoutes(protected, db)
