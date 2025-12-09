@@ -15,7 +15,7 @@ var (
 )
 
 type Service interface {
-  GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error)
+  GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error)
   GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
   CreateUser(ctx context.Context, user *User) error
   UpdateUser(ctx context.Context, id uuid.UUID, user *User) error
@@ -30,7 +30,7 @@ func NewService(userRepo Repository) Service {
   return &service{userRepo: userRepo}
 }
 
-func (s *service) GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error) {
+func (s *service) GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error) {
 	users, length, err := s.userRepo.FindAll(ctx, search, role, offset, limit)
     if err != nil {
     	return nil, 0, err

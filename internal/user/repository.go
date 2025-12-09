@@ -11,7 +11,7 @@ import (
 
 type Repository interface {
   Create(ctx context.Context, u *User) error
-  FindAll (ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error)
+  FindAll (ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error)
   FindByEmail(ctx context.Context, email string) (*User, error)
   FindByUsername(ctx context.Context, username string) (*User, error)
   FindByID(ctx context.Context, id uuid.UUID) (*User, error)
@@ -28,8 +28,8 @@ func NewRepository(db *gorm.DB) Repository {
   return &repository{db: db}
 }
 
-func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error) {
-  var users []User
+func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error) {
+  var users []UserResponseDto
   var length int64
 
   query := r.db.WithContext(ctx).Model(&User{}).

@@ -1,7 +1,6 @@
 package permission
 
 import (
-	"log"
 	"net/http"
 	"nh-be/utils"
 	"strconv"
@@ -15,7 +14,6 @@ import (
 func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
-		log.Println("search in handler", search)
 		permissions, count, err := s.GetAllPermissions(c.Request.Context(), search)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permissions", err.Error())
@@ -25,11 +23,9 @@ func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 		var resp []PermissionResponseDto
 		for _, p := range permissions {
 			resp = append(resp, PermissionResponseDto{
-				ID:          p.ID.String(),
+				ID:          p.ID,
 				Name:        p.Name,
 				Description: p.Description,
-				CreatedAt:   p.CreatedAt,
-				UpdatedAt:   p.UpdatedAt,
 			})
 		}
 
@@ -55,8 +51,6 @@ func GetPermissionHandler(s Service) gin.HandlerFunc {
 			ID:          p.ID.String(),
 			Name:        p.Name,
 			Description: p.Description,
-			CreatedAt:   p.CreatedAt,
-			UpdatedAt:   p.UpdatedAt,
 		}
 
 		utils.MakeSuccessResponse(c, "Permission fetched successfully", resp)
@@ -89,8 +83,6 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 					ID:          p.ID.String(),
 					Name:        p.Name,
 					Description: p.Description,
-					CreatedAt:   p.CreatedAt,
-					UpdatedAt:   p.UpdatedAt,
 				})
 			}
 			resp = append(resp, PermissionGroupResponseDto{
@@ -144,8 +136,6 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 				ID:          p.ID.String(),
 				Name:        p.Name,
 				Description: p.Description,
-				CreatedAt:   p.CreatedAt,
-				UpdatedAt:   p.UpdatedAt,
 			})
 		}
 		resp := PermissionGroupResponseDto{

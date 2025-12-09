@@ -51,7 +51,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		userResp := make([]UserResponseDto, len(users))
 		for i, user := range users {
 			userResp[i] = UserResponseDto{
-				ID: user.ID.String(),
+				ID: user.ID,
 				Username: user.Username,
 				Email: user.Email,
 				Role: user.Role,

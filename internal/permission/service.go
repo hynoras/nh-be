@@ -2,14 +2,13 @@ package permission
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 )
 
 type Service interface {
 	// Permission
-	GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error)
+	GetAllPermissions(ctx context.Context, search string) ([]PermissionResponseDto, int64, error)
 	GetPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 
 	// Permission Group
@@ -34,8 +33,7 @@ func NewService(repo Repository) Service {
 
 // Permission Implementations
 
-func (s *service) GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
-	log.Println("search in service", search)
+func (s *service) GetAllPermissions(ctx context.Context, search string) ([]PermissionResponseDto, int64, error) {
 	return s.repo.FindAllPermissions(ctx, search)
 }
 

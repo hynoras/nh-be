@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	// Permission
-	FindAllPermissions(ctx context.Context, name string) ([]Permission, int64, error)
+	FindAllPermissions(ctx context.Context, name string) ([]PermissionResponseDto, int64, error)
 	FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 	FindPermissionsByIDs(ctx context.Context, ids []uuid.UUID) ([]Permission, error)
 
@@ -37,12 +37,13 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 // Permission Implementations
-func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
-	var permissions []Permission
+func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]PermissionResponseDto, int64, error) {
+	var permissions []PermissionResponseDto
 	var length int64
 
-	query := r.db.WithContext(ctx).Model(&Permission{}).Where("LOWER(name) LIKE ?", "%"+strings.ToLower(search)+"%")
-	query.Count(&length)
+	query := r.db.WithContext(ctx).Model(&Permission{}).
+	Where("LOWER(name) LIKE ?", "%"+strings.ToLower(search)+"%").
+	Count(&length)
 
 	result := query.Find(&permissions).Error
 	return permissions, length, result
