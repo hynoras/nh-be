@@ -1,6 +1,7 @@
 package permission
 
 import (
+	"log"
 	"net/http"
 	"nh-be/utils"
 	"strconv"
@@ -13,10 +14,9 @@ import (
 
 func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
-
-		permissions, count, err := s.GetAllPermissions(c.Request.Context(), page, pageSize)
+		search := c.Query("search")
+		log.Println("search in handler", search)
+		permissions, count, err := s.GetAllPermissions(c.Request.Context(), search)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permissions", err.Error())
 			return
@@ -34,23 +34,6 @@ func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 		}
 
 		utils.MakeSuccessResponse(c, "Permissions fetched successfully", resp, count)
-	}
-}
-
-func CreatePermissionHandler(s Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var dto CreatePermissionDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
-			return
-		}
-
-		if err := s.CreatePermission(c.Request.Context(), &dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create permission", err.Error())
-			return
-		}
-
-		utils.MakeSuccessResponse(c, "Permission created successfully", nil)
 	}
 }
 
@@ -80,54 +63,19 @@ func GetPermissionHandler(s Service) gin.HandlerFunc {
 	}
 }
 
-func UpdatePermissionHandler(s Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id, err := uuid.Parse(c.Param("id"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID", err.Error())
-			return
-		}
-
-		var dto UpdatePermissionDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
-			return
-		}
-
-		if err := s.UpdatePermission(c.Request.Context(), id, &dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update permission", err.Error())
-			return
-		}
-
-		utils.MakeSuccessResponse(c, "Permission updated successfully", nil)
-	}
-}
-
-func DeletePermissionHandler(s Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id, err := uuid.Parse(c.Param("id"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID", err.Error())
-			return
-		}
-
-		if err := s.DeletePermission(c.Request.Context(), id); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete permission", err.Error())
-			return
-		}
-
-		utils.MakeSuccessResponse(c, "Permission deleted successfully", nil)
-	}
-}
-
 // Permission Group Handlers
-
 func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+		name := c.Query("name")
+		assignedUser, err := uuid.Parse(c.Query("assignedUser"))
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid assigned user ID", err.Error())
+			return
+		}
 
-		groups, count, err := s.GetAllPermissionGroups(c.Request.Context(), page, pageSize)
+		groups, count, err := s.GetAllPermissionGroups(c.Request.Context(), name, assignedUser, page, pageSize)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission groups", err.Error())
 			return

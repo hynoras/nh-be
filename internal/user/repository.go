@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"nh-be/utils"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,15 +30,19 @@ func NewRepository(db *gorm.DB) Repository {
 
 func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error) {
   var users []User
-  query := r.db.WithContext(ctx).Where("username LIKE ?", "%"+search+"%")
+  var length int64
+
+  query := r.db.WithContext(ctx).Model(&User{}).
+  Select("id", "username", "email", "role", "created_at").
+  Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
+
   if role != "" {
     query = query.Where("role = ?", role)
-  }
-  var length int64
-  query.Find(&users).Count(&length)
+  }  
+  query.Count(&length)
 
-  result := query.Scopes(utils.Paginate(offset, limit)).Find(&users)
-  return users, length, result.Error
+  result := query.Scopes(utils.Paginate(offset, limit)).Find(&users).Error
+  return users, length, result
 }
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {

@@ -26,6 +26,8 @@ type PermissionGroup struct {
 type UserPermission struct {
 	UserID            uuid.UUID `gorm:"primaryKey;type:uuid"`
 	PermissionGroupID uuid.UUID `gorm:"primaryKey;type:uuid"`
+	CreatedAt    time.Time `gorm:"type:timestamp;not null;default:now()"`
+	UpdatedAt    time.Time `gorm:"type:timestamp;not null;default:now()"`
 }
 
 // TableName overrides the default table name for UserPermission to match the design

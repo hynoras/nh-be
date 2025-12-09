@@ -2,21 +2,19 @@ package permission
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/uuid"
 )
 
 type Service interface {
 	// Permission
-	CreatePermission(ctx context.Context, dto *CreatePermissionDto) error
-	GetAllPermissions(ctx context.Context, page, pageSize int) ([]Permission, int64, error)
+	GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error)
 	GetPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
-	UpdatePermission(ctx context.Context, id uuid.UUID, dto *UpdatePermissionDto) error
-	DeletePermission(ctx context.Context, id uuid.UUID) error
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, dto *CreatePermissionGroupDto) error
-	GetAllPermissionGroups(ctx context.Context, page, pageSize int) ([]PermissionGroup, int64, error)
+	GetAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error)
 	GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, dto *UpdatePermissionGroupDto) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
@@ -36,33 +34,13 @@ func NewService(repo Repository) Service {
 
 // Permission Implementations
 
-func (s *service) CreatePermission(ctx context.Context, dto *CreatePermissionDto) error {
-	p := &Permission{
-		Name:        dto.Name,
-		Description: dto.Description,
-	}
-	return s.repo.CreatePermission(ctx, p)
-}
-
-func (s *service) GetAllPermissions(ctx context.Context, page, pageSize int) ([]Permission, int64, error) {
-	offset := (page - 1) * pageSize
-	return s.repo.FindAllPermissions(ctx, offset, pageSize)
+func (s *service) GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
+	log.Println("search in service", search)
+	return s.repo.FindAllPermissions(ctx, search)
 }
 
 func (s *service) GetPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error) {
 	return s.repo.FindPermissionByID(ctx, id)
-}
-
-func (s *service) UpdatePermission(ctx context.Context, id uuid.UUID, dto *UpdatePermissionDto) error {
-	p := &Permission{
-		Name:        dto.Name,
-		Description: dto.Description,
-	}
-	return s.repo.UpdatePermission(ctx, id, p)
-}
-
-func (s *service) DeletePermission(ctx context.Context, id uuid.UUID) error {
-	return s.repo.DeletePermission(ctx, id)
 }
 
 // Permission Group Implementations
@@ -93,9 +71,9 @@ func (s *service) CreatePermissionGroup(ctx context.Context, dto *CreatePermissi
 	return s.repo.CreatePermissionGroup(ctx, pg)
 }
 
-func (s *service) GetAllPermissionGroups(ctx context.Context, page, pageSize int) ([]PermissionGroup, int64, error) {
+func (s *service) GetAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error) {
 	offset := (page - 1) * pageSize
-	return s.repo.FindAllPermissionGroups(ctx, offset, pageSize)
+	return s.repo.FindAllPermissionGroups(ctx, name, assignedUser, offset, pageSize)
 }
 
 func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {

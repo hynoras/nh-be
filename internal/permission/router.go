@@ -13,10 +13,7 @@ func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB) {
 	permissions := r.Group("/permissions")
 	{
 		permissions.GET("", GetAllPermissionsHandler(s))
-		permissions.POST("", CreatePermissionHandler(s))
 		permissions.GET("/:id", GetPermissionHandler(s))
-		permissions.PUT("/:id", UpdatePermissionHandler(s))
-		permissions.DELETE("/:id", DeletePermissionHandler(s))
 	}
 
 	// Permission Groups

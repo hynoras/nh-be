@@ -56,7 +56,6 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 				Email: user.Email,
 				Role: user.Role,
 				CreatedAt: user.CreatedAt,
-				UpdatedAt: user.UpdatedAt,
 			}
 		}
 		utils.MakeSuccessResponse(c, "Users fetched successfully", userResp, length)
@@ -81,7 +80,6 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 			Email: user.Email,
 			Role: user.Role,
 			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
 		}
 		utils.MakeSuccessResponse(c, "User fetched successfully", userResp)
 	}
@@ -118,7 +116,7 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			Email: user.Email,
 			Role: user.Role,
 			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
+			
 		}
 		utils.MakeSuccessResponse(c, "User fetched successfully", userResp)
 	}

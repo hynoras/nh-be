@@ -3,6 +3,7 @@ package permission
 import (
 	"context"
 	"nh-be/utils"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,16 +12,13 @@ import (
 
 type Repository interface {
 	// Permission
-	CreatePermission(ctx context.Context, p *Permission) error
-	FindAllPermissions(ctx context.Context, offset, limit int) ([]Permission, int64, error)
+	FindAllPermissions(ctx context.Context, name string) ([]Permission, int64, error)
 	FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 	FindPermissionsByIDs(ctx context.Context, ids []uuid.UUID) ([]Permission, error)
-	UpdatePermission(ctx context.Context, id uuid.UUID, p *Permission) error
-	DeletePermission(ctx context.Context, id uuid.UUID) error
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, pg *PermissionGroup) error
-	FindAllPermissionGroups(ctx context.Context, offset, limit int) ([]PermissionGroup, int64, error)
+	FindAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, offset, limit int) ([]PermissionGroup, int64, error)
 	FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg *PermissionGroup) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
@@ -39,18 +37,15 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 // Permission Implementations
-
-func (r *repository) CreatePermission(ctx context.Context, p *Permission) error {
-	return r.db.WithContext(ctx).Create(p).Error
-}
-
-func (r *repository) FindAllPermissions(ctx context.Context, offset, limit int) ([]Permission, int64, error) {
+func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
 	var permissions []Permission
-	var count int64
-	query := r.db.WithContext(ctx).Model(&Permission{})
-	query.Count(&count)
-	result := query.Scopes(utils.Paginate(offset, limit)).Find(&permissions)
-	return permissions, count, result.Error
+	var length int64
+
+	query := r.db.WithContext(ctx).Model(&Permission{}).Where("LOWER(name) LIKE ?", "%"+strings.ToLower(search)+"%")
+	query.Count(&length)
+
+	result := query.Find(&permissions).Error
+	return permissions, length, result
 }
 
 func (r *repository) FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error) {
@@ -69,27 +64,24 @@ func (r *repository) FindPermissionsByIDs(ctx context.Context, ids []uuid.UUID) 
 	return permissions, nil
 }
 
-func (r *repository) UpdatePermission(ctx context.Context, id uuid.UUID, p *Permission) error {
-	return r.db.WithContext(ctx).Where("id = ?", id).Updates(p).Error
-}
-
-func (r *repository) DeletePermission(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&Permission{}).Error
-}
-
 // Permission Group Implementations
-
 func (r *repository) CreatePermissionGroup(ctx context.Context, pg *PermissionGroup) error {
 	return r.db.WithContext(ctx).Create(pg).Error
 }
 
-func (r *repository) FindAllPermissionGroups(ctx context.Context, offset, limit int) ([]PermissionGroup, int64, error) {
+func (r *repository) FindAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, offset, limit int) ([]PermissionGroup, int64, error) {
 	var groups []PermissionGroup
-	var count int64
+	var length int64
 	query := r.db.WithContext(ctx).Model(&PermissionGroup{})
-	query.Count(&count)
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+	if assignedUser != uuid.Nil {
+		query = query.Joins("JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id").Where("user_permissions.user_id = ?", assignedUser)
+	}
+	query.Find(&groups).Count(&length)
 	result := query.Preload("Permissions").Scopes(utils.Paginate(offset, limit)).Find(&groups)
-	return groups, count, result.Error
+	return groups, length, result.Error
 }
 
 func (r *repository) FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
@@ -113,7 +105,6 @@ func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) er
 }
 
 // User Permission Implementations
-
 func (r *repository) AssignUserToGroup(ctx context.Context, userID, groupID uuid.UUID) error {
 	up := UserPermission{UserID: userID, PermissionGroupID: groupID}
 	return r.db.WithContext(ctx).Create(&up).Error

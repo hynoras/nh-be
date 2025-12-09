@@ -10,16 +10,6 @@ type PermissionResponseDto struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-type CreatePermissionDto struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-}
-
-type UpdatePermissionDto struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
 type PermissionGroupResponseDto struct {
 	ID          string                  `json:"id"`
 	Name        string                  `json:"name"`
