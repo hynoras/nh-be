@@ -15,11 +15,13 @@ var (
 )
 
 type Service interface {
-  GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error)
-  GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
-  CreateUser(ctx context.Context, user *User) error
-  UpdateUser(ctx context.Context, id uuid.UUID, user *User) error
-  DeleteUsers(ctx context.Context, ids []uuid.UUID) error
+	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
+	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
+	GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error)
+	GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
+	CreateUser(ctx context.Context, user *User) error
+	UpdateUser(ctx context.Context, id uuid.UUID, user *User) error
+	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
 }
 
 type service struct {
@@ -28,6 +30,29 @@ type service struct {
 
 func NewService(userRepo Repository) Service {
   return &service{userRepo: userRepo}
+}
+
+func (s *service) CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error) {
+		assignedUser, err := s.userRepo.FindByID(ctx, userId)
+		if err != nil {
+			return nil, err
+		}
+		if assignedUser == nil {
+			return nil, errors.New("assigned users not found")
+		}
+	return assignedUser, nil
+}
+
+func (s *service) CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error) {
+	users, err := s.userRepo.FindByIDs(ctx, userIds)
+	if err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		return nil, errors.New("users not found")
+	}
+	return users, nil
+
 }
 
 func (s *service) GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error) {

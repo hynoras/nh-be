@@ -120,11 +120,27 @@ func (r *repository) FindPermissionGroupByID(ctx context.Context, id uuid.UUID) 
 }
 
 func (r *repository) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg *PermissionGroup) error {
-    // For many2many updates, we might need to handle association replacement carefully.
-    // However, basic Updates only touches fields. To replace permissions, we usually use Association replace.
-    // Here we just update basic fields. Association update is better handled in Service by interacting with Associations.
-    // But for simplicity in repo, let's assume pg has ID set.
-	return r.db.WithContext(ctx).Session(&gorm.Session{FullSaveAssociations: true}).Where("id = ?", id).Updates(pg).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		basicFields := map[string]interface{}{
+			"name":        pg.Name,
+			"description": pg.Description,
+		}
+		if err := tx.Model(&PermissionGroup{}).Where("id = ?", id).Updates(basicFields).Error; err != nil {
+			return err
+		}
+		
+		pg.ID = id
+
+		if err := tx.Model(pg).Association("Permissions").Replace(pg.Permissions); err != nil {
+			return err
+		}
+		
+		if err := tx.Model(pg).Association("AssignedUsers").Replace(pg.AssignedUsers); err != nil {
+			return err
+		}
+		
+		return nil
+	})
 }
 
 func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error {
@@ -135,6 +151,11 @@ func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) er
 func (r *repository) AssignUserToGroup(ctx context.Context, userID uuid.UUID, groupID uuid.UUID) error {
 	up := UserPermission{UserID: userID, PermissionGroupID: groupID}
 	return r.db.WithContext(ctx).Create(&up).Error
+}
+
+func (r *repository) UpdateUserPermission(ctx context.Context, userID uuid.UUID, groupID uuid.UUID) error {
+	up := UserPermission{UserID: userID, PermissionGroupID: groupID}
+	return r.db.WithContext(ctx).Session(&gorm.Session{FullSaveAssociations: true}).Where("user_id = ? AND permission_group_id = ?", userID, groupID).Updates(&up).Error
 }
 
 func (r *repository) RemoveUserFromGroup(ctx context.Context, userID, groupID uuid.UUID) error {

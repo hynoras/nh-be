@@ -34,7 +34,7 @@ type UpdatePermissionGroupDto struct {
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
 	Users         []string `json:"users"`
-	PermissionIDs []string `json:"permissions"`
+	Permissions []string `json:"permissions"`
 }
 
 type AssignUserGroupDto struct {
