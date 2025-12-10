@@ -80,23 +80,37 @@ func (r *repository) FindAllPermissionGroups(
 	var groups []PermissionGroup
 	var length int64
 
-	query := r.db.WithContext(ctx).Model(&PermissionGroup{}).Count(&length)
-	// Joins("FULL JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id")
+	query := r.db.WithContext(ctx).Model(&PermissionGroup{})
 
+	// Apply search filters
 	if name != "" {
-		query = query.Where("name LIKE ?", "%"+name+"%")
+		query = query.Where("permission_groups.name LIKE ?", "%"+name+"%")
 	}
+	
+	// Filter by assigned user if provided
 	if assignedUser != "" {
-		query = query.Where("user_permissions.username = ?", assignedUser)
+		query = query.Joins("JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id").
+			Joins("JOIN users ON users.id = user_permissions.user_id").
+			Where("users.username LIKE ?", "%"+assignedUser+"%").
+			Distinct()
 	}
 
-	result := query.Preload("Permissions").Scopes(utils.Paginate(offset, limit)).Find(&groups)
+	// Count total results
+	query.Count(&length)
+
+	// Fetch results with preloaded associations
+	result := query.
+		Preload("Permissions").
+		Preload("AssignedUsers").
+		Scopes(utils.Paginate(offset, limit)).
+		Find(&groups)
+	
 	return groups, length, result.Error
 }
 
 func (r *repository) FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
 	var pg PermissionGroup
-	if err := r.db.WithContext(ctx).Preload("Permissions").First(&pg, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Permissions").Preload("AssignedUsers").First(&pg, id).Error; err != nil {
 		return nil, err
 	}
 	return &pg, nil

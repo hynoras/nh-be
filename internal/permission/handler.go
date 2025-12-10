@@ -72,33 +72,7 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		var resp []PermissionGroupResponseDto
-		for _, g := range groups {
-			var perms []PermissionResponseDto
-			var assignedUser []AssignedUserResponseDto
-			for _, p := range g.Permissions {
-				perms = append(perms, PermissionResponseDto{
-					ID:          p.ID.String(),
-					Name:        p.Name,
-					Description: p.Description,
-				})
-			}
-			// for _, u := range g.AssignedUsers {
-			// 	assignedUser = append(assignedUser, AssignedUserResponseDto{
-			// 		ID:   u.ID,
-			// 		Username: u.Username,
-			// 	})
-			// }
-			resp = append(resp, PermissionGroupResponseDto{
-				ID:          g.ID.String(),
-				Name:        g.Name,
-				Description: g.Description,
-				Permissions: perms,
-				AssignedUsers: assignedUser,
-				CreatedAt:   g.CreatedAt,
-				UpdatedAt:   g.UpdatedAt,
-			})
-		}
+		resp := MapPermissionGroupsToDto(groups)
 
 		utils.MakeSuccessResponse(c, "Permission groups fetched successfully", resp, count)
 	}
@@ -135,22 +109,8 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		var perms []PermissionResponseDto
-		for _, p := range g.Permissions {
-			perms = append(perms, PermissionResponseDto{
-				ID:          p.ID.String(),
-				Name:        p.Name,
-				Description: p.Description,
-			})
-		}
-		resp := PermissionGroupResponseDto{
-			ID:          g.ID.String(),
-			Name:        g.Name,
-			Description: g.Description,
-			Permissions: perms,
-			CreatedAt:   g.CreatedAt,
-			UpdatedAt:   g.UpdatedAt,
-		}
+
+		resp := MapPermissionGroupToDto(*g)
 
 		utils.MakeSuccessResponse(c, "Permission group fetched successfully", resp)
 	}
