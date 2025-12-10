@@ -26,6 +26,9 @@ type Repository interface {
 	// User Permission
 	AssignUserToGroup(ctx context.Context, userID, groupID uuid.UUID) error
 	RemoveUserFromGroup(ctx context.Context, userID, groupID uuid.UUID) error
+
+	// Transaction
+	WithTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
 
 type repository struct {
@@ -129,11 +132,21 @@ func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) er
 }
 
 // User Permission Implementations
-func (r *repository) AssignUserToGroup(ctx context.Context, userID, groupID uuid.UUID) error {
+func (r *repository) AssignUserToGroup(ctx context.Context, userID uuid.UUID, groupID uuid.UUID) error {
 	up := UserPermission{UserID: userID, PermissionGroupID: groupID}
 	return r.db.WithContext(ctx).Create(&up).Error
 }
 
 func (r *repository) RemoveUserFromGroup(ctx context.Context, userID, groupID uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("user_id = ? AND permission_group_id = ?", userID, groupID).Delete(&UserPermission{}).Error
+}
+
+// Transaction Implementations
+func (r *repository) WithTransaction(ctx context.Context, fn func(repo Repository) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Create a new repository instance with the transaction
+		txRepo := &repository{db: tx}
+		// Execute the function with the transactional repository
+		return fn(txRepo)
+	})
 }

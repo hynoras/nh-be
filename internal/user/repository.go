@@ -15,6 +15,7 @@ type Repository interface {
   FindByEmail(ctx context.Context, email string) (*User, error)
   FindByUsername(ctx context.Context, username string) (*User, error)
   FindByID(ctx context.Context, id uuid.UUID) (*User, error)
+  FindByIDs(ctx context.Context, ids []uuid.UUID) ([]User, error)
   FindPasswordById(ctx context.Context, id uuid.UUID) (*string, error)
   Update(ctx context.Context, id uuid.UUID, u *User) error
   Delete(ctx context.Context, id uuid.UUID) error
@@ -79,6 +80,15 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) 
     return nil, result.Error
   }
   return &u, nil
+}
+
+func (r *repository) FindByIDs(ctx context.Context, ids []uuid.UUID) ([]User, error) {
+  var u []User
+  result := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&u)
+  if result.Error != nil {
+    return nil, result.Error
+  }
+  return u, nil
 }
 
 func (r *repository) Create(ctx context.Context, u *User) error {

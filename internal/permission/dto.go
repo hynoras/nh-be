@@ -26,13 +26,15 @@ type PermissionGroupResponseDto struct {
 type CreatePermissionGroupDto struct {
 	Name          string   `json:"name" binding:"required"`
 	Description   string   `json:"description"`
-	PermissionIDs []string `json:"permission_ids"`
+	Users         []string `json:"users"`
+	Permissions []string `json:"permissions"`
 }
 
 type UpdatePermissionGroupDto struct {
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
-	PermissionIDs []string `json:"permission_ids"`
+	Users         []string `json:"users"`
+	PermissionIDs []string `json:"permissions"`
 }
 
 type AssignUserGroupDto struct {

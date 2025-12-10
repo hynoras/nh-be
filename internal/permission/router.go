@@ -1,13 +1,16 @@
 package permission
 
 import (
+	"nh-be/internal/user"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB) {
-	repo := NewRepository(db)
-	s := NewService(repo)
+	permissionRepo := NewRepository(db)
+	userRepo := user.NewRepository(db)
+	s := NewService(permissionRepo, userRepo)
 
 	// Permissions
 	permissions := r.Group("/permissions")
