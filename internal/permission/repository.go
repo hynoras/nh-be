@@ -18,7 +18,7 @@ type Repository interface {
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, pg *PermissionGroup) error
-	FindAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, offset, limit int) ([]PermissionGroup, int64, error)
+	FindAllPermissionGroups(ctx context.Context, name string, assignedUser string, offset, limit int) ([]PermissionGroup, int64, error)
 	FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg *PermissionGroup) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
@@ -70,17 +70,26 @@ func (r *repository) CreatePermissionGroup(ctx context.Context, pg *PermissionGr
 	return r.db.WithContext(ctx).Create(pg).Error
 }
 
-func (r *repository) FindAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, offset, limit int) ([]PermissionGroup, int64, error) {
+func (r *repository) FindAllPermissionGroups(
+	ctx context.Context,
+	name string,
+	assignedUser string,
+	offset,
+	limit int,
+) ([]PermissionGroup, int64, error) {
 	var groups []PermissionGroup
 	var length int64
-	query := r.db.WithContext(ctx).Model(&PermissionGroup{})
+
+	query := r.db.WithContext(ctx).Model(&PermissionGroup{}).Count(&length)
+	// Joins("FULL JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id")
+
 	if name != "" {
 		query = query.Where("name LIKE ?", "%"+name+"%")
 	}
-	if assignedUser != uuid.Nil {
-		query = query.Joins("JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id").Where("user_permissions.user_id = ?", assignedUser)
+	if assignedUser != "" {
+		query = query.Where("user_permissions.username = ?", assignedUser)
 	}
-	query.Find(&groups).Count(&length)
+
 	result := query.Preload("Permissions").Scopes(utils.Paginate(offset, limit)).Find(&groups)
 	return groups, length, result.Error
 }

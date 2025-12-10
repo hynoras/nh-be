@@ -62,12 +62,9 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
 		name := c.Query("name")
-		assignedUser, err := uuid.Parse(c.Query("assignedUser"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid assigned user ID", err.Error())
-			return
-		}
+		assignedUser := c.Query("assignedUser")
 
 		groups, count, err := s.GetAllPermissionGroups(c.Request.Context(), name, assignedUser, page, pageSize)
 		if err != nil {
@@ -78,6 +75,7 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 		var resp []PermissionGroupResponseDto
 		for _, g := range groups {
 			var perms []PermissionResponseDto
+			var assignedUser []AssignedUserResponseDto
 			for _, p := range g.Permissions {
 				perms = append(perms, PermissionResponseDto{
 					ID:          p.ID.String(),
@@ -85,11 +83,18 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 					Description: p.Description,
 				})
 			}
+			// for _, u := range g.AssignedUsers {
+			// 	assignedUser = append(assignedUser, AssignedUserResponseDto{
+			// 		ID:   u.ID,
+			// 		Username: u.Username,
+			// 	})
+			// }
 			resp = append(resp, PermissionGroupResponseDto{
 				ID:          g.ID.String(),
 				Name:        g.Name,
 				Description: g.Description,
 				Permissions: perms,
+				AssignedUsers: assignedUser,
 				CreatedAt:   g.CreatedAt,
 				UpdatedAt:   g.UpdatedAt,
 			})

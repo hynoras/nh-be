@@ -13,7 +13,7 @@ type Service interface {
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, dto *CreatePermissionGroupDto) error
-	GetAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error)
+	GetAllPermissionGroups(ctx context.Context, name string, assignedUser string, page, pageSize int) ([]PermissionGroup, int64, error)
 	GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, dto *UpdatePermissionGroupDto) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
@@ -69,7 +69,7 @@ func (s *service) CreatePermissionGroup(ctx context.Context, dto *CreatePermissi
 	return s.repo.CreatePermissionGroup(ctx, pg)
 }
 
-func (s *service) GetAllPermissionGroups(ctx context.Context, name string, assignedUser uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error) {
+func (s *service) GetAllPermissionGroups(ctx context.Context, name string, assignedUser string, page, pageSize int) ([]PermissionGroup, int64, error) {
 	offset := (page - 1) * pageSize
 	return s.repo.FindAllPermissionGroups(ctx, name, assignedUser, offset, pageSize)
 }

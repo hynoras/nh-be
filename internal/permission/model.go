@@ -29,8 +29,3 @@ type UserPermission struct {
 	CreatedAt    time.Time `gorm:"type:timestamp;not null;default:now()"`
 	UpdatedAt    time.Time `gorm:"type:timestamp;not null;default:now()"`
 }
-
-// TableName overrides the default table name for UserPermission to match the design
-func (UserPermission) TableName() string {
-	return "user_permission"
-}

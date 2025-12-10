@@ -33,13 +33,13 @@ func (r *repository) FindAll(ctx context.Context, search string, role string, of
   var length int64
 
   query := r.db.WithContext(ctx).Model(&User{}).
+  Count(&length).
   Select("id", "username", "email", "role", "created_at").
   Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
 
   if role != "" {
     query = query.Where("role = ?", role)
   }  
-  query.Count(&length)
 
   result := query.Scopes(utils.Paginate(offset, limit)).Find(&users).Error
   return users, length, result
