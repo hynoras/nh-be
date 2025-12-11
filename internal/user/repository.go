@@ -11,7 +11,7 @@ import (
 
 type Repository interface {
   Create(ctx context.Context, u *User) error
-  FindAll (ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error)
+  FindAll (ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error)
   FindByEmail(ctx context.Context, email string) (*User, error)
   FindByUsername(ctx context.Context, username string) (*User, error)
   FindByID(ctx context.Context, id uuid.UUID) (*User, error)
@@ -29,11 +29,16 @@ func NewRepository(db *gorm.DB) Repository {
   return &repository{db: db}
 }
 
-func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]UserResponseDto, int64, error) {
-  var users []UserResponseDto
+func (r *repository) Create(ctx context.Context, u *User) error {
+  return r.db.WithContext(ctx).Create(&u).Error
+}
+
+func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error) {
+  var users []User
   var length int64
 
   query := r.db.WithContext(ctx).Model(&User{}).
+  Preload("AssignedPermissionGroups").
   Count(&length).
   Select("id", "username", "email", "role", "created_at").
   Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
@@ -75,7 +80,10 @@ func (r *repository) FindPasswordById(ctx context.Context, id uuid.UUID) (*strin
 
 func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) {
   var u User
-  result := r.db.WithContext(ctx).Where("id = ?", id).First(&u)
+  result := r.db.WithContext(ctx).Where("id = ?", id).
+    Preload("AssignedPermissionGroups").
+    Preload("AssignedPermissionGroups.Permissions").
+    First(&u)
   if result.Error != nil {
     return nil, result.Error
   }
@@ -89,10 +97,6 @@ func (r *repository) FindByIDs(ctx context.Context, ids []uuid.UUID) ([]User, er
     return nil, result.Error
   }
   return u, nil
-}
-
-func (r *repository) Create(ctx context.Context, u *User) error {
-  return r.db.WithContext(ctx).Create(&u).Error
 }
 
 func (r *repository) Update(ctx context.Context, id uuid.UUID, u *User) error {

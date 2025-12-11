@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -80,4 +81,31 @@ func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func ParsePaginationParams(c *gin.Context, defaultPage, defaultPageSize int) (int, int, error) {
+	pageStr := c.Query("page")
+	pageSizeStr := c.Query("pageSize")
+	
+	var page int = defaultPage
+	var pageSize int = defaultPageSize
+	var err error
+	
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil {
+			MakeErrorResponse(c, http.StatusBadRequest, "Invalid page", err.Error())
+			return 0, 0, err
+		}
+	}
+	
+	if pageSizeStr != "" {
+		pageSize, err = strconv.Atoi(pageSizeStr)
+		if err != nil {
+			MakeErrorResponse(c, http.StatusBadRequest, "Invalid page size", err.Error())
+			return 0, 0, err
+		}
+	}
+	
+	return page, pageSize, nil
 }
