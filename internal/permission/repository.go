@@ -114,7 +114,6 @@ func (r *repository) FindAllPermissionGroups(
 
 	result := query.
 		Preload("Permissions").
-		Preload("AssignedUsers").
 		Scopes(utils.Paginate(offset, limit)).
 		Find(&groups)
 	
@@ -123,7 +122,7 @@ func (r *repository) FindAllPermissionGroups(
 
 func (r *repository) FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
 	var pg PermissionGroup
-	if err := r.db.WithContext(ctx).Preload("Permissions").Preload("AssignedUsers").First(&pg, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Permissions").First(&pg, id).Error; err != nil {
 		return nil, err
 	}
 	return &pg, nil
@@ -157,10 +156,6 @@ func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) er
 		}
 		
 		if err := tx.Model(&pg).Association("Permissions").Clear(); err != nil {
-			return err
-		}
-		
-		if err := tx.Model(&pg).Association("AssignedUsers").Clear(); err != nil {
 			return err
 		}
 		
