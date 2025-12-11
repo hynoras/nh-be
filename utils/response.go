@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type APIResponse struct {
@@ -45,4 +48,36 @@ func MakeErrorResponse(c *gin.Context, statusCode int, message string, error int
 		Message: message,
 		Error:   &error,
 	})
+}
+
+func ValidateUUID(c *gin.Context, id string) (*uuid.UUID, error){
+	parsedID, err := ParseStringToUUID(id)
+	if err != nil {
+		MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID format", err.Error())
+		return nil, err
+	}
+	return &parsedID, nil
+}
+
+func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		var verr validator.ValidationErrors
+		if errors.As(err, &verr) {
+			MakeErrorResponse(
+				c,
+				http.StatusUnprocessableEntity,
+				"Validation failed",
+				verr.Error(),
+			)
+			return verr
+		}
+		MakeErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Invalid request",
+			err.Error(),
+		)
+		return err
+	}
+	return nil
 }

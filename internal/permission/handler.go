@@ -81,10 +81,10 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var dto CreatePermissionGroupDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
-			return
-		}
+        validateErr := utils.ValidateRequestFormat(c, &dto)
+        if validateErr != nil {
+            return
+        }
 
 		if err := s.CreatePermissionGroup(c.Request.Context(), &dto); err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create permission group", err.Error())
@@ -97,40 +97,39 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 
 func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, err := uuid.Parse(c.Param("id"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID", err.Error())
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		if idErr != nil {
 			return
 		}
 
-		g, err := s.GetPermissionGroupByID(c.Request.Context(), id)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", err.Error())
+		permissionGroup, err := s.GetPermissionGroupByID(c.Request.Context(), *parsedId)
+		if err == ErrPermissionGroupNotFound {
+			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
+			return
+		} else if err != nil {
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission group", err.Error())
 			return
 		}
 
-
-		resp := MapPermissionGroupToDto(*g)
-
+		resp := MapPermissionGroupToDto(*permissionGroup)
 		utils.MakeSuccessResponse(c, "Permission group fetched successfully", resp)
 	}
 }
 
 func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, err := uuid.Parse(c.Param("id"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID", err.Error())
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		if idErr != nil {
 			return
 		}
 
 		var dto UpdatePermissionGroupDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
-			return
-		}
+		validateErr := utils.ValidateRequestFormat(c, &dto)
+        if validateErr != nil {
+            return
+        }
 
-		if err := s.UpdatePermissionGroup(c.Request.Context(), id, &dto); err != nil {
+		if err := s.UpdatePermissionGroup(c.Request.Context(), *parsedId, &dto); err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update permission group", err.Error())
 			return
 		}
@@ -141,13 +140,12 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 
 func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, err := uuid.Parse(c.Param("id"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID", err.Error())
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		if idErr != nil {
 			return
 		}
 
-		if err := s.DeletePermissionGroup(c.Request.Context(), id); err != nil {
+		if err := s.DeletePermissionGroup(c.Request.Context(), *parsedId); err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete permission group", err.Error())
 			return
 		}

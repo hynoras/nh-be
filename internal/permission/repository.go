@@ -12,6 +12,8 @@ import (
 
 type Repository interface {
 	// Permission
+	FindIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	FindIDByIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
 	FindAllPermissions(ctx context.Context, name string) ([]PermissionResponseDto, int64, error)
 	FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 	FindPermissionsByIDs(ctx context.Context, ids []uuid.UUID) ([]Permission, error)
@@ -52,6 +54,22 @@ func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]P
 	return permissions, length, result
 }
 
+func (r *repository) FindIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var p uuid.UUID
+	if err := r.db.WithContext(ctx).Model(&Permission{}).Select("id").Where("id = ?", id).First(&p).Error; err != nil {
+		return uuid.Nil, err
+	}
+	return p, nil
+}
+
+func (r *repository) FindIDByIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {
+	var p []uuid.UUID
+	if err := r.db.WithContext(ctx).Model(&Permission{}).Select("id").Where("id IN ?", ids).Find(&p).Error; err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 func (r *repository) FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error) {
 	var p Permission
 	if err := r.db.WithContext(ctx).First(&p, id).Error; err != nil {
@@ -85,12 +103,10 @@ func (r *repository) FindAllPermissionGroups(
 
 	query := r.db.WithContext(ctx).Model(&PermissionGroup{})
 
-	// Apply search filters
 	if name != "" {
 		query = query.Where("permission_groups.name LIKE ?", "%"+name+"%")
 	}
 	
-	// Filter by assigned user if provided
 	if assignedUser != "" {
 		query = query.Joins("JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id").
 			Joins("JOIN users ON users.id = user_permissions.user_id").
@@ -98,10 +114,8 @@ func (r *repository) FindAllPermissionGroups(
 			Distinct()
 	}
 
-	// Count total results
 	query.Count(&length)
 
-	// Fetch results with preloaded associations
 	result := query.
 		Preload("Permissions").
 		Preload("AssignedUsers").
@@ -165,9 +179,7 @@ func (r *repository) RemoveUserFromGroup(ctx context.Context, userID, groupID uu
 // Transaction Implementations
 func (r *repository) WithTransaction(ctx context.Context, fn func(repo Repository) error) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Create a new repository instance with the transaction
 		txRepo := &repository{db: tx}
-		// Execute the function with the transactional repository
 		return fn(txRepo)
 	})
 }

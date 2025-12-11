@@ -10,6 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	ErrPermissionNotFound = errors.New("permission not found")
+	ErrPermissionGroupNotFound = errors.New("permission group not found")
+	ErrNotNullPermissions = errors.New("permissions can not be null")
+)
+
 type Service interface {
 	CheckExistingPermission(ctx context.Context, permissionId uuid.UUID) (*Permission, error)
 	CheckExistingPermissions(ctx context.Context, permissionIds []uuid.UUID) ([]Permission, error)
@@ -45,7 +51,7 @@ func (s *service) CheckExistingPermission(ctx context.Context, permissionId uuid
 		return nil, err
 	}
 	if permission == nil {
-		return nil, errors.New("permissions not found")
+		return nil, ErrPermissionNotFound
 	}
 	return permission, nil
 }
@@ -56,7 +62,7 @@ func (s *service) CheckExistingPermissions(ctx context.Context, permissionIds []
 		return nil, err
 	}
 	if len(permissions) == 0 {
-		return nil, errors.New("permissions not found")
+		return nil, ErrPermissionNotFound
 	}
 	return permissions, nil
 }
@@ -80,10 +86,10 @@ func (s *service) CreatePermissionGroup(ctx context.Context, dto *CreatePermissi
 		if parseErr != nil {
 			return parseErr
 		}
-		var err error
-		permissions, err = s.CheckExistingPermissions(ctx, ids)
-		if err != nil {
-			return err
+		var checkExistingPermissionsErr error
+		permissions, checkExistingPermissionsErr = s.CheckExistingPermissions(ctx, ids)
+		if checkExistingPermissionsErr != nil {
+			return checkExistingPermissionsErr
 		}
 	}
 
@@ -116,29 +122,37 @@ func (s *service) CreatePermissionGroup(ctx context.Context, dto *CreatePermissi
 	})
 }
 
-
 func (s *service) GetAllPermissionGroups(ctx context.Context, name string, assignedUser string, page, pageSize int) ([]PermissionGroup, int64, error) {
 	offset := (page - 1) * pageSize
 	return s.permissionRepo.FindAllPermissionGroups(ctx, name, assignedUser, offset, pageSize)
 }
 
 func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
-	return s.permissionRepo.FindPermissionGroupByID(ctx, id)
+	permissionGroup, err := s.permissionRepo.FindPermissionGroupByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if permissionGroup == nil {
+		return nil, ErrPermissionGroupNotFound
+	}
+	return permissionGroup, nil
 }
 
 func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, dto *UpdatePermissionGroupDto) error {
 	var permissions []Permission
 	var assignedUsers []user.User
 	
-	if len(dto.Permissions) > 0 {
+	if len(dto.Permissions) == 0 || dto.Permissions == nil {
+		return ErrNotNullPermissions
+	} else {
 		ids, parseErr := utils.ParseStringsToUUIDs(dto.Permissions)
 		if parseErr != nil {
 			return parseErr
 		}
-		var err error
-		permissions, err = s.CheckExistingPermissions(ctx, ids)
-		if err != nil {
-			return err
+		var checkExistingPermissionsErr error
+		permissions, checkExistingPermissionsErr = s.CheckExistingPermissions(ctx, ids)
+		if checkExistingPermissionsErr != nil {
+			return checkExistingPermissionsErr
 		}
 	}
 
