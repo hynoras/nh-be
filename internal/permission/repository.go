@@ -7,14 +7,13 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type Repository interface {
 	// Permission
 	FindIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	FindIDByIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
-	FindAllPermissions(ctx context.Context, name string) ([]PermissionResponseDto, int64, error)
+	FindAllPermissions(ctx context.Context, name string) ([]Permission, int64, error)
 	FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 	FindPermissionsByIDs(ctx context.Context, ids []uuid.UUID) ([]Permission, error)
 
@@ -42,16 +41,16 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 // Permission Implementations
-func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]PermissionResponseDto, int64, error) {
-	var permissions []PermissionResponseDto
+func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
+	var permissions []Permission
 	var length int64
 
-	query := r.db.WithContext(ctx).Model(&Permission{}).
+	query := r.db.WithContext(ctx).Select("id", "name", "description").Model(&Permission{}).
 	Where("LOWER(name) LIKE ?", "%"+strings.ToLower(search)+"%").
 	Count(&length)
 
-	result := query.Find(&permissions).Error
-	return permissions, length, result
+	result := query.Find(&permissions)
+	return permissions, length, result.Error
 }
 
 func (r *repository) FindIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
@@ -158,7 +157,22 @@ func (r *repository) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg
 }
 
 func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("id = ?", id).Select(clause.Associations).Delete(&PermissionGroup{}).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var pg PermissionGroup
+		if err := tx.First(&pg, id).Error; err != nil {
+			return err
+		}
+		
+		if err := tx.Model(&pg).Association("Permissions").Clear(); err != nil {
+			return err
+		}
+		
+		if err := tx.Model(&pg).Association("AssignedUsers").Clear(); err != nil {
+			return err
+		}
+		
+		return tx.Delete(&pg).Error
+	})
 }
 
 // User Permission Implementations

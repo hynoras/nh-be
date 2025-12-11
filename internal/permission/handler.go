@@ -20,40 +20,31 @@ func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		var resp []PermissionResponseDto
-		for _, p := range permissions {
-			resp = append(resp, PermissionResponseDto{
-				ID:          p.ID,
-				Name:        p.Name,
-				Description: p.Description,
-			})
-		}
-
+		resp := MapPermissionsToDto(permissions)
 		utils.MakeSuccessResponse(c, "Permissions fetched successfully", resp, count)
 	}
 }
 
 func GetPermissionHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		id, err := uuid.Parse(c.Param("id"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID", err.Error())
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		if idErr != nil {
 			return
 		}
 
-		p, err := s.GetPermissionByID(c.Request.Context(), id)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission not found", err.Error())
+		permission, serviceErr := s.GetPermissionByID(c.Request.Context(), *parsedId)
+		switch serviceErr {
+		case ErrPermissionNotFound:
+			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission not found", serviceErr.Error())
+			return
+		case nil:
+			resp := MapPermissionToDto(*permission)
+			utils.MakeSuccessResponse(c, "Permission fetched successfully", resp)
+			return
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission", serviceErr.Error())
 			return
 		}
-
-		resp := PermissionResponseDto{
-			ID:          p.ID.String(),
-			Name:        p.Name,
-			Description: p.Description,
-		}
-
-		utils.MakeSuccessResponse(c, "Permission fetched successfully", resp)
 	}
 }
 
@@ -66,14 +57,13 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 		name := c.Query("name")
 		assignedUser := c.Query("assignedUser")
 
-		groups, count, err := s.GetAllPermissionGroups(c.Request.Context(), name, assignedUser, page, pageSize)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission groups", err.Error())
+		groups, count, serviceErr := s.GetAllPermissionGroups(c.Request.Context(), name, assignedUser, page, pageSize)
+		if serviceErr != nil {
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission groups", serviceErr.Error())
 			return
 		}
 
 		resp := MapPermissionGroupsToDto(groups)
-
 		utils.MakeSuccessResponse(c, "Permission groups fetched successfully", resp, count)
 	}
 }
@@ -86,11 +76,10 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
             return
         }
 
-		if err := s.CreatePermissionGroup(c.Request.Context(), &dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create permission group", err.Error())
+		if serviceErr := s.CreatePermissionGroup(c.Request.Context(), &dto); serviceErr != nil {
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create permission group", serviceErr.Error())
 			return
-		}
-
+		} 
 		utils.MakeSuccessResponse(c, "Permission group created successfully", nil)
 	}
 }
@@ -102,17 +91,18 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		permissionGroup, err := s.GetPermissionGroupByID(c.Request.Context(), *parsedId)
-		if err == ErrPermissionGroupNotFound {
+		permissionGroup, serviceErr := s.GetPermissionGroupByID(c.Request.Context(), *parsedId)
+		switch serviceErr {
+		case ErrPermissionGroupNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
 			return
-		} else if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission group", err.Error())
+		case nil :
+			resp := MapPermissionGroupToDto(*permissionGroup)
+			utils.MakeSuccessResponse(c, "Permission group fetched successfully", resp)
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission group", serviceErr.Error())
 			return
 		}
-
-		resp := MapPermissionGroupToDto(*permissionGroup)
-		utils.MakeSuccessResponse(c, "Permission group fetched successfully", resp)
 	}
 }
 
@@ -129,12 +119,18 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
             return
         }
 
-		if err := s.UpdatePermissionGroup(c.Request.Context(), *parsedId, &dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update permission group", err.Error())
+		serviceErr := s.UpdatePermissionGroup(c.Request.Context(), *parsedId, &dto)
+		switch serviceErr {
+		case ErrPermissionGroupNotFound:
+			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
+			return
+		case nil:
+			utils.MakeSuccessResponse(c, "Permission group updated successfully", nil)
+			return
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update permission group", serviceErr.Error())
 			return
 		}
-
-		utils.MakeSuccessResponse(c, "Permission group updated successfully", nil)
 	}
 }
 
@@ -145,12 +141,18 @@ func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		if err := s.DeletePermissionGroup(c.Request.Context(), *parsedId); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete permission group", err.Error())
+		serviceErr := s.DeletePermissionGroup(c.Request.Context(), *parsedId)
+		switch serviceErr {
+		case ErrPermissionGroupNotFound:
+			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
+			return
+		case nil:
+			utils.MakeSuccessResponse(c, "Permission group deleted successfully", nil)
+			return
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete permission group", serviceErr.Error())
 			return
 		}
-
-		utils.MakeSuccessResponse(c, "Permission group deleted successfully", nil)
 	}
 }
 

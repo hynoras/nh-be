@@ -20,7 +20,7 @@ type Service interface {
 	CheckExistingPermission(ctx context.Context, permissionId uuid.UUID) (*Permission, error)
 	CheckExistingPermissions(ctx context.Context, permissionIds []uuid.UUID) ([]Permission, error)
 	// Permission
-	GetAllPermissions(ctx context.Context, search string) ([]PermissionResponseDto, int64, error)
+	GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error)
 	GetPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 
 	// Permission Group
@@ -68,7 +68,7 @@ func (s *service) CheckExistingPermissions(ctx context.Context, permissionIds []
 }
 
 // Permission Implementations
-func (s *service) GetAllPermissions(ctx context.Context, search string) ([]PermissionResponseDto, int64, error) {
+func (s *service) GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
 	return s.permissionRepo.FindAllPermissions(ctx, search)
 }
 
@@ -129,11 +129,11 @@ func (s *service) GetAllPermissionGroups(ctx context.Context, name string, assig
 
 func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
 	permissionGroup, err := s.permissionRepo.FindPermissionGroupByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
 	if permissionGroup == nil {
 		return nil, ErrPermissionGroupNotFound
+	}
+	if err != nil {
+		return nil, err
 	}
 	return permissionGroup, nil
 }
@@ -141,10 +141,13 @@ func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*Pe
 func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, dto *UpdatePermissionGroupDto) error {
 	var permissions []Permission
 	var assignedUsers []user.User
+
+	_, err := s.GetPermissionGroupByID(ctx, id)
+	if err != nil {
+		return err
+	}
 	
-	if len(dto.Permissions) == 0 || dto.Permissions == nil {
-		return ErrNotNullPermissions
-	} else {
+	if len(dto.Permissions) > 0 {
 		ids, parseErr := utils.ParseStringsToUUIDs(dto.Permissions)
 		if parseErr != nil {
 			return parseErr
