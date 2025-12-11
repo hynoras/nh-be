@@ -36,7 +36,7 @@ type UpdateUserDto struct {
 	Username string `json:"username,omitempty"`
 	Email string `json:"email,omitempty"`
 	Role string `json:"role,omitempty"`
-	PermissionGroups []string `json:"permission_groups,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 type DeleteUsersDto struct {

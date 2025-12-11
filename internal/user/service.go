@@ -23,7 +23,7 @@ type Service interface {
 	GetAllUsers(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
 	CreateUser(ctx context.Context, user *CreateUserDto) error
-	UpdateUser(ctx context.Context, id uuid.UUID, user *User) error
+	UpdateUser(ctx context.Context, id uuid.UUID, dto *UpdateUserDto) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
 }
 
@@ -133,33 +133,32 @@ func (s *service) CreateUser(ctx context.Context, dto *CreateUserDto) error {
 	})
 }
 
-func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, user *User) error {
-	// Validate permission groups exist if provided
-	if len(user.AssignedPermissionGroups) > 0 {
-		groupIDs := make([]uuid.UUID, len(user.AssignedPermissionGroups))
-		for i, group := range user.AssignedPermissionGroups {
-			groupIDs[i] = group.ID
+func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, dto *UpdateUserDto) error {
+	var permissionGroups []permission.PermissionGroup
+	var err error
+	if len(dto.Permissions) > 0 {
+		ids, parseErr := utils.ParseStringsToUUIDs(dto.Permissions)
+		if parseErr != nil {
+			return errors.New("invalid permission group ID: " + parseErr.Error())
 		}
-		validGroups, err := s.userRepo.FindPermissionGroupsByIDs(ctx, groupIDs)
+		permissionGroups, err = s.permissionService.CheckExistingPermissionGroups(ctx, ids)
 		if err != nil {
 			return err
 		}
-		if len(validGroups) != len(groupIDs) {
-			return errors.New("one or more permission groups not found")
-		}
 	}
-	
-	userDto := &User{
-		Username: user.Username,
-		Email: user.Email,
-		Role: user.Role,
-		AssignedPermissionGroups: user.AssignedPermissionGroups,
+
+	err = s.userRepo.Update(ctx, id, &User{
+		Username: dto.Username,
+		Email: dto.Email,
+		Role: dto.Role,
+		AssignedPermissionGroups: permissionGroups,
 		UpdatedAt: time.Now(),
-	}
-	err := s.userRepo.Update(ctx, id, userDto) 
+	}) 
+
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
