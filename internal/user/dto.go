@@ -29,12 +29,14 @@ type CreateUserDto struct {
 	Email string `json:"email"`
 	Password string `json:"password"`
 	Role string `json:"role"`
+	Permissions []string `json:"permissions"`
 }
 
 type UpdateUserDto struct {
 	Username string `json:"username,omitempty"`
 	Email string `json:"email,omitempty"`
 	Role string `json:"role,omitempty"`
+	PermissionGroups []string `json:"permission_groups,omitempty"`
 }
 
 type DeleteUsersDto struct {

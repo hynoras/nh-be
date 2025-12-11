@@ -26,18 +26,12 @@ type PermissionGroupResponseDto struct {
 type CreatePermissionGroupDto struct {
 	Name          string   `json:"name" binding:"required,min=5,max=50"`
 	Description   string   `json:"description" binding:"omitempty"`
-	Users         []string `json:"users" binding:"omitempty,dive,uuid4"`
 	Permissions []string `json:"permissions" binding:"required,dive,uuid4"`
 }
 
 type UpdatePermissionGroupDto struct {
 	Name          string   `json:"name" binding:"omitempty,min=5,max=50"`
 	Description   string   `json:"description" binding:"omitempty"`
-	Users         []string `json:"users" binding:"omitempty,dive,uuid4"`
 	Permissions []string `json:"permissions" binding:"required,dive,uuid4"`
 }
 
-type AssignUserGroupDto struct {
-	UserID            string `json:"user_id" binding:"required"`
-	PermissionGroupID string `json:"permission_group_id" binding:"required"`
-}

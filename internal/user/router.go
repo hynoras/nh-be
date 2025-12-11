@@ -1,6 +1,8 @@
 package user
 
 import (
+	"nh-be/internal/permission"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -8,7 +10,9 @@ import (
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	usersGroup := rg.Group("/users")
 	userRepo := NewRepository(db)
-	userService := NewService(userRepo)
+	permissionRepo := permission.NewRepository(db)
+	permissionService := permission.NewService(permissionRepo)
+	userService := NewService(userRepo, permissionRepo, permissionService)
 
 	usersGroup.GET("", GetAllUsersHandler(userService))
 	usersGroup.GET("/:id", GetUserByIDHandler(userService))

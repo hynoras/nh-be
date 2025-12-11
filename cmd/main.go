@@ -29,7 +29,7 @@ func main() {
 
 	// Initialize database
 	db := config.ConnectDatabase()
-	db.AutoMigrate(&user.User{}, &permission.Permission{}, &permission.PermissionGroup{}, &permission.UserPermission{})
+	db.AutoMigrate(&user.User{}, &permission.Permission{}, &permission.PermissionGroup{}, &user.UserPermission{})
 	sqlDB, _ := db.DB()
 	defer func() {
 		if sqlDB != nil {

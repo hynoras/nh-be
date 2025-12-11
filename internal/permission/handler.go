@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 // Permission Handlers
@@ -153,46 +152,5 @@ func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete permission group", serviceErr.Error())
 			return
 		}
-	}
-}
-
-// User Permission Handlers
-
-func AssignUserToGroupHandler(s Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var dto AssignUserGroupDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
-			return
-		}
-
-		if err := s.AssignUserToGroup(c.Request.Context(), &dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to assign user to group", err.Error())
-			return
-		}
-
-		utils.MakeSuccessResponse(c, "User assigned to group successfully", nil)
-	}
-}
-
-func RemoveUserFromGroupHandler(s Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID, err := uuid.Parse(c.Param("userId"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid User ID", err.Error())
-			return
-		}
-		groupID, err := uuid.Parse(c.Param("groupId"))
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid Group ID", err.Error())
-			return
-		}
-
-		if err := s.RemoveUserFromGroup(c.Request.Context(), userID, groupID); err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to remove user from group", err.Error())
-			return
-		}
-
-		utils.MakeSuccessResponse(c, "User removed from group successfully", nil)
 	}
 }

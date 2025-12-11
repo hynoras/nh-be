@@ -23,10 +23,7 @@ type Repository interface {
 	FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg *PermissionGroup) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
-
-	// User Permission
-	AssignUserToGroup(ctx context.Context, userID, groupID uuid.UUID) error
-	RemoveUserFromGroup(ctx context.Context, userID, groupID uuid.UUID) error
+	FindPermissionGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]PermissionGroup, error)
 
 	// Transaction
 	WithTransaction(ctx context.Context, fn func(repo Repository) error) error
@@ -148,10 +145,6 @@ func (r *repository) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg
 			return err
 		}
 		
-		if err := tx.Model(pg).Association("AssignedUsers").Replace(pg.AssignedUsers); err != nil {
-			return err
-		}
-		
 		return nil
 	})
 }
@@ -175,19 +168,12 @@ func (r *repository) DeletePermissionGroup(ctx context.Context, id uuid.UUID) er
 	})
 }
 
-// User Permission Implementations
-func (r *repository) AssignUserToGroup(ctx context.Context, userID uuid.UUID, groupID uuid.UUID) error {
-	up := UserPermission{UserID: userID, PermissionGroupID: groupID}
-	return r.db.WithContext(ctx).Create(&up).Error
-}
-
-func (r *repository) UpdateUserPermission(ctx context.Context, userID uuid.UUID, groupID uuid.UUID) error {
-	up := UserPermission{UserID: userID, PermissionGroupID: groupID}
-	return r.db.WithContext(ctx).Session(&gorm.Session{FullSaveAssociations: true}).Where("user_id = ? AND permission_group_id = ?", userID, groupID).Updates(&up).Error
-}
-
-func (r *repository) RemoveUserFromGroup(ctx context.Context, userID, groupID uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("user_id = ? AND permission_group_id = ?", userID, groupID).Delete(&UserPermission{}).Error
+func (r *repository) FindPermissionGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]PermissionGroup, error) {
+	var permissionGroups []PermissionGroup
+	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&permissionGroups).Error; err != nil {
+		return nil, err
+	}
+	return permissionGroups, nil
 }
 
 // Transaction Implementations

@@ -3,12 +3,12 @@ package user
 import (
 	"errors"
 	"net/http"
+	"nh-be/internal/permission"
 	"nh-be/utils"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
@@ -70,26 +70,13 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 
 func CreateUserHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req CreateUserDto
-		if err := c.ShouldBindJSON(&req); err != nil {
+		var dto CreateUserDto
+		if err := c.ShouldBindJSON(&dto); err != nil {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
 			return
 		}
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to hash password", err.Error())
-			return
-		}
-		
-		userReq := &User{
-			Username: req.Username,
-			Email: req.Email,
-			Password: string(hashedPassword),
-			Role: req.Role,
-		}
-
-		err = s.CreateUser(c.Request.Context(), userReq)
+		err := s.CreateUser(c.Request.Context(), &dto)
 		if err != nil {
 			if errors.Is(err, ErrDuplicateUsername) || errors.Is(err, ErrDuplicateEmail) {
 				utils.MakeErrorResponse(c, http.StatusBadRequest, err.Error(), err.Error())
@@ -116,11 +103,27 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 			return
 		}
 
+		var assignedPermissionGroups []permission.PermissionGroup
+		if len(req.PermissionGroups) > 0 {
+			for _, permissionGroupId := range req.PermissionGroups {
+				groupID, err := utils.ParseStringToUUID(permissionGroupId)
+				if err != nil {
+					utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permission group ID", err.Error())
+					return
+				}
+				assignedPermissionGroups = append(assignedPermissionGroups, permission.PermissionGroup{ID: groupID})
+			}
+		}
 		
 		userReq := &User{
 			Username: req.Username,
 			Email: req.Email,
 			Role: req.Role,
+		}
+		
+		// Only set AssignedPermissionGroups if it was provided in the request
+		if len(req.PermissionGroups) > 0 {
+			userReq.AssignedPermissionGroups = assignedPermissionGroups
 		}
 
 		err = s.UpdateUser(c.Request.Context(), userID, userReq)
