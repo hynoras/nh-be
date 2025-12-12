@@ -15,7 +15,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		search := c.Query("search")
 		role := c.Query("role")
 
-		pageInt, pageSizeInt, err := utils.ParsePaginationParams(c, 1, 10)
+		pageInt, pageSizeInt, err := utils.ParsePaginationParams(c)
 		if err != nil {
 			return
 		}
@@ -26,7 +26,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 			return
 		}
 		userResp := MapUsersToDto(users)
-		utils.MakeSuccessResponse(c, "Users fetched successfully", userResp, length)
+		utils.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
 	}
 }
 
@@ -41,7 +41,7 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, "User fetched successfully", MapUserToDto(*user))
+		utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
 	}
 }
 
@@ -63,7 +63,7 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, "User fetched successfully", MapUserToDto(*user))
+		utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
 	}
 }
 
@@ -84,7 +84,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", err.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, "User created successfully", nil)
+		utils.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
 	}
 }
 
@@ -108,7 +108,7 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", err.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, "User updated successfully", nil)
+		utils.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
 	}
 }
 
@@ -133,6 +133,6 @@ func DeleteUsersHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete users", err.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, "Users deleted successfully", nil)
+		utils.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
 	}
 }

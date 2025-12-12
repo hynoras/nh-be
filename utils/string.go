@@ -2,6 +2,22 @@ package utils
 
 import "github.com/google/uuid"
 
+func ValidateUUIDString(uuidStr string) (error) {
+	if err := uuid.Validate(uuidStr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ValidateUUIDStrings(uuidStrs []string) (error) {
+	for _, uuidToValidate := range uuidStrs {
+		if err := uuid.Validate(uuidToValidate); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func ParseStringToUUID(s string) (uuid.UUID, error) {
 	return uuid.Parse(s)
 }

@@ -18,7 +18,13 @@ type APIResponse struct {
 	Length  *int64       `json:"length,omitempty"`
 }
 
-func MakeSuccessResponse(c *gin.Context, message string, args ...interface{}) {
+type ValidationError struct {
+	Index int    `json:"index"`
+	Value string `json:"value"`
+	Error string `json:"error"`
+}
+
+func MakeSuccessResponse(c *gin.Context, statusCode int, message string, args ...interface{}) {
 	resp := APIResponse{
 		Success: true,
 		Message: message,
@@ -40,7 +46,7 @@ func MakeSuccessResponse(c *gin.Context, message string, args ...interface{}) {
 		}
 	}
 	
-	c.JSON(http.StatusOK, resp)
+	c.JSON(statusCode, resp)
 }
 
 func MakeErrorResponse(c *gin.Context, statusCode int, message string, error interface{}) {
@@ -58,6 +64,44 @@ func ValidateUUID(c *gin.Context, id string) (*uuid.UUID, error){
 		return nil, err
 	}
 	return &parsedID, nil
+}
+
+func ValidateUUIDs(c *gin.Context, uuids []string) ([]uuid.UUID, error) {
+	var parsedIDs []uuid.UUID
+	var validationErrors []ValidationError
+
+	for i, uuidStr := range uuids {
+		// Check for empty string
+		if uuidStr == "" {
+			validationErrors = append(validationErrors, ValidationError{
+				Index: i,
+				Value: uuidStr,
+				Error: "empty string is not allowed",
+			})
+			continue
+		}
+
+		// Attempt to parse UUID
+		parsedID, err := ParseStringToUUID(uuidStr)
+		if err != nil {
+			validationErrors = append(validationErrors, ValidationError{
+				Index: i,
+				Value: uuidStr,
+				Error: err.Error(),
+			})
+			continue
+		}
+		parsedIDs = append(parsedIDs, parsedID)
+		
+	}
+
+	// If any validation errors occurred, return them
+	if len(validationErrors) > 0 {
+		MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID format", validationErrors)
+		return nil, errors.New("validation failed")
+	}
+
+	return parsedIDs, nil
 }
 
 func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
@@ -83,29 +127,27 @@ func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
 	return nil
 }
 
-func ParsePaginationParams(c *gin.Context, defaultPage, defaultPageSize int) (int, int, error) {
-	pageStr := c.Query("page")
-	pageSizeStr := c.Query("pageSize")
-	
-	var page int = defaultPage
-	var pageSize int = defaultPageSize
+func ParsePaginationParams(c *gin.Context) (int, int, error) {
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("pageSize", "10")
+
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	if pageSizeStr == "" {
+		pageSizeStr = "10"
+	}
+
 	var err error
-	
-	if pageStr != "" {
-		page, err = strconv.Atoi(pageStr)
-		if err != nil {
-			MakeErrorResponse(c, http.StatusBadRequest, "Invalid page", err.Error())
-			return 0, 0, err
-		}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		MakeErrorResponse(c, http.StatusBadRequest, "Invalid page value", err.Error())
+		return 0, 0, err
 	}
-	
-	if pageSizeStr != "" {
-		pageSize, err = strconv.Atoi(pageSizeStr)
-		if err != nil {
-			MakeErrorResponse(c, http.StatusBadRequest, "Invalid page size", err.Error())
-			return 0, 0, err
-		}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		MakeErrorResponse(c, http.StatusBadRequest, "Invalid page size value", err.Error())
+		return 0, 0, err	
 	}
-	
 	return page, pageSize, nil
 }

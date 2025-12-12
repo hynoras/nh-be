@@ -19,7 +19,7 @@ type Repository interface {
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, pg *PermissionGroup) error
-	FindAllPermissionGroups(ctx context.Context, name string, assignedUser string, offset, limit int) ([]PermissionGroup, int64, error)
+	FindAllPermissionGroups(ctx context.Context, search string, offset, limit int) ([]PermissionGroup, int64, error)
 	FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg *PermissionGroup) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
@@ -89,8 +89,7 @@ func (r *repository) CreatePermissionGroup(ctx context.Context, pg *PermissionGr
 
 func (r *repository) FindAllPermissionGroups(
 	ctx context.Context,
-	name string,
-	assignedUser string,
+	search string,
 	offset,
 	limit int,
 ) ([]PermissionGroup, int64, error) {
@@ -99,17 +98,10 @@ func (r *repository) FindAllPermissionGroups(
 
 	query := r.db.WithContext(ctx).Model(&PermissionGroup{})
 
-	if name != "" {
-		query = query.Where("permission_groups.name LIKE ?", "%"+name+"%")
+	if search != "" {
+		query = query.Where("LOWER(permission_groups.name) LIKE ?", "%"+strings.ToLower(search)+"%")
 	}
 	
-	if assignedUser != "" {
-		query = query.Joins("JOIN user_permissions ON user_permissions.permission_group_id = permission_groups.id").
-			Joins("JOIN users ON users.id = user_permissions.user_id").
-			Where("users.username LIKE ?", "%"+assignedUser+"%").
-			Distinct()
-	}
-
 	query.Count(&length)
 
 	result := query.

@@ -56,7 +56,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 				UpdatedAt: user.UpdatedAt,
 			},
 		}
-		utils.MakeSuccessResponse(c, "User logged in successfully", resp)	
+		utils.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", resp)	
 	}
 }
 
@@ -71,7 +71,7 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 			)
 			return
 		}
-		utils.MakeSuccessResponse(c, "User logged out successfully", nil)
+		utils.MakeSuccessResponse(c, http.StatusOK, "User logged out successfully", nil)
 	}
 }
 
@@ -94,6 +94,6 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Failed to update user password", err.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, "User password changed successfully", nil)
+		utils.MakeSuccessResponse(c, http.StatusOK, "User password changed successfully", nil)
 	}
 }
