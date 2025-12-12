@@ -1,6 +1,10 @@
 package user
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type PermissionResponseDto struct {
 	ID          string    `json:"id"`
@@ -37,6 +41,14 @@ type UpdateUserDto struct {
 	Email string `json:"email,omitempty"`
 	Role string `json:"role,omitempty"`
 	Permissions []string `json:"permissions,omitempty"`
+}
+
+type UserInput struct {
+	Username string 
+	Email string 
+	Password string
+	Role string 
+	Permissions []uuid.UUID 
 }
 
 type DeleteUsersDto struct {

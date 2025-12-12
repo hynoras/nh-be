@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
   Create(ctx context.Context, u *User) error
-  FindAll (ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error)
+  FindAll (ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error)
   FindByEmail(ctx context.Context, email string) (*User, error)
   FindByUsername(ctx context.Context, username string) (*User, error)
   FindByID(ctx context.Context, id uuid.UUID) (*User, error)
@@ -36,7 +36,7 @@ func (r *repository) Create(ctx context.Context, u *User) error {
   return r.db.WithContext(ctx).Create(&u).Error
 }
 
-func (r *repository) FindAll(ctx context.Context, search string, role string, offset int, limit int) ([]User, int64, error) {
+func (r *repository) FindAll(ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error) {
   var users []User
   var length int64
 
@@ -50,7 +50,7 @@ func (r *repository) FindAll(ctx context.Context, search string, role string, of
     query = query.Where("role = ?", role)
   }  
 
-  result := query.Scopes(utils.Paginate(offset, limit)).Find(&users).Error
+  result := query.Scopes(utils.Paginate(page, pageSize)).Find(&users).Error
   return users, length, result
 }
 

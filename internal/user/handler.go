@@ -1,14 +1,55 @@
 package user
 
 import (
-	"errors"
 	"net/http"
 	"nh-be/utils"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
+
+func CreateUserHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var dto CreateUserDto
+		var validationErr error
+		validationErr = utils.ValidateRequestFormat(c, &dto)
+        if validationErr != nil {
+            return
+        }
+
+		var parsedPermissions []uuid.UUID
+		if (dto.Permissions != nil) {
+			parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
+			if validationErr != nil {
+				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
+				return
+			}
+		}
+
+		cleanInput := UserInput{
+			Username: dto.Username,
+			Email: dto.Email,
+			Role: dto.Role,
+			Permissions: parsedPermissions,
+		}
+
+		serviceErr := s.CreateUser(c.Request.Context(), &cleanInput)
+		switch serviceErr {
+		//using the same message to avoid attacker from knowing the exact error
+		case ErrDuplicateUsername:
+		case ErrDuplicateEmail:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Username or email already exists", serviceErr.Error())
+			return
+		case nil:
+			utils.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", serviceErr.Error())
+			return
+		}
+	}
+}
 
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -37,11 +78,14 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 			return
 		}
 		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
-		if serviceErr != nil {
+		switch serviceErr {
+		case gorm.ErrRecordNotFound:
+			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
+		case nil:
+			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
+		default:
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
-			return
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
 	}
 }
 
@@ -59,32 +103,14 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 		}
 		
 		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
-		if serviceErr != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
-			return
+		switch serviceErr {
+		case gorm.ErrRecordNotFound:
+			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
+		case nil:
+			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get me", serviceErr.Error())
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
-	}
-}
-
-func CreateUserHandler(s Service) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var dto CreateUserDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
-			return
-		}
-
-		err := s.CreateUser(c.Request.Context(), &dto)
-		if err != nil {
-			if errors.Is(err, ErrDuplicateUsername) || errors.Is(err, ErrDuplicateEmail) {
-				utils.MakeErrorResponse(c, http.StatusBadRequest, err.Error(), err.Error())
-				return
-			}
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", err.Error())
-			return
-		}
-		utils.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
 	}
 }
 
@@ -97,13 +123,27 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 		}
 
 		var dto UpdateUserDto
-		if err := c.ShouldBindJSON(&dto); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
-			return
+		var validationErr error
+		validationErr = utils.ValidateRequestFormat(c, &dto)
+        if validationErr != nil {
+            return
+        }
+
+		var parsedPermissions []uuid.UUID
+		parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
+        if validationErr != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
+            return
+        }
+
+		cleanInput := UserInput{
+			Username: dto.Username,
+			Email: dto.Email,
+			Role: dto.Role,
+			Permissions: parsedPermissions,
 		}
 
-
-		err = s.UpdateUser(c.Request.Context(), userID, &dto)
+		err = s.UpdateUser(c.Request.Context(), userID, &cleanInput)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", err.Error())
 			return
