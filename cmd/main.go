@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"nh-be/config"
+	"nh-be/internal/permission"
 	"nh-be/internal/user"
 	"nh-be/router"
 
@@ -28,7 +29,7 @@ func main() {
 
 	// Initialize database
 	db := config.ConnectDatabase()
-	db.AutoMigrate(&user.User{})
+	db.AutoMigrate(&user.User{}, &permission.Permission{}, &permission.PermissionGroup{}, &user.UserPermission{})
 	sqlDB, _ := db.DB()
 	defer func() {
 		if sqlDB != nil {
@@ -37,14 +38,12 @@ func main() {
 		}
 	}()
 
-	// Create router
 	r := gin.Default()
-
 	r.Use(cors.New(cors.Config{
-    	AllowOrigins:     []string{"http://localhost:3000"}, // Specify allowed origins
+    	AllowOrigins:     []string{"http://localhost:3000"},
     	AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
     	AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-    	ExposeHeaders:    []string{"Content-Length"}, // Headers the client can access
+    	ExposeHeaders:    []string{"Content-Length"},
     	AllowCredentials: true,
     	MaxAge:           12 * time.Hour, 
     }))
@@ -52,11 +51,11 @@ func main() {
 	// Initialize session store
 	secret := os.Getenv("SESSION_SECRET")
 	if secret == "" {
-		secret = "noheir_secret" // fallback for local dev
+		secret = "noheir_secret"
 	}
 	store := cookie.NewStore([]byte(secret))
 	store.Options(sessions.Options{
-		MaxAge:   60 * 60,
+		MaxAge:   8 * 60 * 60, // 8 hours
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
@@ -64,23 +63,19 @@ func main() {
 	})
 	r.Use(sessions.Sessions("auth_session", store))
 
-	// Simple test route
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 
-	// Register routes
 	router.SetupRoutes(r, db)
 
-	// HTTP server
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: r,
 	}
 
-	// Run server in goroutine
 	go func() {
 		log.Println("Server is running on http://localhost:8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -88,13 +83,11 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal
 	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server gracefully...")
 
-	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

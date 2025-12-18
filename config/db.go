@@ -7,15 +7,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-// ConnectDatabase initializes a GORM DB connection
 func ConnectDatabase() *gorm.DB {
-	// Load .env
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: No .env file found")
 	}
@@ -27,28 +27,31 @@ func ConnectDatabase() *gorm.DB {
 	pass := os.Getenv("DB_PASSWORD")
 
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%d sslmode=require target_session_attrs=read-write TimeZone=Asia/Ho_Chi_Minh",
-		host, user, pass, dbname, port,
+		"postgres://%s:%s@%s:%d/%s?sslmode=require",
+		user, pass, host, port, dbname,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn), // Info for debugging, Warn for cleaner logs
+	pgxCfg, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		log.Fatalf("Failed to parse pgx config: %v", err)
+	}
+
+	sqlDB := stdlib.OpenDB(*pgxCfg)
+
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: sqlDB,
+	}), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Setup connection pool
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatalf("Failed to get sql.DB from gorm.DB: %v", err)
-	}
-
+	// Connection Pool
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	log.Println("Successfully connected to PostgreSQL via GORM!")
-
+	log.Println("Connected to PostgreSQL using pgx-stdlib (IPv4 mode)")
 	return db
 }

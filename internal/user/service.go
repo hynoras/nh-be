@@ -2,33 +2,130 @@ package user
 
 import (
 	"context"
+	"errors"
+	"nh-be/internal/permission"
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+var (
+	ErrDuplicateUsername = errors.New("username already exists")
+	ErrDuplicateEmail    = errors.New("email already exists")
 )
 
 type Service interface {
-  GetAllUsers(ctx context.Context, search string) ([]User, error)
-  GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
-  CreateUser(ctx context.Context, user *User) error
-  UpdateUser(ctx context.Context, id uuid.UUID, user *User) error
-  DeleteUsers(ctx context.Context, ids []uuid.UUID) error
+	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
+	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
+	GetAllUsers(ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error)
+	GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
+	CreateUser(ctx context.Context, userInput *UserInput) error
+	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
+	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
 }
 
 type service struct {
-  userRepo Repository
+	userRepo          Repository
+	permissionRepo    permission.Repository
+	permissionService permission.Service
 }
 
-func NewService(userRepo Repository) Service {
-  return &service{userRepo: userRepo}
+func NewService(userRepo Repository, permissionRepo permission.Repository, permissionService permission.Service) Service {
+	return &service{userRepo: userRepo, permissionRepo: permissionRepo, permissionService: permissionService}
 }
 
-func (s *service) GetAllUsers(ctx context.Context, search string) ([]User, error) {
-	users, err := s.userRepo.FindAll(ctx, search)
-    if err != nil {
-    	return nil, err
-  	}
-  return users, nil
+func (s *service) CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error) {
+	assignedUser, err := s.userRepo.FindByID(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	if assignedUser == nil {
+		return nil, errors.New("assigned users not found")
+	}
+	return assignedUser, nil
+}
+
+func (s *service) CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error) {
+	users, err := s.userRepo.FindByIDs(ctx, userIds)
+	if err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		return nil, errors.New("users not found")
+	}
+	return users, nil
+
+}
+
+func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
+	// Check for duplicate username
+	existingUser, err := s.userRepo.FindByUsername(ctx, userInput.Username)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return ErrDuplicateUsername
+	}
+
+	// Check for duplicate email
+	existingUser, err = s.userRepo.FindByEmail(ctx, userInput.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return ErrDuplicateEmail
+	}
+
+	// Check for duplicate email
+	existingUser, err = s.userRepo.FindByEmail(ctx, userInput.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existingUser != nil {
+		return ErrDuplicateEmail
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("failed to hash password: " + err.Error())
+	}
+
+	// Parse and validate permission groups exist if provided
+	var permissionGroups []permission.PermissionGroup
+	if len(userInput.Permissions) > 0 {
+		permissionGroups, err = s.permissionService.CheckExistingPermissionGroups(ctx, userInput.Permissions)
+		if err != nil {
+			return err
+		}
+	}
+
+	return s.userRepo.WithTransaction(ctx, func(txRepo Repository) error {
+		userToCreate := &User{
+			Username:                 userInput.Username,
+			Email:                    userInput.Email,
+			Password:                 string(hashedPassword),
+			Role:                     userInput.Role,
+			AssignedPermissionGroups: permissionGroups,
+			CreatedAt:                time.Now(),
+		}
+		err := txRepo.Create(ctx, userToCreate)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *service) GetAllUsers(ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error) {
+	users, length, err := s.userRepo.FindAll(ctx, search, role, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, length, nil
 }
 
 func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) {
@@ -39,34 +136,29 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) 
 	return user, nil
 }
 
-func (s *service) CreateUser(ctx context.Context, user *User) error {
-	userDto := &User{
-		Username: user.Username,
-		Email: user.Email,
-		Password: user.Password,
-		Role: user.Role,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {
+	var permissionGroups []permission.PermissionGroup
+	var err error
+	if len(userInput.Permissions) > 0 {
+		permissionGroups, err = s.permissionService.CheckExistingPermissionGroups(ctx, userInput.Permissions)
+		if err != nil {
+			return err
+		}
 	}
-	
-	err := s.userRepo.Create(ctx, userDto)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
-func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, user *User) error {
-	userDto := &User{
-		Username: user.Username,
-		Email: user.Email,
-		Role: user.Role,
-		UpdatedAt: time.Now(),
+	userToUpdate := &User{
+		Username:                 userInput.Username,
+		Email:                    userInput.Email,
+		Role:                     userInput.Role,
+		AssignedPermissionGroups: permissionGroups,
+		UpdatedAt:                time.Now(),
 	}
-	err := s.userRepo.Update(ctx, id, userDto) 
+
+	err = s.userRepo.Update(ctx, id, userToUpdate)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
