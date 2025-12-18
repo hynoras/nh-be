@@ -3,6 +3,7 @@ package permission
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -91,6 +92,7 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 			Name:          permissionGroup.Name,
 			Description:   permissionGroup.Description,
 			Permissions:   permissions,
+			CreatedAt:     time.Now(),
 		}
 
 		err := txRepo.CreatePermissionGroup(ctx, pg)
@@ -134,6 +136,7 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 		Name:        permissionGroup.Name,
 		Description: permissionGroup.Description,
 		Permissions: permissions,
+		UpdatedAt:   time.Now(),
 	}
 	return s.permissionRepo.UpdatePermissionGroup(ctx, id, pg)
 }

@@ -15,12 +15,12 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		var dto CreateUserDto
 		var validationErr error
 		validationErr = utils.ValidateRequestFormat(c, &dto)
-        if validationErr != nil {
-            return
-        }
+		if validationErr != nil {
+			return
+		}
 
 		var parsedPermissions []uuid.UUID
-		if (dto.Permissions != nil) {
+		if dto.Permissions != nil {
 			parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
 			if validationErr != nil {
 				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
@@ -29,9 +29,9 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		}
 
 		cleanInput := UserInput{
-			Username: dto.Username,
-			Email: dto.Email,
-			Role: dto.Role,
+			Username:    dto.Username,
+			Email:       dto.Email,
+			Role:        dto.Role,
 			Permissions: parsedPermissions,
 		}
 
@@ -60,7 +60,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		if err != nil {
 			return
 		}
-		
+
 		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, role, pageInt, pageSizeInt)
 		if serviceErr != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", serviceErr.Error())
@@ -96,12 +96,12 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
 			return
 		}
-		
+
 		parsedId, idErr := utils.ValidateUUID(c, userId.(string))
 		if idErr != nil {
 			return
 		}
-		
+
 		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
 		switch serviceErr {
 		case gorm.ErrRecordNotFound:
@@ -125,21 +125,21 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 		var dto UpdateUserDto
 		var validationErr error
 		validationErr = utils.ValidateRequestFormat(c, &dto)
-        if validationErr != nil {
-            return
-        }
+		if validationErr != nil {
+			return
+		}
 
 		var parsedPermissions []uuid.UUID
 		parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
-        if validationErr != nil {
+		if validationErr != nil {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
-            return
-        }
+			return
+		}
 
 		cleanInput := UserInput{
-			Username: dto.Username,
-			Email: dto.Email,
-			Role: dto.Role,
+			Username:    dto.Username,
+			Email:       dto.Email,
+			Role:        dto.Role,
 			Permissions: parsedPermissions,
 		}
 

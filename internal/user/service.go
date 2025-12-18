@@ -27,23 +27,23 @@ type Service interface {
 }
 
 type service struct {
-  userRepo Repository
-  permissionRepo permission.Repository
-  permissionService permission.Service
+	userRepo          Repository
+	permissionRepo    permission.Repository
+	permissionService permission.Service
 }
 
 func NewService(userRepo Repository, permissionRepo permission.Repository, permissionService permission.Service) Service {
-  return &service{userRepo: userRepo, permissionRepo: permissionRepo, permissionService: permissionService}
+	return &service{userRepo: userRepo, permissionRepo: permissionRepo, permissionService: permissionService}
 }
 
 func (s *service) CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error) {
-		assignedUser, err := s.userRepo.FindByID(ctx, userId)
-		if err != nil {
-			return nil, err
-		}
-		if assignedUser == nil {
-			return nil, errors.New("assigned users not found")
-		}
+	assignedUser, err := s.userRepo.FindByID(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	if assignedUser == nil {
+		return nil, errors.New("assigned users not found")
+	}
 	return assignedUser, nil
 }
 
@@ -86,13 +86,13 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 	if existingUser != nil {
 		return ErrDuplicateEmail
 	}
-	
+
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.New("failed to hash password: " + err.Error())
 	}
-	
+
 	// Parse and validate permission groups exist if provided
 	var permissionGroups []permission.PermissionGroup
 	if len(userInput.Permissions) > 0 {
@@ -101,16 +101,15 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 			return err
 		}
 	}
-	
+
 	return s.userRepo.WithTransaction(ctx, func(txRepo Repository) error {
 		userToCreate := &User{
-			Username: userInput.Username,
-			Email: userInput.Email,
-			Password: string(hashedPassword),
-			Role: userInput.Role,
+			Username:                 userInput.Username,
+			Email:                    userInput.Email,
+			Password:                 string(hashedPassword),
+			Role:                     userInput.Role,
 			AssignedPermissionGroups: permissionGroups,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt:                time.Now(),
 		}
 		err := txRepo.Create(ctx, userToCreate)
 		if err != nil {
@@ -123,10 +122,10 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 
 func (s *service) GetAllUsers(ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error) {
 	users, length, err := s.userRepo.FindAll(ctx, search, role, page, pageSize)
-    if err != nil {
-    	return nil, 0, err
-  	}
-  return users, length, nil
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, length, nil
 }
 
 func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) {
@@ -148,14 +147,14 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 	}
 
 	userToUpdate := &User{
-		Username: userInput.Username,
-		Email: userInput.Email,
-		Role: userInput.Role,
+		Username:                 userInput.Username,
+		Email:                    userInput.Email,
+		Role:                     userInput.Role,
 		AssignedPermissionGroups: permissionGroups,
-		UpdatedAt: time.Now(),
+		UpdatedAt:                time.Now(),
 	}
-	
-	err = s.userRepo.Update(ctx, id, userToUpdate) 
+
+	err = s.userRepo.Update(ctx, id, userToUpdate)
 	if err != nil {
 		return err
 	}
