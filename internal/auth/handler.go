@@ -51,7 +51,6 @@ func LoginHandler(s Service) gin.HandlerFunc {
 				ID: user.ID,
 				Username: user.Username,
 				Email: user.Email,
-				Role: user.Role,
 				CreatedAt: user.CreatedAt,
 				UpdatedAt: user.UpdatedAt,
 			},

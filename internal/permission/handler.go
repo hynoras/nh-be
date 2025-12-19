@@ -72,6 +72,9 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 
 		serviceErr := s.CreatePermissionGroup(c.Request.Context(), &cleanInput)
 		switch serviceErr {
+		case ErrRoleNameAlreadyExists:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Role name already exists", serviceErr.Error())
+			return
 		case nil:
 			utils.MakeSuccessResponse(c, http.StatusCreated, "Permission group created successfully", nil)
 			return
@@ -90,7 +93,17 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 		}
 		search := c.Query("search")
 
-		groups, count, serviceErr := s.GetAllPermissionGroups(c.Request.Context(), search, page, pageSize)
+		var permissionIds []uuid.UUID
+		permissionIdStrings := c.QueryArray("permissions")
+		if len(permissionIdStrings) > 0 {
+			parsedPermissionIds, validationErr := utils.ValidateUUIDs(c, permissionIdStrings)
+			if validationErr != nil {
+				return
+			}
+			permissionIds = parsedPermissionIds
+		}
+
+		groups, count, serviceErr := s.GetAllPermissionGroups(c.Request.Context(), search, permissionIds, page, pageSize)
 		if serviceErr != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission groups", serviceErr.Error())
 			return
@@ -156,6 +169,9 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
 			return
+		case ErrRoleNameAlreadyExists:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Role name already exists", serviceErr.Error())
+			return
 		case nil:
 			utils.MakeSuccessResponse(c, http.StatusOK, "Permission group updated successfully", nil)
 			return
@@ -177,6 +193,9 @@ func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 		switch serviceErr {
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
+			return
+		case ErrCannotDeleteSuperAdmin:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Can not delete Super Admin. At least one must exist", serviceErr.Error())
 			return
 		case nil:
 			utils.MakeSuccessResponse(c, http.StatusOK, "Permission group deleted successfully", nil)

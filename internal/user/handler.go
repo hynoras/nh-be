@@ -31,7 +31,6 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		cleanInput := UserInput{
 			Username:    dto.Username,
 			Email:       dto.Email,
-			Role:        dto.Role,
 			Permissions: parsedPermissions,
 		}
 
@@ -54,14 +53,13 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
-		role := c.Query("role")
 
 		pageInt, pageSizeInt, err := utils.ParsePaginationParams(c)
 		if err != nil {
 			return
 		}
 
-		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, role, pageInt, pageSizeInt)
+		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, pageInt, pageSizeInt)
 		if serviceErr != nil {
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", serviceErr.Error())
 			return
@@ -139,7 +137,6 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 		cleanInput := UserInput{
 			Username:    dto.Username,
 			Email:       dto.Email,
-			Role:        dto.Role,
 			Permissions: parsedPermissions,
 		}
 

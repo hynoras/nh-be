@@ -19,8 +19,9 @@ type Repository interface {
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, pg *PermissionGroup) error
-	FindAllPermissionGroups(ctx context.Context, search string, offset, limit int) ([]PermissionGroup, int64, error)
+	FindAllPermissionGroups(ctx context.Context, search string, permissionIds []uuid.UUID, offset, limit int) ([]PermissionGroup, int64, error)
 	FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
+	FindPermissionGroupByName(ctx context.Context, name string) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, pg *PermissionGroup) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
 	FindPermissionGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]PermissionGroup, error)
@@ -90,6 +91,7 @@ func (r *repository) CreatePermissionGroup(ctx context.Context, pg *PermissionGr
 func (r *repository) FindAllPermissionGroups(
 	ctx context.Context,
 	search string,
+	permissionIds []uuid.UUID,
 	offset,
 	limit int,
 ) ([]PermissionGroup, int64, error) {
@@ -101,8 +103,24 @@ func (r *repository) FindAllPermissionGroups(
 	if search != "" {
 		query = query.Where("LOWER(permission_groups.name) LIKE ?", "%"+strings.ToLower(search)+"%")
 	}
+
+	if len(permissionIds) > 0 {
+		query = query.Joins("JOIN permission_group_items ON permission_groups.id = permission_group_items.permission_group_id").
+			Where("permission_group_items.permission_id IN ?", permissionIds).
+			Group("permission_groups.id")
+	}
 	
-	query.Count(&length)
+	// Count distinct groups
+	countQuery := r.db.WithContext(ctx).Model(&PermissionGroup{})
+	if search != "" {
+		countQuery = countQuery.Where("LOWER(permission_groups.name) LIKE ?", "%"+strings.ToLower(search)+"%")
+	}
+	if len(permissionIds) > 0 {
+		countQuery = countQuery.Joins("JOIN permission_group_items ON permission_groups.id = permission_group_items.permission_group_id").
+			Where("permission_group_items.permission_id IN ?", permissionIds).
+			Distinct("permission_groups.id")
+	}
+	countQuery.Count(&length)
 
 	result := query.
 		Preload("Permissions").
@@ -115,6 +133,14 @@ func (r *repository) FindAllPermissionGroups(
 func (r *repository) FindPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
 	var pg PermissionGroup
 	if err := r.db.WithContext(ctx).Preload("Permissions").First(&pg, id).Error; err != nil {
+		return nil, err
+	}
+	return &pg, nil
+}
+
+func (r *repository) FindPermissionGroupByName(ctx context.Context, name string) (*PermissionGroup, error) {
+	var pg PermissionGroup
+	if err := r.db.WithContext(ctx).Preload("Permissions").Where("name = ?", name).First(&pg).Error; err != nil {
 		return nil, err
 	}
 	return &pg, nil

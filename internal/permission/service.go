@@ -12,19 +12,20 @@ var (
 	ErrPermissionNotFound = errors.New("permission not found")
 	ErrPermissionGroupNotFound = errors.New("permission group not found")
 	ErrNotNullPermissions = errors.New("permissions can not be null")
+	ErrCannotDeleteSuperAdmin = errors.New("can not delete Super Admin. At least one must exist")
+	ErrRoleNameAlreadyExists = errors.New("role name already exists")
 )
 
-type Service interface {
-	CheckExistingPermission(ctx context.Context, permissionId uuid.UUID) (*Permission, error)
-	CheckExistingPermissions(ctx context.Context, permissionIds []uuid.UUID) ([]Permission, error)
-	CheckExistingPermissionGroups(ctx context.Context, permissionGroupIds []uuid.UUID) ([]PermissionGroup, error)
+type Service interface {	
 	// Permission
 	GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error)
+	GetPermissionsByIDs(ctx context.Context, permissionIds []uuid.UUID) ([]Permission, error)
 	GetPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error)
 
 	// Permission Group
 	CreatePermissionGroup(ctx context.Context, permissionGroup *PermissionGroupInput) error
-	GetAllPermissionGroups(ctx context.Context, search string, page, pageSize int) ([]PermissionGroup, int64, error)
+	GetAllPermissionGroups(ctx context.Context, search string, permissionIds []uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error)
+	GetPermissionGroupsByIDs(ctx context.Context, permissionGroupIds []uuid.UUID) ([]PermissionGroup, error)
 	GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error)
 	UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permissionGroup *PermissionGroupInput) error
 	DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
@@ -38,18 +39,7 @@ func NewService(permissionRepo Repository) Service {
 	return &service{permissionRepo: permissionRepo}
 }
 
-func (s *service) CheckExistingPermission(ctx context.Context, permissionId uuid.UUID) (*Permission, error) {
-	permission, err := s.permissionRepo.FindPermissionByID(ctx, permissionId)
-	if err != nil {
-		return nil, err
-	}
-	if permission == nil {
-		return nil, ErrPermissionNotFound
-	}
-	return permission, nil
-}
-
-func (s *service) CheckExistingPermissions(ctx context.Context, permissionIds []uuid.UUID) ([]Permission, error) {
+func (s *service) GetPermissionsByIDs(ctx context.Context, permissionIds []uuid.UUID) ([]Permission, error) {
 	permissions, err := s.permissionRepo.FindPermissionsByIDs(ctx, permissionIds)
 	if err != nil {
 		return nil, err
@@ -57,7 +47,7 @@ func (s *service) CheckExistingPermissions(ctx context.Context, permissionIds []
 	return permissions, nil
 }
 
-func (s *service) CheckExistingPermissionGroups(ctx context.Context, permissionGroupIds []uuid.UUID) ([]PermissionGroup, error) {
+func (s *service) GetPermissionGroupsByIDs(ctx context.Context, permissionGroupIds []uuid.UUID) ([]PermissionGroup, error) {
 	permissionGroups, err := s.permissionRepo.FindPermissionGroupsByIDs(ctx, permissionGroupIds)
 	if err != nil {
 		return nil, err
@@ -82,9 +72,15 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 	var permissions []Permission
 	
 	var checkExistingPermissionsErr error
-	permissions, checkExistingPermissionsErr = s.CheckExistingPermissions(ctx, permissionGroup.Permissions)
+	permissions, checkExistingPermissionsErr = s.GetPermissionsByIDs(ctx, permissionGroup.Permissions)
 	if checkExistingPermissionsErr != nil {
 		return checkExistingPermissionsErr
+	}
+
+	// Check for duplicate name
+	existingGroup, err := s.permissionRepo.FindPermissionGroupByName(ctx, permissionGroup.Name)
+	if err == nil && existingGroup != nil {
+		return ErrRoleNameAlreadyExists
 	}
 
 	return s.permissionRepo.WithTransaction(ctx, func(txRepo Repository) error {
@@ -105,9 +101,9 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 	})
 }
 
-func (s *service) GetAllPermissionGroups(ctx context.Context, search string, page, pageSize int) ([]PermissionGroup, int64, error) {
+func (s *service) GetAllPermissionGroups(ctx context.Context, search string, permissionIds []uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error) {
 	offset := (page - 1) * pageSize
-	return s.permissionRepo.FindAllPermissionGroups(ctx, search, offset, pageSize)
+	return s.permissionRepo.FindAllPermissionGroups(ctx, search, permissionIds, offset, pageSize)
 }
 
 func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
@@ -127,9 +123,15 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 	}
 	
 	var checkExistingPermissionsErr error
-	permissions, checkExistingPermissionsErr = s.CheckExistingPermissions(ctx, permissionGroup.Permissions)
+	permissions, checkExistingPermissionsErr = s.GetPermissionsByIDs(ctx, permissionGroup.Permissions)
 	if checkExistingPermissionsErr != nil {
 		return checkExistingPermissionsErr
+	}
+
+	// Check for duplicate name (excluding current group)
+	duplicateGroup, err := s.permissionRepo.FindPermissionGroupByName(ctx, permissionGroup.Name)
+	if err == nil && duplicateGroup != nil && duplicateGroup.ID != id {
+		return ErrRoleNameAlreadyExists
 	}
 	
 	pg := &PermissionGroup{
@@ -142,9 +144,13 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 }
 
 func (s *service) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error {
-	_, err := s.GetPermissionGroupByID(ctx, id)
+	permissionGroup, err := s.GetPermissionGroupByID(ctx, id)
 	if err != nil {
 		return err
+	}
+	
+	if permissionGroup.Name == "Super Admin" {
+		return ErrCannotDeleteSuperAdmin
 	}
 	
 	return s.permissionRepo.DeletePermissionGroup(ctx, id)
