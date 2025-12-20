@@ -23,7 +23,6 @@ func MapUserToListDto(user User) UserResponseDto {
 		ID:               user.ID.String(),
 		Username:         user.Username,
 		Email:            user.Email,
-		Role:             user.Role,
 		PermissionGroups: permissionGroups,
 		CreatedAt:        user.CreatedAt,
 	}
@@ -52,7 +51,6 @@ func MapUserToDto(user User) UserResponseDto {
 		ID:               user.ID.String(),
 		Username:         user.Username,
 		Email:            user.Email,
-		Role:             user.Role,
 		PermissionGroups: permissionGroups,
 		CreatedAt:        user.CreatedAt,
 	}

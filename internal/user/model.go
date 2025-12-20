@@ -13,7 +13,6 @@ type User struct {
 	Username                 string                       `gorm:"type:varchar(255);not null"`
 	Email                    string                       `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Password                 string                       `gorm:"type:varchar(255);not null"`
-	Role                     string                       `gorm:"type:varchar(255);not null;default:user"`
 	AssignedPermissionGroups []permission.PermissionGroup `gorm:"many2many:user_permissions;joinForeignKey:UserID;joinReferences:PermissionGroupID;constraint:OnDelete:CASCADE"`
 	CreatedAt                time.Time                    `gorm:"type:timestamp;not null;default:now()"`
 	UpdatedAt                time.Time                    `gorm:"type:timestamp;not null;default:now()"`

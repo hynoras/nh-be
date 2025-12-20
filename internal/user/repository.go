@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, u *User) error
-	FindAll(ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error)
+	FindAll(ctx context.Context, search string, page, pageSize int) ([]User, int64, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByUsername(ctx context.Context, username string) (*User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*User, error)
@@ -36,19 +36,15 @@ func (r *repository) Create(ctx context.Context, u *User) error {
 	return r.db.WithContext(ctx).Create(&u).Error
 }
 
-func (r *repository) FindAll(ctx context.Context, search, role string, page, pageSize int) ([]User, int64, error) {
+func (r *repository) FindAll(ctx context.Context, search string, page, pageSize int) ([]User, int64, error) {
 	var users []User
 	var length int64
 
 	query := r.db.WithContext(ctx).Model(&User{}).
 		Preload("AssignedPermissionGroups").
 		Count(&length).
-		Select("id", "username", "email", "role", "created_at").
+		Select("id", "username", "email", "created_at").
 		Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
-
-	if role != "" {
-		query = query.Where("role = ?", role)
-	}
 
 	result := query.Scopes(utils.Paginate(page, pageSize)).Find(&users).Error
 	return users, length, result
@@ -120,9 +116,6 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, u *User) error {
 		}
 		if u.Email != "" {
 			basicFields["email"] = u.Email
-		}
-		if u.Role != "" {
-			basicFields["role"] = u.Role
 		}
 		basicFields["updated_at"] = u.UpdatedAt
 
