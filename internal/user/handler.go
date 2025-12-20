@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/http"
+	"nh-be/constant"
 	"nh-be/utils"
 
 	"github.com/gin-contrib/sessions"
@@ -37,7 +38,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		serviceErr := s.CreateUser(c.Request.Context(), &cleanInput)
 		switch serviceErr {
 		case ErrForbidCreateUser:
-			utils.MakeErrorResponse(c, http.StatusForbidden, "Authorization failed", serviceErr.Error())
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		//using the same message to avoid attacker from knowing the exact error
 		case ErrDuplicateUsername:
@@ -65,7 +66,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, pageInt, pageSizeInt)
 		switch serviceErr {
 		case ErrForbidViewUsers:
-			utils.MakeErrorResponse(c, http.StatusForbidden, "Authorization failed", serviceErr.Error())
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case nil:
 			userResp := MapUsersToDto(users)
@@ -86,8 +87,12 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 		}
 		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
 		switch serviceErr {
+		case ErrForbidViewUser:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
+			return
 		case nil:
 			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
 		default:
@@ -149,12 +154,17 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 			Permissions: parsedPermissions,
 		}
 
-		err = s.UpdateUser(c.Request.Context(), userID, &cleanInput)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", err.Error())
+		serviceErr := s.UpdateUser(c.Request.Context(), userID, &cleanInput)
+		switch serviceErr {
+		case ErrForbidUpdateUser:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
+		case nil:
+			utils.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", serviceErr.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
 	}
 }
 
@@ -174,11 +184,16 @@ func DeleteUsersHandler(s Service) gin.HandlerFunc {
 			}
 			ids[i] = parsedId
 		}
-		err := s.DeleteUsers(c.Request.Context(), ids)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete users", err.Error())
+		serviceErr := s.DeleteUsers(c.Request.Context(), ids)
+		switch serviceErr {
+		case ErrForbidDeleteUser:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
+		case nil:
+			utils.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete users", serviceErr.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
 	}
 }

@@ -2,6 +2,7 @@ package permission
 
 import (
 	"net/http"
+	"nh-be/constant"
 	"nh-be/utils"
 
 	"github.com/gin-gonic/gin"
@@ -72,7 +73,10 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 
 		serviceErr := s.CreatePermissionGroup(c.Request.Context(), &cleanInput)
 		switch serviceErr {
-		case ErrRoleNameAlreadyExists:
+		case ErrForbidCreatePermissionGroup:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
+		case ErrPermissionGroupNameAlreadyExists:
 			utils.MakeErrorResponse(c, http.StatusConflict, "Role name already exists", serviceErr.Error())
 			return
 		case nil:
@@ -104,13 +108,18 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 		}
 
 		groups, count, serviceErr := s.GetAllPermissionGroups(c.Request.Context(), search, permissionIds, page, pageSize)
-		if serviceErr != nil {
+		switch serviceErr {
+		case ErrForbidViewPermissionGroups:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
+		case nil:
+			resp := MapPermissionGroupsToDto(groups)
+			utils.MakeSuccessResponse(c, http.StatusOK, "Permission groups fetched successfully", resp, count)
+			return
+		default:
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission groups", serviceErr.Error())
 			return
 		}
-
-		resp := MapPermissionGroupsToDto(groups)
-		utils.MakeSuccessResponse(c, http.StatusOK, "Permission groups fetched successfully", resp, count)
 	}
 }
 
@@ -123,6 +132,9 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 
 		permissionGroup, serviceErr := s.GetPermissionGroupByID(c.Request.Context(), *parsedId)
 		switch serviceErr {
+		case ErrForbidViewPermissionGroup:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
 			return
@@ -166,10 +178,13 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 
 		serviceErr := s.UpdatePermissionGroup(c.Request.Context(), *parsedId, &cleanInput)
 		switch serviceErr {
+		case ErrForbidUpdatePermissionGroup:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
 			return
-		case ErrRoleNameAlreadyExists:
+		case ErrPermissionGroupNameAlreadyExists:
 			utils.MakeErrorResponse(c, http.StatusConflict, "Role name already exists", serviceErr.Error())
 			return
 		case nil:
@@ -191,6 +206,9 @@ func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 
 		serviceErr := s.DeletePermissionGroup(c.Request.Context(), *parsedId)
 		switch serviceErr {
+		case ErrForbidDeletePermissionGroup:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
 			return
