@@ -13,49 +13,48 @@ func LoginHandler(s Service) gin.HandlerFunc {
 		var req LoginDto
 		if err := c.ShouldBindJSON(&req); err != nil {
 			utils.MakeErrorResponse(
-				c, 
-				http.StatusBadRequest, 
-				"Invalid request format", 
+				c,
+				http.StatusBadRequest,
+				"Invalid request format",
 				err.Error(),
 			)
 			return
 		}
 
-		user, err := s.Login(c.Request.Context(), req.Email, req.Password)
+		userRes, err := s.Login(c.Request.Context(), req.Email, req.Password)
 		if err != nil {
 			utils.MakeErrorResponse(
-				c, 
-				http.StatusUnauthorized, 
-				"Invalid email or password", 
+				c,
+				http.StatusUnauthorized,
+				"Invalid email or password",
 				err.Error(),
 			)
 			return
 		}
 
+		// Save user id to session
 		sess := sessions.Default(c)
-		sess.Set("user_id", user.ID.String())
+		sess.Set("user_id", userRes.ID.String())
 		if err := sess.Save(); err != nil {
 			utils.MakeErrorResponse(
-				c, 
-				http.StatusInternalServerError, 
-				"Session save failed", 
+				c,
+				http.StatusInternalServerError,
+				"Session save failed",
 				err.Error(),
 			)
 			return
 		}
-
-		// Get the session ID from the session store
 
 		resp := LoginResponseDto{
 			User: UserResponseDto{
-				ID: user.ID,
-				Username: user.Username,
-				Email: user.Email,
-				CreatedAt: user.CreatedAt,
-				UpdatedAt: user.UpdatedAt,
+				ID:        userRes.ID,
+				Username:  userRes.Username,
+				Email:     userRes.Email,
+				CreatedAt: userRes.CreatedAt,
+				UpdatedAt: userRes.UpdatedAt,
 			},
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", resp)	
+		utils.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", resp)
 	}
 }
 
@@ -63,9 +62,9 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if err := s.Logout(c); err != nil {
 			utils.MakeErrorResponse(
-				c, 
-				http.StatusInternalServerError, 
-				"Failed to logout", 
+				c,
+				http.StatusInternalServerError,
+				"Failed to logout",
 				err.Error(),
 			)
 			return

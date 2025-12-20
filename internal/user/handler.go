@@ -31,11 +31,14 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		cleanInput := UserInput{
 			Username:    dto.Username,
 			Email:       dto.Email,
+			Password:    dto.Password,
 			Permissions: parsedPermissions,
 		}
-
 		serviceErr := s.CreateUser(c.Request.Context(), &cleanInput)
 		switch serviceErr {
+		case ErrForbidCreateUser:
+			utils.MakeErrorResponse(c, http.StatusForbidden, "Authorization failed", serviceErr.Error())
+			return
 		//using the same message to avoid attacker from knowing the exact error
 		case ErrDuplicateUsername:
 		case ErrDuplicateEmail:
@@ -60,12 +63,18 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		}
 
 		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, pageInt, pageSizeInt)
-		if serviceErr != nil {
+		switch serviceErr {
+		case ErrForbidViewUsers:
+			utils.MakeErrorResponse(c, http.StatusForbidden, "Authorization failed", serviceErr.Error())
+			return
+		case nil:
+			userResp := MapUsersToDto(users)
+			utils.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
+			return
+		default:
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", serviceErr.Error())
 			return
 		}
-		userResp := MapUsersToDto(users)
-		utils.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
 	}
 }
 

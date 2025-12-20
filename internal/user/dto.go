@@ -29,7 +29,7 @@ type UserResponseDto struct {
 
 type CreateUserDto struct {
 	Username    string   `json:"username" binding:"min=3,max=20,lowercase"`
-	Email       string   `json:"email" binding:"required,email,unique"`
+	Email       string   `json:"email" binding:"required,email"`
 	Password    string   `json:"password" binding:"required,min=8"`
 	Permissions []string `json:"permissions" binding:"omitempty,dive,uuid"`
 }

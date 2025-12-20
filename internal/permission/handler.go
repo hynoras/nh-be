@@ -54,18 +54,18 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		var dto CreatePermissionGroupDto
 		var validationErr error
 		validationErr = utils.ValidateRequestFormat(c, &dto)
-        if validationErr != nil {
-            return
-        }
-		
+		if validationErr != nil {
+			return
+		}
+
 		var parsedPermissions []uuid.UUID
 		parsedPermissions, validationErr = utils.ValidateUUIDs(c, dto.Permissions)
-        if validationErr != nil {
-            return
-        }
+		if validationErr != nil {
+			return
+		}
 
 		cleanInput := PermissionGroupInput{
-			Name: dto.Name,
+			Name:        dto.Name,
 			Description: dto.Description,
 			Permissions: parsedPermissions,
 		}
@@ -126,7 +126,7 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
 			return
-		case nil :
+		case nil:
 			resp := MapPermissionGroupToDto(*permissionGroup)
 			utils.MakeSuccessResponse(c, http.StatusOK, "Permission group fetched successfully", resp)
 			return
@@ -147,19 +147,19 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		var dto UpdatePermissionGroupDto
 		var validationErr error
 		validationErr = utils.ValidateRequestFormat(c, &dto)
-        if validationErr != nil {
-            return
-        }
-		
+		if validationErr != nil {
+			return
+		}
+
 		var parsedPermissions []uuid.UUID
 		parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
-        if validationErr != nil {
+		if validationErr != nil {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
-            return
-        }
+			return
+		}
 
 		cleanInput := PermissionGroupInput{
-			Name: dto.Name,
+			Name:        dto.Name,
 			Description: dto.Description,
 			Permissions: parsedPermissions,
 		}

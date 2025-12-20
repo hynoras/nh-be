@@ -3,7 +3,11 @@ package user
 import (
 	"context"
 	"errors"
+	"log"
+	"nh-be/constant"
 	"nh-be/internal/permission"
+	"nh-be/utils"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,16 +15,12 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	ErrDuplicateUsername = errors.New("username already exists")
-	ErrDuplicateEmail    = errors.New("email already exists")
-)
-
 type Service interface {
 	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
 	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
+	GetUserPermissionCodeNames(ctx context.Context, id uuid.UUID) ([]string, error)
 	CreateUser(ctx context.Context, userInput *UserInput) error
 	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
@@ -32,8 +32,16 @@ type service struct {
 	permissionService permission.Service
 }
 
-func NewService(userRepo Repository, permissionRepo permission.Repository, permissionService permission.Service) Service {
-	return &service{userRepo: userRepo, permissionRepo: permissionRepo, permissionService: permissionService}
+func NewService(
+	userRepo Repository,
+	permissionRepo permission.Repository,
+	permissionService permission.Service,
+) Service {
+	return &service{
+		userRepo:          userRepo,
+		permissionRepo:    permissionRepo,
+		permissionService: permissionService,
+	}
 }
 
 func (s *service) CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error) {
@@ -78,6 +86,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return ErrDuplicateEmail
 	}
 	// Hash password
+	log.Println("userInput.Password", userInput.Password)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.New("failed to hash password: " + err.Error())
@@ -110,6 +119,20 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 }
 
 func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error) {
+	userId, err := utils.GetUserIdFromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	userPerm, err := s.GetUserPermissionCodeNames(ctx, userId)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
+		return nil, 0, ErrForbidViewUsers
+	}
+
 	users, length, err := s.userRepo.FindAll(ctx, search, page, pageSize)
 	if err != nil {
 		return nil, 0, err
@@ -123,6 +146,27 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) 
 		return nil, err
 	}
 	return user, nil
+}
+
+func (s *service) GetUserPermissionCodeNames(ctx context.Context, id uuid.UUID) ([]string, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	codeNameMap := make(map[string]bool)
+	for _, group := range user.AssignedPermissionGroups {
+		for _, permission := range group.Permissions {
+			codeNameMap[permission.CodeName] = true
+		}
+	}
+
+	codeNames := make([]string, 0, len(codeNameMap))
+	for codeName := range codeNameMap {
+		codeNames = append(codeNames, codeName)
+	}
+
+	return codeNames, nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {
