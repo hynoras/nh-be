@@ -15,14 +15,19 @@ import (
 func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
-		permissions, count, err := s.GetAllPermissions(c.Request.Context(), search)
-		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permissions", err.Error())
+		permissions, count, serviceErr := s.GetAllPermissions(c.Request.Context(), search)
+		switch serviceErr {
+		case ErrForbidViewPermissions:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
+		case nil:
+			resp := MapPermissionsToDto(permissions)
+			utils.MakeSuccessResponse(c, http.StatusOK, "Permissions fetched successfully", resp, count)
+			return
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permissions", serviceErr.Error())
 			return
 		}
-
-		resp := MapPermissionsToDto(permissions)
-		utils.MakeSuccessResponse(c, http.StatusOK, "Permissions fetched successfully", resp, count)
 	}
 }
 

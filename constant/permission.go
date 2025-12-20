@@ -3,6 +3,6 @@ package constant
 const (
 	ViewUser              = "user:view"
 	ManageUser            = "user:manage"
-	ViewPermissionGroup   = "permission-group:view"
-	ManagePermissionGroup = "permission-group:manage"
+	ViewPermissionGroup   = "permission_group:view"
+	ManagePermissionGroup = "permission_group:manage"
 )

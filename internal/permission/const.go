@@ -7,6 +7,7 @@ var (
 	ErrPermissionGroupNotFound          = errors.New("permission group not found")
 	ErrNotNullPermissions               = errors.New("permissions can not be null")
 	ErrCannotDeleteSuperAdmin           = errors.New("can not delete Super Admin. At least one must exist")
+	ErrForbidViewPermissions            = errors.New("you are not allowed to view permissions")
 	ErrPermissionGroupNameAlreadyExists = errors.New("permission group name already exists")
 	ErrForbidViewPermissionGroups       = errors.New("you are not allowed to view permission groups")
 	ErrForbidViewPermissionGroup        = errors.New("you are not allowed to view permission group")

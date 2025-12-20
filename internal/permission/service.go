@@ -66,7 +66,7 @@ func (s *service) GetAllPermissions(ctx context.Context, search string) ([]Permi
 	}
 
 	if !slices.Contains(userPerm, constant.ViewPermissionGroup) && !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return nil, 0, ErrForbidViewPermissionGroups
+		return nil, 0, ErrForbidViewPermissions
 	}
 
 	return s.permissionRepo.FindAllPermissions(ctx, search)
@@ -129,6 +129,20 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 }
 
 func (s *service) GetAllPermissionGroups(ctx context.Context, search string, permissionIds []uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error) {
+	userId, err := utils.GetUserIdFromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	userPerm, err := s.GetUserPermissionCodeNames(ctx, userId)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if !slices.Contains(userPerm, constant.ViewPermissionGroup) && !slices.Contains(userPerm, constant.ManagePermissionGroup) {
+		return nil, 0, ErrForbidViewPermissionGroup
+	}
+
 	offset := (page - 1) * pageSize
 	return s.permissionRepo.FindAllPermissionGroups(ctx, search, permissionIds, offset, pageSize)
 }
