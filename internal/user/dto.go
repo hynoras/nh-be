@@ -28,14 +28,14 @@ type UserResponseDto struct {
 }
 
 type CreateUserDto struct {
-	Username    string   `json:"username" binding:"min=3,max=20,lowercase"`
+	Username    string   `json:"username" binding:"min=3,max=30"`
 	Email       string   `json:"email" binding:"required,email"`
 	Password    string   `json:"password" binding:"required,min=8"`
 	Permissions []string `json:"permissions" binding:"omitempty,dive,uuid"`
 }
 
 type UpdateUserDto struct {
-	Username    string   `json:"username,omitempty" binding:"omitempty,min=3,max=20,lowercase"`
+	Username    string   `json:"username,omitempty" binding:"omitempty,min=3,max=30"`
 	Email       string   `json:"email,omitempty" binding:"omitempty,email"`
 	Permissions []string `json:"permissions,omitempty" binding:"omitempty,dive,uuid"`
 }
