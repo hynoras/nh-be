@@ -52,6 +52,6 @@ func ConnectDatabase() *gorm.DB {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	log.Println("Connected to PostgreSQL using pgx-stdlib (IPv4 mode)")
+	log.Println("Connected to PostgreSQL")
 	return db
 }
