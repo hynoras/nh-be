@@ -28,6 +28,16 @@ func MapUserToListDto(user User) UserResponseDto {
 	}
 }
 
+func MapUserToMeDto(user User, permissionCodes []string) MeResponseDto {
+	return MeResponseDto{
+		ID:          user.ID.String(),
+		Username:    user.Username,
+		Email:       user.Email,
+		Permissions: permissionCodes,
+		CreatedAt:   user.CreatedAt,
+	}
+}
+
 func MapUserToDto(user User) UserResponseDto {
 	var permissionGroups []PermissionGroupResponseDto
 	for _, permissionGroup := range user.AssignedPermissionGroups {

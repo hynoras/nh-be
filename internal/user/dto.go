@@ -27,6 +27,14 @@ type UserResponseDto struct {
 	CreatedAt        time.Time                    `json:"created_at"`
 }
 
+type MeResponseDto struct {
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	Email       string    `json:"email"`
+	Permissions []string  `json:"permissions"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type CreateUserDto struct {
 	Username    string   `json:"username" binding:"min=3,max=30"`
 	Email       string   `json:"email" binding:"required,email"`

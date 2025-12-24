@@ -93,7 +93,7 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 		if idErr != nil {
 			return
 		}
-		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
+		user, _, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
 		switch serviceErr {
 		case ErrForbidViewUser:
 			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
@@ -122,12 +122,12 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
+		user, perm, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, true)
 		switch serviceErr {
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
+			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToMeDto(*user, perm))
 		default:
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get me", serviceErr.Error())
 		}
