@@ -21,7 +21,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		userRes, err := s.Login(c.Request.Context(), req.Email, req.Password)
+		userRes, permRes, err := s.Login(c.Request.Context(), req.Email, req.Password)
 		if err != nil {
 			utils.MakeErrorResponse(
 				c,
@@ -47,11 +47,12 @@ func LoginHandler(s Service) gin.HandlerFunc {
 
 		resp := LoginResponseDto{
 			User: UserResponseDto{
-				ID:        userRes.ID,
-				Username:  userRes.Username,
-				Email:     userRes.Email,
-				CreatedAt: userRes.CreatedAt,
-				UpdatedAt: userRes.UpdatedAt,
+				ID:          userRes.ID,
+				Username:    userRes.Username,
+				Email:       userRes.Email,
+				Permissions: permRes,
+				CreatedAt:   userRes.CreatedAt,
+				UpdatedAt:   userRes.UpdatedAt,
 			},
 		}
 		utils.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", resp)

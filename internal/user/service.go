@@ -18,7 +18,7 @@ type Service interface {
 	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
 	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error)
-	GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
+	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error)
 	CreateUser(ctx context.Context, userInput *UserInput) error
 	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
@@ -151,26 +151,38 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 	return users, length, nil
 }
 
-func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) {
+func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error) {
 	userId, err := utils.GetUserIdFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
 	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
-	if !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, ErrForbidViewUser
+	if isMe == false && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
+		return nil, []string{}, ErrForbidViewUser
 	}
 
-	user, err := s.userRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
+	var user *User
+	var userErr error
+	var permissionCodes []string
+	var permCodeErr error
+
+	user, userErr = s.userRepo.FindByID(ctx, id)
+	if userErr != nil {
+		return nil, []string{}, userErr
 	}
-	return user, nil
+
+	if isMe == true {
+		permissionCodes, permCodeErr = s.permissionService.GetUserPermissionCodeNames(ctx, id)
+		if permCodeErr != nil {
+			return nil, []string{}, permCodeErr
+		}
+	}
+	return user, permissionCodes, nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {

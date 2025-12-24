@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"nh-be/constant"
 	"nh-be/utils"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,13 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		var validationErr error
 		validationErr = utils.ValidateRequestFormat(c, &dto)
 		if validationErr != nil {
+			return
+		}
+
+		// Normalize username to lowercase and validate
+		dto.Username = strings.ToLower(dto.Username)
+		if err := ValidateUsername(dto.Username); err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
 			return
 		}
 
@@ -85,7 +93,7 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 		if idErr != nil {
 			return
 		}
-		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
+		user, _, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
 		switch serviceErr {
 		case ErrForbidViewUser:
 			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
@@ -114,12 +122,12 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
+		user, perm, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, true)
 		switch serviceErr {
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
+			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToMeDto(*user, perm))
 		default:
 			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get me", serviceErr.Error())
 		}
@@ -139,6 +147,16 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 		validationErr = utils.ValidateRequestFormat(c, &dto)
 		if validationErr != nil {
 			return
+		}
+
+		// Validate username if being updated
+		if dto.Username != "" {
+			// Normalize username to lowercase and validate
+			dto.Username = strings.ToLower(dto.Username)
+			if err := ValidateUsername(dto.Username); err != nil {
+				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
+				return
+			}
 		}
 
 		var parsedPermissions []uuid.UUID

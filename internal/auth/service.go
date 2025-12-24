@@ -6,6 +6,7 @@ import (
 
 	"nh-be/utils"
 
+	"nh-be/internal/permission"
 	"nh-be/internal/user"
 
 	"github.com/gin-contrib/sessions"
@@ -14,31 +15,38 @@ import (
 )
 
 type Service interface {
-	Login(ctx context.Context, email, password string) (*user.User, error)
+	Login(ctx context.Context, email, password string) (*user.User, []string, error)
 	Logout(c *gin.Context) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 }
 
 type service struct {
-	userRepo user.Repository
+	userRepo          user.Repository
+	permissionService permission.Service
 }
 
-func NewService(userRepo user.Repository) Service {
-	return &service{userRepo: userRepo}
+func NewService(userRepo user.Repository, permissionService permission.Service) Service {
+	return &service{userRepo: userRepo, permissionService: permissionService}
 }
 
-func (s *service) Login(ctx context.Context, email, password string) (*user.User, error) {
+func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, error) {
 	u, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 	if u == nil {
-		return nil, errors.New("invalid credentials")
+		return nil, []string{}, errors.New("invalid credentials")
 	}
 	if !utils.CheckPasswordHash(password, u.Password) {
-		return nil, errors.New("invalid credentials")
+		return nil, []string{}, errors.New("invalid credentials")
 	}
-	return u, nil
+
+	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)
+	if err != nil {
+		return nil, []string{}, err
+	}
+
+	return u, permissions, nil
 }
 
 func (s *service) Logout(c *gin.Context) error {

@@ -95,3 +95,33 @@ func ValidateUUIDStrings(uuidStrs []string) error {
 	}
 	return nil
 }
+
+// ValidateNoAdjacentSpecialChars checks if a string contains adjacent special characters (dot and underscore)
+// Returns true if no adjacent special chars are found, false otherwise
+func ValidateNoAdjacentSpecialChars(s string) bool {
+	return !strings.Contains(s, "._") && !strings.Contains(s, "_.")
+}
+
+// ReservedNames contains names that cannot be used
+var ReservedNames = []string{
+	"admin",
+	"root",
+	"system",
+	"support",
+	"api",
+	"null",
+	"undefined",
+	"superadmin",
+}
+
+// ValidateNotReservedName checks if a name is not in the reserved names list
+// Returns true if the name is not reserved, false otherwise
+func ValidateNotReservedName(name string) bool {
+	lowerName := strings.ToLower(name)
+	for _, reserved := range ReservedNames {
+		if lowerName == reserved {
+			return false
+		}
+	}
+	return true
+}
