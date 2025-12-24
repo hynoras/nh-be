@@ -1,0 +1,30 @@
+# VCS
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yaml
+
+# Environment & secrets
+.env
+.env.*
+
+# Build outputs
+server
+bin/
+dist/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Editor / IDE
+.vscode
+.idea
+
+# Go cache
+tmp/
+coverage.out
