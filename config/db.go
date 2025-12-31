@@ -3,28 +3,22 @@ package config
 import (
 	"fmt"
 	"log"
-	"os"
-	"strconv"
+	"nh-be/utils"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
 func ConnectDatabase() *gorm.DB {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: No .env file found")
-	}
-
-	host := os.Getenv("DB_HOST")
-	port, _ := strconv.Atoi(os.Getenv("DB_PORT"))
-	user := os.Getenv("DB_USERNAME")
-	dbname := os.Getenv("DB_NAME")
-	pass := os.Getenv("DB_PASSWORD")
+	host := utils.MustEnv("DB_HOST")
+	port := utils.MustEnvInt("DB_PORT")
+	user := utils.MustEnv("DB_USERNAME")
+	dbname := utils.MustEnv("DB_NAME")
+	pass := utils.MustEnv("DB_PASSWORD")
 
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=require",

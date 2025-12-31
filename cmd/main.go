@@ -13,6 +13,7 @@ import (
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
 	"nh-be/router"
+	"nh-be/utils"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
@@ -22,12 +23,19 @@ import (
 )
 
 func main() {
-	// Load .env early
-	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: No .env file found")
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "dev"
 	}
 
-	// Initialize database
+	if env != "prod" {
+		if err := godotenv.Load(); err != nil {
+			log.Println("Warning: No .env file found")
+		}
+	}
+
+	log.Printf("Starting app in %s mode\n", env)
+
 	db := config.ConnectDatabase()
 	db.AutoMigrate(&user.User{}, &permission.Permission{}, &permission.PermissionGroup{}, &user.UserPermission{})
 	sqlDB, _ := db.DB()
@@ -40,19 +48,16 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-    	AllowOrigins:     []string{"http://localhost:3000"},
-    	AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-    	AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-    	ExposeHeaders:    []string{"Content-Length"},
-    	AllowCredentials: true,
-    	MaxAge:           12 * time.Hour, 
-    }))
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
-	// Initialize session store
-	secret := os.Getenv("SESSION_SECRET")
-	if secret == "" {
-		secret = "noheir_secret"
-	}
+	secret := utils.MustEnv("SESSION_SECRET")
+
 	store := cookie.NewStore([]byte(secret))
 	store.Options(sessions.Options{
 		MaxAge:   8 * 60 * 60, // 8 hours
@@ -71,8 +76,13 @@ func main() {
 
 	router.SetupRoutes(r, db)
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + port,
 		Handler: r,
 	}
 
