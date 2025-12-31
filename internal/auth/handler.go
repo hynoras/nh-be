@@ -8,6 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// LoginHandler godoc
+// @Summary User login
+// @Description Authenticate user with email and password, returns user information with permissions and creates a session
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginDto true "Login credentials (email and password)"
+// @Success 200 {object} utils.SuccessResponse{data=LoginResponseDto} "Successfully logged in"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request format"
+// @Failure 401 {object} utils.ErrorResponse "Invalid email or password"
+// @Failure 500 {object} utils.ErrorResponse "Session save failed"
+// @Router /auth/login [post]
 func LoginHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginDto
@@ -59,6 +71,16 @@ func LoginHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// LogoutHandler godoc
+// @Summary User logout
+// @Description Clear user session and log out from the system
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Success 200 {object} utils.SuccessResponse "Successfully logged out"
+// @Failure 500 {object} utils.ErrorResponse "Failed to logout"
+// @Security SessionAuth
+// @Router /auth/logout [post]
 func LogoutHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if err := s.Logout(c); err != nil {
@@ -74,6 +96,18 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// ChangePasswordHandler godoc
+// @Summary Change user password
+// @Description Update user password with new password and confirmation
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID format)"
+// @Param request body ChangePasswordDto true "New password and confirmation"
+// @Success 200 {object} utils.SuccessResponse "Password changed successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid user ID or request body"
+// @Security SessionAuth
+// @Router /auth/users/{id}/change-password [put]
 func ChangePasswordHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := utils.ParseStringToUUID(c.Param("id"))

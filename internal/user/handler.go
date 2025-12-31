@@ -12,6 +12,21 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateUserHandler godoc
+// @Summary Create a new user
+// @Description Create a new user with username, email, password, and optional permissions
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body CreateUserDto true "User creation details"
+// @Success 201 {object} utils.SuccessResponse "User created successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid username or invalid permissions"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 409 {object} utils.ErrorResponse "Username or email already exists"
+// @Failure 422 {object} utils.ErrorResponse "Validation failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to create user"
+// @Security SessionAuth
+// @Router /users [post]
 func CreateUserHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var dto CreateUserDto
@@ -62,6 +77,21 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// GetAllUsersHandler godoc
+// @Summary Get all users
+// @Description Retrieve a paginated list of users with optional search filter
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param search query string false "Search term to filter users by username or email"
+// @Param page query int false "Page number" default(1)
+// @Param pageSize query int false "Number of items per page" default(10)
+// @Success 200 {object} utils.SuccessResponse{data=[]UserResponseDto} "Users fetched successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid pagination parameters"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to get all users"
+// @Security SessionAuth
+// @Router /users [get]
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
@@ -87,6 +117,20 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// GetUserByIDHandler godoc
+// @Summary Get user by ID
+// @Description Retrieve a single user by their UUID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID format)"
+// @Success 200 {object} utils.SuccessResponse{data=UserResponseDto} "User fetched successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 404 {object} utils.ErrorResponse "User not found"
+// @Failure 500 {object} utils.ErrorResponse "Failed to get user"
+// @Security SessionAuth
+// @Router /users/{id} [get]
 func GetUserByIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
@@ -109,6 +153,19 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// GetMeHandler godoc
+// @Summary Get current user
+// @Description Retrieve the currently authenticated user's information with their permissions
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Success 200 {object} utils.SuccessResponse{data=MeResponseDto} "User fetched successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
+// @Failure 401 {object} utils.ErrorResponse "Unauthorized"
+// @Failure 404 {object} utils.ErrorResponse "User not found"
+// @Failure 500 {object} utils.ErrorResponse "Failed to get me"
+// @Security SessionAuth
+// @Router /users/me [get]
 func GetMeHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var userId = sessions.Default(c).Get("user_id")
@@ -134,6 +191,21 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// UpdateUserHander godoc
+// @Summary Update a user
+// @Description Update an existing user by their UUID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID format)"
+// @Param request body UpdateUserDto true "Updated user details"
+// @Success 200 {object} utils.SuccessResponse "User updated successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid user ID, invalid username, or invalid permissions"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 422 {object} utils.ErrorResponse "Validation failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to update user"
+// @Security SessionAuth
+// @Router /users/{id} [put]
 func UpdateUserHander(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := utils.ParseStringToUUID(c.Param("id"))
@@ -186,6 +258,19 @@ func UpdateUserHander(s Service) gin.HandlerFunc {
 	}
 }
 
+// DeleteUsersHandler godoc
+// @Summary Delete users
+// @Description Delete multiple users by their UUIDs
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body DeleteUsersDto true "Array of user IDs to delete"
+// @Success 200 {object} utils.SuccessResponse "Users deleted successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request body or invalid user ID"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to delete users"
+// @Security SessionAuth
+// @Router /users [delete]
 func DeleteUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req DeleteUsersDto

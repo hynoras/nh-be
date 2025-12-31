@@ -1,5 +1,24 @@
 package main
 
+// @title NoHeir API
+// @version 1.0
+// @description API server for NoHeir application
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@noheir.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http https
+
+// @securityDefinitions.apikey SessionAuth
+// @in cookie
+// @name auth_session
+
 import (
 	"context"
 	"log"
@@ -8,6 +27,11 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	docs "nh-be/docs"
+
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/config"
 	"nh-be/internal/permission"
@@ -67,6 +91,9 @@ func main() {
 		SameSite: http.SameSiteLaxMode,
 	})
 	r.Use(sessions.Sessions("auth_session", store))
+
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

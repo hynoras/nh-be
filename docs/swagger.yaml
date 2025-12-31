@@ -1,0 +1,901 @@
+basePath: /api/v1
+definitions:
+  auth.ChangePasswordDto:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        type: string
+    required:
+    - confirm_password
+    - new_password
+    type: object
+  auth.LoginDto:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginResponseDto:
+    properties:
+      user:
+        $ref: '#/definitions/auth.UserResponseDto'
+    type: object
+  auth.UserResponseDto:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  permission.CreatePermissionGroupDto:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 5
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+    required:
+    - name
+    - permissions
+    type: object
+  permission.PermissionGroupResponseDto:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/permission.PermissionResponseDto'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  permission.PermissionResponseDto:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  permission.UpdatePermissionGroupDto:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 5
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+    required:
+    - permissions
+    type: object
+  user.CreateUserDto:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  user.DeleteUsersDto:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
+  user.MeResponseDto:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  user.PermissionGroupResponseDto:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/user.PermissionResponseDto'
+        type: array
+    type: object
+  user.PermissionResponseDto:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  user.UpdateUserDto:
+    properties:
+      email:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      username:
+        maxLength: 30
+        minLength: 3
+        type: string
+    type: object
+  user.UserResponseDto:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      permission_groups:
+        items:
+          $ref: '#/definitions/user.PermissionGroupResponseDto'
+        type: array
+      username:
+        type: string
+    type: object
+  utils.ErrorResponse:
+    properties:
+      error:
+        example: Error details
+        type: string
+      message:
+        example: Operation failed
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  utils.SuccessResponse:
+    properties:
+      data: {}
+      length:
+        type: integer
+      message:
+        example: Operation successful
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@noheir.com
+    name: API Support
+  description: API server for NoHeir application
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: NoHeir API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, returns user information
+        with permissions and creates a session
+      parameters:
+      - description: Login credentials (email and password)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged in
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.LoginResponseDto'
+              type: object
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Session save failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: User login
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Clear user session and log out from the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged out
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "500":
+          description: Failed to logout
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: User logout
+      tags:
+      - Authentication
+  /auth/users/{id}/change-password:
+    put:
+      consumes:
+      - application/json
+      description: Update user password with new password and confirmation
+      parameters:
+      - description: User ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New password and confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ChangePasswordDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Change user password
+      tags:
+      - Authentication
+  /permission-groups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of permission groups with optional filters
+      parameters:
+      - description: Search term to filter permission groups by name
+        in: query
+        name: search
+        type: string
+      - collectionFormat: csv
+        description: Filter by permission IDs (UUID format)
+        in: query
+        items:
+          type: string
+        name: permissions
+        type: array
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission groups fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/permission.PermissionGroupResponseDto'
+                  type: array
+              type: object
+        "400":
+          description: Invalid pagination parameters or permission IDs
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to fetch permission groups
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get all permission groups
+      tags:
+      - Permission Groups
+    post:
+      consumes:
+      - application/json
+      description: Create a new permission group (role) with specified permissions
+      parameters:
+      - description: Permission group details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/permission.CreatePermissionGroupDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Permission group created successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid request format or invalid permissions
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Role name already exists
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to create permission group
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Create a new permission group
+      tags:
+      - Permission Groups
+  /permission-groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing permission group by its UUID
+      parameters:
+      - description: Permission Group ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission group deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Permission group not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to delete permission group or cannot delete Super Admin
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Delete a permission group
+      tags:
+      - Permission Groups
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single permission group by its UUID
+      parameters:
+      - description: Permission Group ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission group fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/permission.PermissionGroupResponseDto'
+              type: object
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Permission group not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to fetch permission group
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get permission group by ID
+      tags:
+      - Permission Groups
+    put:
+      consumes:
+      - application/json
+      description: Update an existing permission group by its UUID
+      parameters:
+      - description: Permission Group ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated permission group details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/permission.UpdatePermissionGroupDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission group updated successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid ID format or invalid permissions
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Permission group not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Role name already exists
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to update permission group
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Update a permission group
+      tags:
+      - Permission Groups
+  /permissions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all permissions with optional search filter
+      parameters:
+      - description: Search term to filter permissions by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permissions fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/permission.PermissionResponseDto'
+                  type: array
+              type: object
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to fetch permissions
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get all permissions
+      tags:
+      - Permissions
+  /permissions/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single permission by its UUID
+      parameters:
+      - description: Permission ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permission fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/permission.PermissionResponseDto'
+              type: object
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Permission not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to fetch permission
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get permission by ID
+      tags:
+      - Permissions
+  /users:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple users by their UUIDs
+      parameters:
+      - description: Array of user IDs to delete
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.DeleteUsersDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid request body or invalid user ID
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to delete users
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Delete users
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of users with optional search filter
+      parameters:
+      - description: Search term to filter users by username or email
+        in: query
+        name: search
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/user.UserResponseDto'
+                  type: array
+              type: object
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to get all users
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with username, email, password, and optional
+        permissions
+      parameters:
+      - description: User creation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.CreateUserDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid username or invalid permissions
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Username or email already exists
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to create user
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Create a new user
+      tags:
+      - Users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single user by their UUID
+      parameters:
+      - description: User ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.UserResponseDto'
+              type: object
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to get user
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing user by their UUID
+      parameters:
+      - description: User ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated user details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateUserDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid user ID, invalid username, or invalid permissions
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to update user
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Update a user
+      tags:
+      - Users
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the currently authenticated user's information with their
+        permissions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/user.MeResponseDto'
+              type: object
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to get me
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get current user
+      tags:
+      - Users
+schemes:
+- http
+- https
+securityDefinitions:
+  SessionAuth:
+    in: cookie
+    name: auth_session
+    type: apiKey
+swagger: "2.0"
