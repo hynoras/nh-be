@@ -1,0 +1,184 @@
+basePath: /api/v1
+definitions:
+  auth.ChangePasswordDto:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        type: string
+    required:
+    - confirm_password
+    - new_password
+    type: object
+  auth.LoginDto:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginResponseDto:
+    properties:
+      user:
+        $ref: '#/definitions/auth.UserResponseDto'
+    type: object
+  auth.UserResponseDto:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  utils.ErrorResponse:
+    properties:
+      error:
+        example: Error details
+        type: string
+      message:
+        example: Operation failed
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  utils.SuccessResponse:
+    properties:
+      data: {}
+      length:
+        type: integer
+      message:
+        example: Operation successful
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@noheir.com
+    name: API Support
+  description: API server for NoHeir application
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: NoHeir API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, returns user information
+        with permissions and creates a session
+      parameters:
+      - description: Login credentials (email and password)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged in
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.LoginResponseDto'
+              type: object
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Session save failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: User login
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Clear user session and log out from the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged out
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "500":
+          description: Failed to logout
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: User logout
+      tags:
+      - Authentication
+  /auth/users/{id}/change-password:
+    put:
+      consumes:
+      - application/json
+      description: Update user password with new password and confirmation
+      parameters:
+      - description: User ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New password and confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ChangePasswordDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Change user password
+      tags:
+      - Authentication
+schemes:
+- http
+- https
+securityDefinitions:
+  SessionAuth:
+    in: cookie
+    name: auth_session
+    type: apiKey
+swagger: "2.0"

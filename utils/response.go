@@ -11,11 +11,26 @@ import (
 )
 
 type APIResponse struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
 	Data    *interface{} `json:"data,omitempty"`
 	Error   *interface{} `json:"error,omitempty"`
 	Length  *int64       `json:"length,omitempty"`
+}
+
+// for Swagger documentation
+type SuccessResponse struct {
+	Success bool        `json:"success" example:"true"`
+	Message string      `json:"message" example:"Operation successful"`
+	Data    interface{} `json:"data,omitempty"`
+	Length  *int64      `json:"length,omitempty"`
+}
+
+// for Swagger documentation
+type ErrorResponse struct {
+	Success bool   `json:"success" example:"false"`
+	Message string `json:"message" example:"Operation failed"`
+	Error   string `json:"error,omitempty" example:"Error details"`
 }
 
 type ValidationError struct {
@@ -29,13 +44,13 @@ func MakeSuccessResponse(c *gin.Context, statusCode int, message string, args ..
 		Success: true,
 		Message: message,
 	}
-	
+
 	// First optional arg is data
 	if len(args) > 0 && args[0] != nil {
 		data := args[0]
 		resp.Data = &data
 	}
-	
+
 	// Second optional arg is length
 	if len(args) > 1 {
 		if length, ok := args[1].(int64); ok {
@@ -45,7 +60,7 @@ func MakeSuccessResponse(c *gin.Context, statusCode int, message string, args ..
 			resp.Length = &length64
 		}
 	}
-	
+
 	c.JSON(statusCode, resp)
 }
 
@@ -57,7 +72,7 @@ func MakeErrorResponse(c *gin.Context, statusCode int, message string, error int
 	})
 }
 
-func ValidateUUID(c *gin.Context, id string) (*uuid.UUID, error){
+func ValidateUUID(c *gin.Context, id string) (*uuid.UUID, error) {
 	parsedID, err := ParseStringToUUID(id)
 	if err != nil {
 		MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID format", err.Error())
@@ -92,7 +107,7 @@ func ValidateUUIDs(c *gin.Context, uuids []string) ([]uuid.UUID, error) {
 			continue
 		}
 		parsedIDs = append(parsedIDs, parsedID)
-		
+
 	}
 
 	// If any validation errors occurred, return them
@@ -147,7 +162,7 @@ func ParsePaginationParams(c *gin.Context) (int, int, error) {
 	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil {
 		MakeErrorResponse(c, http.StatusBadRequest, "Invalid page size value", err.Error())
-		return 0, 0, err	
+		return 0, 0, err
 	}
 	return page, pageSize, nil
 }
