@@ -5,4 +5,6 @@ const (
 	ManageUser            = "user:manage"
 	ViewPermissionGroup   = "permission_group:view"
 	ManagePermissionGroup = "permission_group:manage"
+	ViewExperiment        = "experiment:view"
+	ManageExperiment      = "experiment:manage"
 )
