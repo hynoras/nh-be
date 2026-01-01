@@ -34,6 +34,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/config"
+	experiment "nh-be/internal/experiment/root"
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
 	"nh-be/router"
@@ -61,7 +62,7 @@ func main() {
 	log.Printf("Starting app in %s mode\n", env)
 
 	db := config.ConnectDatabase()
-	db.AutoMigrate(&user.User{}, &permission.Permission{}, &permission.PermissionGroup{}, &user.UserPermission{})
+	db.AutoMigrate(&user.User{}, &permission.Permission{}, &permission.PermissionGroup{}, &user.UserPermission{}, &experiment.Experiment{})
 	sqlDB, _ := db.DB()
 	defer func() {
 		if sqlDB != nil {
