@@ -99,6 +99,67 @@ definitions:
     required:
     - permissions
     type: object
+  root.CreateExperimentDto:
+    properties:
+      objective:
+        maxLength: 255
+        minLength: 5
+        type: string
+      title:
+        maxLength: 200
+        minLength: 3
+        type: string
+    required:
+    - objective
+    - title
+    type: object
+  root.ExperimentResponseDto:
+    properties:
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      objective:
+        type: string
+      started_at:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  root.ExperimentsResponseDto:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      objective:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  root.UpdateExperimentDto:
+    properties:
+      objective:
+        maxLength: 255
+        minLength: 5
+        type: string
+      title:
+        maxLength: 200
+        minLength: 3
+        type: string
+    type: object
   user.CreateUserDto:
     properties:
       email:
@@ -321,6 +382,226 @@ paths:
       summary: Change user password
       tags:
       - Authentication
+  /experiments:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of experiments with optional search filter
+      parameters:
+      - description: Search term to filter experiments by title
+        in: query
+        name: search
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Experiments fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/root.ExperimentsResponseDto'
+                  type: array
+              type: object
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to get experiments
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get all experiments
+      tags:
+      - Experiments
+    post:
+      consumes:
+      - application/json
+      description: Create a new experiment with title and objective
+      parameters:
+      - description: Experiment creation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/root.CreateExperimentDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Experiment created successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to create experiment
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Create a new experiment
+      tags:
+      - Experiments
+  /experiments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a single experiment by its UUID
+      parameters:
+      - description: Experiment ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Experiment deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid experiment ID
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Experiment not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to delete experiment
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Delete an experiment
+      tags:
+      - Experiments
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single experiment by its UUID
+      parameters:
+      - description: Experiment ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Experiment fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/root.ExperimentResponseDto'
+              type: object
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Experiment not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to get experiment
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Get experiment by ID
+      tags:
+      - Experiments
+    put:
+      consumes:
+      - application/json
+      description: Update an existing experiment by its UUID
+      parameters:
+      - description: Experiment ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated experiment details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/root.UpdateExperimentDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Experiment updated successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Invalid experiment ID
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Authorization failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Experiment not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Failed to update experiment
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: Update an experiment
+      tags:
+      - Experiments
   /permission-groups:
     get:
       consumes:
