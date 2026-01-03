@@ -3,6 +3,7 @@ package root
 import "errors"
 
 type ExperimentStatus string
+type ExperimentType string
 
 const (
 	ExperimentDraft     ExperimentStatus = "draft"
@@ -10,6 +11,11 @@ const (
 	ExperimentRunning   ExperimentStatus = "running"
 	ExperimentCompleted ExperimentStatus = "completed"
 	ExperimentAborted   ExperimentStatus = "aborted"
+)
+
+const (
+	ExperimentExploratoryType ExperimentType = "exploratory"
+	ExperimentConfirmatoryType ExperimentType = "confirmatory"
 )
 
 var (

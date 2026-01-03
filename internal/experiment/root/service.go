@@ -95,6 +95,7 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 		Title:       dto.Title,
 		Objective:   dto.Objective,
 		Status:      ExperimentDraft,
+		Type:        ExperimentType(dto.Type),
 		CreatedByID: userId,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -127,6 +128,7 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 	experiment := &Experiment{
 		Title:     dto.Title,
 		Objective: dto.Objective,
+		Type:      ExperimentType(dto.Type),
 		UpdatedAt: time.Now(),
 	}
 

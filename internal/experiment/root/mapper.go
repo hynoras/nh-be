@@ -6,6 +6,7 @@ func MapExperimentToDto(e Experiment) ExperimentResponseDto {
 		Title:       e.Title,
 		Objective:   e.Objective,
 		Status:      string(e.Status),
+		Type:        string(e.Type),
 		CreatedBy:   e.CreatedBy.ID.String(),
 		CreatedAt:   e.CreatedAt,
 		StartedAt:   e.StartedAt,
@@ -22,6 +23,7 @@ func MapExperimentsToDto(experiments []Experiment) []ExperimentsResponseDto {
 			Title:     e.Title,
 			Objective: e.Objective,
 			Status:    string(e.Status),
+			Type:      string(e.Type),
 			CreatedBy: e.CreatedBy.ID.String(),
 			CreatedAt: e.CreatedAt,
 		})

@@ -67,6 +67,9 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, e *Experiment) er
 	if e.Title != "" {
 		fields["title"] = e.Title
 	}
+	if e.Type != "" {
+		fields["type"] = e.Type
+	}
 	if e.Objective != "" {
 		fields["objective"] = e.Objective
 	}

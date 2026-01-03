@@ -6,6 +6,7 @@ type ExperimentsResponseDto struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
 	Objective string    `json:"objective"`
+	Type      string    `json:"type"`
 	Status    string    `json:"status"`
 	CreatedBy string    `json:"created_by"`
 	CreatedAt time.Time `json:"created_at"`
@@ -15,6 +16,7 @@ type ExperimentResponseDto struct {
 	ID          string     `json:"id"`
 	Title       string     `json:"title"`
 	Objective   string     `json:"objective"`
+	Type        string     `json:"type"`
 	Status      string     `json:"status"`
 	CreatedBy   string     `json:"created_by"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -25,10 +27,12 @@ type ExperimentResponseDto struct {
 
 type CreateExperimentDto struct {
 	Title     string `json:"title" binding:"required,min=3,max=200"`
+	Type      string `json:"type" binding:"required"`
 	Objective string `json:"objective" binding:"required,min=5,max=255"`
 }
 
 type UpdateExperimentDto struct {
 	Title     string `json:"title" binding:"omitempty,min=3,max=200"`
+	Type      string `json:"type" binding:"required"`
 	Objective string `json:"objective" binding:"omitempty,min=5,max=255"`
 }
