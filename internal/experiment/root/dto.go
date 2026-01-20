@@ -33,6 +33,6 @@ type CreateExperimentDto struct {
 
 type UpdateExperimentDto struct {
 	Title     string `json:"title" binding:"omitempty,min=3,max=200"`
-	Type      string `json:"type" binding:"required"`
+	Type      string `json:"type" binding:"omitempty"`
 	Objective string `json:"objective" binding:"omitempty,min=5,max=255"`
 }
