@@ -19,5 +19,6 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	experimentsGroup.GET("/:id", GetExperimentByIDHandler(experimentService))
 	experimentsGroup.POST("", CreateExperimentHandler(experimentService))
 	experimentsGroup.PUT("/:id", UpdateExperimentHandler(experimentService))
+	experimentsGroup.PUT("/:id/status", UpdateExperimentStatusHandler(experimentService))
 	experimentsGroup.DELETE("/:id", DeleteExperimentHandler(experimentService))
 }

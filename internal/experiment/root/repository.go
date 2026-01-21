@@ -14,6 +14,7 @@ type Repository interface {
 	FindAll(ctx context.Context, search string, page, pageSize int) ([]Experiment, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*Experiment, error)
 	Update(ctx context.Context, id uuid.UUID, e *Experiment) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -75,6 +76,10 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, e *Experiment) er
 	}
 
 	return r.db.WithContext(ctx).Model(&Experiment{}).Where("id = ?", id).Updates(fields).Error
+}
+
+func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error {
+	return r.db.WithContext(ctx).Model(&Experiment{}).Where("id = ?", id).Update("status", status).Error
 }
 
 func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {
