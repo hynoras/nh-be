@@ -28,4 +28,6 @@ var (
 	ErrStatusTransitionFromDraftToPlanning             = errors.New("Invalid status transition, only draft can be transition to planning")
 	ErrStatusTransitionFromPlanningToRunning           = errors.New("Invalid status transition, only planning can be transition to running")
 	ErrStatusTransitionFromRunningToCompletedOrAborted = errors.New("Invalid status transition, only running can be transition to completed or aborted")
+	ErrOptimisticLockingConflict                       = errors.New("the experiment was modified by another request, please retry")
+	ErrAlreadyInTargetState                            = errors.New("experiment is already in target state")
 )

@@ -38,5 +38,6 @@ type UpdateExperimentDto struct {
 }
 
 type UpdateExperimentStatusDto struct {
-	Status string `json:"status" binding:"required"`
+	Status  string `json:"status" binding:"required"`
+	Version int    `json:"version" binding:"required"`
 }

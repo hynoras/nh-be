@@ -14,6 +14,7 @@ type Experiment struct {
 	Objective string           `gorm:"type:text"`
 	Status    ExperimentStatus `gorm:"type:varchar(20);not null;index;default:draft"`
 	Type      ExperimentType   `gorm:"type:varchar(20);not null;index"`
+	Version   int              `gorm:"not null;default:1"`
 
 	CreatedByID uuid.UUID `gorm:"type:uuid;not null;index"`
 	CreatedBy   user.User `gorm:"foreignKey:CreatedByID"`

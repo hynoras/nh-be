@@ -158,6 +158,10 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 		return err
 	}
 
+	if exp.Status == status {
+		return ErrAlreadyInTargetState
+	}
+
 	// validate status
 	if exp.Status == ExperimentDraft && status != ExperimentPlanning {
 		return ErrStatusTransitionFromDraftToPlanning
@@ -169,7 +173,7 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 		return ErrStatusTransitionFromRunningToCompletedOrAborted
 	}
 
-	return s.experimentRepo.UpdateStatus(ctx, id, status)
+	return s.experimentRepo.UpdateStatus(ctx, id, status, exp.Version)
 }
 
 func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {

@@ -206,7 +206,10 @@ func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
 			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case gorm.ErrRecordNotFound:
-			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", serviceErr.Error())
+			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", nil)
+			return
+		case ErrAlreadyInTargetState:
+			utils.MakeErrorResponse(c, http.StatusOK, "Experiment is already in target state", nil)
 			return
 		//for some reasons, stacked case is not working here so i use multiple case
 		case ErrStatusTransitionFromDraftToPlanning:
