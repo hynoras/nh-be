@@ -18,6 +18,7 @@ type ExperimentResponseDto struct {
 	Objective   string     `json:"objective"`
 	Type        string     `json:"type"`
 	Status      string     `json:"status"`
+	Version     int        `json:"version"`
 	CreatedBy   string     `json:"created_by"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`

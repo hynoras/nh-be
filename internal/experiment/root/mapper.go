@@ -7,6 +7,7 @@ func MapExperimentToDto(e Experiment) ExperimentResponseDto {
 		Objective:   e.Objective,
 		Status:      string(e.Status),
 		Type:        string(e.Type),
+		Version:     e.Version,
 		CreatedBy:   e.CreatedBy.ID.String(),
 		CreatedAt:   e.CreatedAt,
 		StartedAt:   e.StartedAt,
