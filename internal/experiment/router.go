@@ -18,7 +18,7 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	permissionRepo := permission.NewRepository(db)
 	permissionService := permission.NewService(permissionRepo)
 	experimentService := root.NewService(experimentRepo, permissionService)
-	resultService := result.NewService(resultRepo, experimentRepo, permissionService)
+	resultService := result.NewService(resultRepo, permissionService)
 
 	// Experiment routes
 	experimentsGroup.GET("", root.GetAllExperimentsHandler(experimentService))

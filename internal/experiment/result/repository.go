@@ -2,6 +2,8 @@ package result
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,7 +13,17 @@ type Repository interface {
 	Create(ctx context.Context, r *ExperimentResult) error
 	FindByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*ExperimentResult, error)
-	Update(ctx context.Context, id uuid.UUID, experimentID uuid.UUID, r *ExperimentResult, currentVersion int) error
+	FindByIDAndExperimentID(ctx context.Context, id uuid.UUID, experimentID uuid.UUID) (*ExperimentResult, error)
+	Update(ctx context.Context, id uuid.UUID, experimentID uuid.UUID, r *UpdateFields, currentVersion int) error
+}
+
+// UpdateFields holds pointer fields for partial updates.
+// nil means "don't update", non-nil means "set to this value".
+type UpdateFields struct {
+	Outcome         *Outcome
+	Summary         *string
+	OutcomeReason   *string
+	ConfidenceLevel *ConfidenceLevel
 }
 
 type repository struct {
@@ -23,7 +35,14 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, result *ExperimentResult) error {
-	return r.db.WithContext(ctx).Create(result).Error
+	err := r.db.WithContext(ctx).Create(result).Error
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") && strings.Contains(err.Error(), "experiment_id") {
+			return ErrExperimentResultAlreadyExists
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *repository) FindByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error) {
@@ -32,6 +51,9 @@ func (r *repository) FindByExperimentID(ctx context.Context, experimentID uuid.U
 		Where("experiment_id = ?", experimentID).
 		First(&result).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrExperimentResultNotFound
+		}
 		return nil, err
 	}
 	return &result, nil
@@ -43,33 +65,49 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*ExperimentRes
 		Where("id = ?", id).
 		First(&result).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrExperimentResultNotFound
+		}
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (r *repository) Update(ctx context.Context, id uuid.UUID, experimentID uuid.UUID, result *ExperimentResult, currentVersion int) error {
-	fields := map[string]interface{}{
-		"updated_at": result.UpdatedAt,
-		"version":    currentVersion + 1,
+func (r *repository) FindByIDAndExperimentID(ctx context.Context, id uuid.UUID, experimentID uuid.UUID) (*ExperimentResult, error) {
+	var result ExperimentResult
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND experiment_id = ?", id, experimentID).
+		First(&result).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrExperimentResultNotFound
+		}
+		return nil, err
 	}
-	if result.Outcome != "" {
-		fields["outcome"] = result.Outcome
+	return &result, nil
+}
+
+func (r *repository) Update(ctx context.Context, id uuid.UUID, experimentID uuid.UUID, fields *UpdateFields, currentVersion int) error {
+	updates := map[string]interface{}{
+		"version": currentVersion + 1,
 	}
-	if result.Summary != "" {
-		fields["summary"] = result.Summary
+	if fields.Outcome != nil {
+		updates["outcome"] = *fields.Outcome
 	}
-	if result.OutcomeReason != "" {
-		fields["outcome_reason"] = result.OutcomeReason
+	if fields.Summary != nil {
+		updates["summary"] = *fields.Summary
 	}
-	if result.ConfidenceLevel != "" {
-		fields["confidence_level"] = result.ConfidenceLevel
+	if fields.OutcomeReason != nil {
+		updates["outcome_reason"] = *fields.OutcomeReason
+	}
+	if fields.ConfidenceLevel != nil {
+		updates["confidence_level"] = *fields.ConfidenceLevel
 	}
 
 	dbResult := r.db.WithContext(ctx).
 		Model(&ExperimentResult{}).
 		Where("id = ? AND experiment_id = ? AND version = ?", id, experimentID, currentVersion).
-		Updates(fields)
+		Updates(updates)
 
 	if dbResult.Error != nil {
 		return dbResult.Error

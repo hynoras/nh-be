@@ -140,8 +140,8 @@ func TestRepository_Create_DuplicateExperimentID(t *testing.T) {
 
 	err := repo.Create(ctx, result)
 
-	if err == nil || !strings.Contains(err.Error(), "duplicate key") {
-		t.Errorf("expected duplicate key error, got: %v", err)
+	if !errors.Is(err, ErrExperimentResultAlreadyExists) {
+		t.Errorf("expected ErrExperimentResultAlreadyExists, got: %v", err)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -160,12 +160,16 @@ func TestRepository_Update_Success(t *testing.T) {
 	experimentID := uuid.New()
 	currentVersion := 1
 
-	result := &ExperimentResult{
-		Outcome:         OutcomeFailure,
-		Summary:         "Updated summary",
-		OutcomeReason:   "Updated reason",
-		ConfidenceLevel: ConfidenceMedium,
-		UpdatedAt:       time.Now(),
+	outcome := OutcomeFailure
+	summary := "Updated summary"
+	outcomeReason := "Updated reason"
+	confidenceLevel := ConfidenceMedium
+
+	fields := &UpdateFields{
+		Outcome:         &outcome,
+		Summary:         &summary,
+		OutcomeReason:   &outcomeReason,
+		ConfidenceLevel: &confidenceLevel,
 	}
 
 	mock.ExpectBegin()
@@ -173,7 +177,7 @@ func TestRepository_Update_Success(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err := repo.Update(ctx, resultID, experimentID, result, currentVersion)
+	err := repo.Update(ctx, resultID, experimentID, fields, currentVersion)
 
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
@@ -199,12 +203,16 @@ func TestRepository_Update_OptimisticLockingConflict(t *testing.T) {
 			repo := NewRepository(db)
 			ctx := context.Background()
 
-			result := &ExperimentResult{
-				Outcome:         OutcomeFailure,
-				Summary:         "Updated summary",
-				OutcomeReason:   "Updated reason",
-				ConfidenceLevel: ConfidenceMedium,
-				UpdatedAt:       time.Now(),
+			outcome := OutcomeFailure
+			summary := "Updated summary"
+			outcomeReason := "Updated reason"
+			confidenceLevel := ConfidenceMedium
+
+			fields := &UpdateFields{
+				Outcome:         &outcome,
+				Summary:         &summary,
+				OutcomeReason:   &outcomeReason,
+				ConfidenceLevel: &confidenceLevel,
 			}
 
 			mock.ExpectBegin()
@@ -212,7 +220,7 @@ func TestRepository_Update_OptimisticLockingConflict(t *testing.T) {
 				WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
 			mock.ExpectCommit()
 
-			err := repo.Update(ctx, uuid.New(), uuid.New(), result, 1)
+			err := repo.Update(ctx, uuid.New(), uuid.New(), fields, 1)
 
 			if !errors.Is(err, ErrOptimisticLockingConflict) {
 				t.Errorf("expected ErrOptimisticLockingConflict, got: %v", err)

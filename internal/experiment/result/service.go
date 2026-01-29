@@ -3,14 +3,12 @@ package result
 import (
 	"context"
 	"nh-be/constant"
-	"nh-be/internal/experiment/root"
 	"nh-be/internal/permission"
 	"nh-be/utils"
 	"slices"
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Service interface {
@@ -21,14 +19,12 @@ type Service interface {
 
 type service struct {
 	resultRepo        Repository
-	experimentRepo    root.Repository
 	permissionService permission.Service
 }
 
-func NewService(resultRepo Repository, experimentRepo root.Repository, permissionService permission.Service) Service {
+func NewService(resultRepo Repository, permissionService permission.Service) Service {
 	return &service{
 		resultRepo:        resultRepo,
-		experimentRepo:    experimentRepo,
 		permissionService: permissionService,
 	}
 }
@@ -46,12 +42,6 @@ func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid
 
 	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
 		return nil, ErrForbidViewExperimentResult
-	}
-
-	// Verify experiment exists
-	_, err = s.experimentRepo.FindByID(ctx, experimentID)
-	if err != nil {
-		return nil, err
 	}
 
 	result, err := s.resultRepo.FindByExperimentID(ctx, experimentID)
@@ -75,21 +65,6 @@ func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto 
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
 		return ErrForbidCreateExperimentResult
-	}
-
-	// Verify experiment exists
-	_, err = s.experimentRepo.FindByID(ctx, experimentID)
-	if err != nil {
-		return err
-	}
-
-	// Check if result already exists for this experiment
-	existingResult, err := s.resultRepo.FindByExperimentID(ctx, experimentID)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return err
-	}
-	if existingResult != nil {
-		return ErrExperimentResultAlreadyExists
 	}
 
 	result := &ExperimentResult{
@@ -122,25 +97,28 @@ func (s *service) UpdateResult(ctx context.Context, resultID uuid.UUID, experime
 		return ErrForbidUpdateExperimentResult
 	}
 
-	// Verify experiment exists
-	_, err = s.experimentRepo.FindByID(ctx, experimentID)
+	// Use FindByIDAndExperimentID to validate both IDs and get current version
+	_, err = s.resultRepo.FindByIDAndExperimentID(ctx, resultID, experimentID)
 	if err != nil {
 		return err
 	}
 
-	// Check if result exists
-	_, err = s.resultRepo.FindByID(ctx, resultID)
-	if err != nil {
-		return err
+	// Build update fields with pointers
+	fields := &UpdateFields{}
+	if dto.Outcome != nil {
+		outcome := Outcome(*dto.Outcome)
+		fields.Outcome = &outcome
+	}
+	if dto.Summary != nil {
+		fields.Summary = dto.Summary
+	}
+	if dto.OutcomeReason != nil {
+		fields.OutcomeReason = dto.OutcomeReason
+	}
+	if dto.ConfidenceLevel != nil {
+		confidenceLevel := ConfidenceLevel(*dto.ConfidenceLevel)
+		fields.ConfidenceLevel = &confidenceLevel
 	}
 
-	result := &ExperimentResult{
-		Outcome:         Outcome(dto.Outcome),
-		Summary:         dto.Summary,
-		OutcomeReason:   dto.OutcomeReason,
-		ConfidenceLevel: ConfidenceLevel(dto.ConfidenceLevel),
-		UpdatedAt:       time.Now(),
-	}
-
-	return s.resultRepo.Update(ctx, resultID, experimentID, result, dto.Version)
+	return s.resultRepo.Update(ctx, resultID, experimentID, fields, dto.Version)
 }

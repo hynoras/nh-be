@@ -22,9 +22,9 @@ type CreateResultDto struct {
 }
 
 type UpdateResultDto struct {
-	Version         int    `json:"version" binding:"required,min=1"`
-	Outcome         string `json:"outcome" binding:"omitempty,oneof=success failure inconclusive"`
-	Summary         string `json:"summary" binding:"omitempty,min=10"`
-	OutcomeReason   string `json:"outcome_reason" binding:"omitempty,min=10"`
-	ConfidenceLevel string `json:"confidence_level" binding:"omitempty,oneof=low medium high"`
+	Version         int     `json:"version" binding:"required,min=1"`
+	Outcome         *string `json:"outcome" binding:"omitempty,oneof=success failure inconclusive"`
+	Summary         *string `json:"summary" binding:"omitempty,min=10"`
+	OutcomeReason   *string `json:"outcome_reason" binding:"omitempty,min=10"`
+	ConfidenceLevel *string `json:"confidence_level" binding:"omitempty,oneof=low medium high"`
 }
