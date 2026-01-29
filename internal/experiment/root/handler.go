@@ -55,17 +55,17 @@ func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Success 200 {object} utils.SuccessResponse{data=ExperimentResponseDto} "Experiment fetched successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
 // @Failure 403 {object} utils.ErrorResponse "Authorization failed"
 // @Failure 404 {object} utils.ErrorResponse "Experiment not found"
 // @Failure 500 {object} utils.ErrorResponse "Failed to get experiment"
 // @Security SessionAuth
-// @Router /experiments/{id} [get]
+// @Router /experiments/{experimentId} [get]
 func GetExperimentByIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
@@ -130,7 +130,7 @@ func CreateExperimentHandler(s Service) gin.HandlerFunc {
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Param request body UpdateExperimentDto true "Updated experiment details"
 // @Success 200 {object} utils.SuccessResponse "Experiment updated successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID"
@@ -139,10 +139,10 @@ func CreateExperimentHandler(s Service) gin.HandlerFunc {
 // @Failure 422 {object} utils.ErrorResponse "Validation failed"
 // @Failure 500 {object} utils.ErrorResponse "Failed to update experiment"
 // @Security SessionAuth
-// @Router /experiments/{id} [put]
+// @Router /experiments/{experimentId} [put]
 func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
@@ -176,7 +176,7 @@ func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Param request body UpdateExperimentStatusDto true "New experiment status"
 // @Success 200 {object} utils.SuccessResponse "Experiment status updated successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID or status transition"
@@ -185,10 +185,10 @@ func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 // @Failure 422 {object} utils.ErrorResponse "Validation failed"
 // @Failure 500 {object} utils.ErrorResponse "Failed to update experiment status"
 // @Security SessionAuth
-// @Router /experiments/{id}/status [patch]
+// @Router /experiments/{experimentId}/status [patch]
 func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
@@ -237,17 +237,17 @@ func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Success 200 {object} utils.SuccessResponse "Experiment deleted successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID"
 // @Failure 403 {object} utils.ErrorResponse "Authorization failed"
 // @Failure 404 {object} utils.ErrorResponse "Experiment not found"
 // @Failure 500 {object} utils.ErrorResponse "Failed to delete experiment"
 // @Security SessionAuth
-// @Router /experiments/{id} [delete]
+// @Router /experiments/{experimentId} [delete]
 func DeleteExperimentHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}

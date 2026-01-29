@@ -2,8 +2,7 @@ package router
 
 import (
 	"nh-be/internal/auth"
-	result "nh-be/internal/experiment/result"
-	experiment "nh-be/internal/experiment/root"
+	"nh-be/internal/experiment"
 	"nh-be/internal/middleware"
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
@@ -28,7 +27,6 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	user.RegisterRoutes(protected, db)
 	permission.RegisterRoutes(protected, db)
 	experiment.RegisterRoutes(protected, db)
-	result.RegisterRoutes(protected, db)
 
 	// 404 handler for undefined routes
 	r.NoRoute(func(c *gin.Context) {

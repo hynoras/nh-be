@@ -15,7 +15,7 @@ import (
 
 type Service interface {
 	GetResultByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error)
-	CreateResult(ctx context.Context, dto *CreateResultDto) error
+	CreateResult(ctx context.Context, experimentID uuid.UUID, dto *CreateResultDto) error
 	UpdateResult(ctx context.Context, resultID uuid.UUID, experimentID uuid.UUID, dto *UpdateResultDto) error
 }
 
@@ -62,7 +62,7 @@ func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid
 	return result, nil
 }
 
-func (s *service) CreateResult(ctx context.Context, dto *CreateResultDto) error {
+func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto *CreateResultDto) error {
 	userId, err := utils.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
@@ -75,12 +75,6 @@ func (s *service) CreateResult(ctx context.Context, dto *CreateResultDto) error 
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
 		return ErrForbidCreateExperimentResult
-	}
-
-	// Parse experiment ID
-	experimentID, err := uuid.Parse(dto.ExperimentID)
-	if err != nil {
-		return err
 	}
 
 	// Verify experiment exists

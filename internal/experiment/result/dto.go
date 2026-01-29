@@ -15,7 +15,6 @@ type ExperimentResultResponseDto struct {
 }
 
 type CreateResultDto struct {
-	ExperimentID    string `json:"experiment_id" binding:"required,uuid"`
 	Outcome         string `json:"outcome" binding:"required,oneof=success failure inconclusive"`
 	Summary         string `json:"summary" binding:"required,min=10"`
 	OutcomeReason   string `json:"outcome_reason" binding:"required,min=10"`

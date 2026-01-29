@@ -22,7 +22,7 @@ import (
 // @Failure 404 {object} utils.ErrorResponse "Experiment or result not found"
 // @Failure 500 {object} utils.ErrorResponse "Failed to get experiment result"
 // @Security SessionAuth
-// @Router /experiment-results/experiment/{experimentId} [get]
+// @Router /experiments/{experimentId}/result [get]
 func GetResultByExperimentIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
@@ -54,6 +54,7 @@ func GetResultByExperimentIDHandler(s Service) gin.HandlerFunc {
 // @Tags Experiment Results
 // @Accept json
 // @Produce json
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Param request body CreateResultDto true "Experiment result creation details"
 // @Success 201 {object} utils.SuccessResponse "Experiment result created successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid request"
@@ -63,15 +64,20 @@ func GetResultByExperimentIDHandler(s Service) gin.HandlerFunc {
 // @Failure 422 {object} utils.ErrorResponse "Validation failed"
 // @Failure 500 {object} utils.ErrorResponse "Failed to create experiment result"
 // @Security SessionAuth
-// @Router /experiment-results [post]
+// @Router /experiments/{experimentId}/result [post]
 func CreateResultHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		parsedExperimentId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		if idErr != nil {
+			return
+		}
+
 		var dto CreateResultDto
 		if err := utils.ValidateRequestFormat(c, &dto); err != nil {
 			return
 		}
 
-		serviceErr := s.CreateResult(c.Request.Context(), &dto)
+		serviceErr := s.CreateResult(c.Request.Context(), *parsedExperimentId, &dto)
 		switch serviceErr {
 		case ErrForbidCreateExperimentResult:
 			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
@@ -98,8 +104,8 @@ func CreateResultHandler(s Service) gin.HandlerFunc {
 // @Tags Experiment Results
 // @Accept json
 // @Produce json
-// @Param id path string true "Result ID (UUID format)"
 // @Param experimentId path string true "Experiment ID (UUID format)"
+// @Param resultId path string true "Result ID (UUID format)"
 // @Param request body UpdateResultDto true "Updated experiment result details (includes version for optimistic locking)"
 // @Success 200 {object} utils.SuccessResponse "Experiment result updated successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
@@ -109,16 +115,16 @@ func CreateResultHandler(s Service) gin.HandlerFunc {
 // @Failure 422 {object} utils.ErrorResponse "Validation failed"
 // @Failure 500 {object} utils.ErrorResponse "Failed to update experiment result"
 // @Security SessionAuth
-// @Router /experiment-results/{id}/experiment/{experimentId} [put]
+// @Router /experiments/{experimentId}/result/{resultId} [put]
 func UpdateResultHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedResultId, idErr := utils.ValidateUUID(c, c.Param("id"))
-		if idErr != nil {
+		parsedExperimentId, expIdErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		if expIdErr != nil {
 			return
 		}
 
-		parsedExperimentId, expIdErr := utils.ValidateUUID(c, c.Param("experimentId"))
-		if expIdErr != nil {
+		parsedResultId, idErr := utils.ValidateUUID(c, c.Param("resultId"))
+		if idErr != nil {
 			return
 		}
 
