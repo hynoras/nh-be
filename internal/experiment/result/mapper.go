@@ -8,6 +8,7 @@ func MapResultToDto(r ExperimentResult) ExperimentResultResponseDto {
 		Summary:         r.Summary,
 		OutcomeReason:   r.OutcomeReason,
 		ConfidenceLevel: string(r.ConfidenceLevel),
+		Version:         r.Version,
 		CreatedAt:       r.CreatedAt,
 		UpdatedAt:       r.UpdatedAt,
 	}

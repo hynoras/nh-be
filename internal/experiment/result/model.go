@@ -29,6 +29,7 @@ type ExperimentResult struct {
 	Summary         string          `gorm:"type:text;not null"`
 	OutcomeReason   string          `gorm:"type:text;not null"`
 	ConfidenceLevel ConfidenceLevel `gorm:"type:varchar(20);not null"`
+	Version         int             `gorm:"not null;default:1"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

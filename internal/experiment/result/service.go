@@ -16,7 +16,7 @@ import (
 type Service interface {
 	GetResultByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error)
 	CreateResult(ctx context.Context, dto *CreateResultDto) error
-	UpdateResult(ctx context.Context, experimentID uuid.UUID, dto *UpdateResultDto) error
+	UpdateResult(ctx context.Context, resultID uuid.UUID, experimentID uuid.UUID, dto *UpdateResultDto) error
 }
 
 type service struct {
@@ -105,6 +105,7 @@ func (s *service) CreateResult(ctx context.Context, dto *CreateResultDto) error 
 		Summary:         dto.Summary,
 		OutcomeReason:   dto.OutcomeReason,
 		ConfidenceLevel: ConfidenceLevel(dto.ConfidenceLevel),
+		Version:         1,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
@@ -112,7 +113,7 @@ func (s *service) CreateResult(ctx context.Context, dto *CreateResultDto) error 
 	return s.resultRepo.Create(ctx, result)
 }
 
-func (s *service) UpdateResult(ctx context.Context, experimentID uuid.UUID, dto *UpdateResultDto) error {
+func (s *service) UpdateResult(ctx context.Context, resultID uuid.UUID, experimentID uuid.UUID, dto *UpdateResultDto) error {
 	userId, err := utils.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
@@ -134,7 +135,7 @@ func (s *service) UpdateResult(ctx context.Context, experimentID uuid.UUID, dto 
 	}
 
 	// Check if result exists
-	_, err = s.resultRepo.FindByExperimentID(ctx, experimentID)
+	_, err = s.resultRepo.FindByID(ctx, resultID)
 	if err != nil {
 		return err
 	}
@@ -147,5 +148,5 @@ func (s *service) UpdateResult(ctx context.Context, experimentID uuid.UUID, dto 
 		UpdatedAt:       time.Now(),
 	}
 
-	return s.resultRepo.Update(ctx, experimentID, result)
+	return s.resultRepo.Update(ctx, resultID, experimentID, result, dto.Version)
 }

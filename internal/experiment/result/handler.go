@@ -94,24 +94,31 @@ func CreateResultHandler(s Service) gin.HandlerFunc {
 
 // UpdateResultHandler godoc
 // @Summary Update an experiment result
-// @Description Update an existing experiment result by experiment ID
+// @Description Update an existing experiment result by result ID and experiment ID
 // @Tags Experiment Results
 // @Accept json
 // @Produce json
+// @Param id path string true "Result ID (UUID format)"
 // @Param experimentId path string true "Experiment ID (UUID format)"
-// @Param request body UpdateResultDto true "Updated experiment result details"
+// @Param request body UpdateResultDto true "Updated experiment result details (includes version for optimistic locking)"
 // @Success 200 {object} utils.SuccessResponse "Experiment result updated successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID"
+// @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
 // @Failure 403 {object} utils.ErrorResponse "Authorization failed"
 // @Failure 404 {object} utils.ErrorResponse "Experiment or result not found"
+// @Failure 409 {object} utils.ErrorResponse "Optimistic locking conflict"
 // @Failure 422 {object} utils.ErrorResponse "Validation failed"
 // @Failure 500 {object} utils.ErrorResponse "Failed to update experiment result"
 // @Security SessionAuth
-// @Router /experiment-results/experiment/{experimentId} [put]
+// @Router /experiment-results/{id}/experiment/{experimentId} [put]
 func UpdateResultHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		parsedResultId, idErr := utils.ValidateUUID(c, c.Param("id"))
 		if idErr != nil {
+			return
+		}
+
+		parsedExperimentId, expIdErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		if expIdErr != nil {
 			return
 		}
 
@@ -120,13 +127,16 @@ func UpdateResultHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		serviceErr := s.UpdateResult(c.Request.Context(), *parsedId, &dto)
+		serviceErr := s.UpdateResult(c.Request.Context(), *parsedResultId, *parsedExperimentId, &dto)
 		switch serviceErr {
 		case ErrForbidUpdateExperimentResult:
 			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment result not found", serviceErr.Error())
+			return
+		case ErrOptimisticLockingConflict:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Version conflict", serviceErr.Error())
 			return
 		case nil:
 			utils.MakeSuccessResponse(c, http.StatusOK, "Experiment result updated successfully", nil)

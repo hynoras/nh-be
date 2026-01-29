@@ -10,4 +10,5 @@ var (
 	ErrForbidUpdateExperimentResult  = errors.New("you do not have permission to update this experiment result")
 	ErrInvalidOutcome                = errors.New("invalid outcome value")
 	ErrInvalidConfidenceLevel        = errors.New("invalid confidence level value")
+	ErrOptimisticLockingConflict     = errors.New("the experiment result was modified by another request, please retry")
 )
