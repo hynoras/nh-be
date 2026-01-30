@@ -40,6 +40,9 @@ func (r *repository) Create(ctx context.Context, result *ExperimentResult) error
 		if strings.Contains(err.Error(), "duplicate key") && strings.Contains(err.Error(), "experiment_id") {
 			return ErrExperimentResultAlreadyExists
 		}
+		if strings.Contains(err.Error(), "foreign key constraint") && strings.Contains(err.Error(), "experiment_id") {
+			return ErrExperimentNotFound
+		}
 		return err
 	}
 	return nil

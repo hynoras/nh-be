@@ -2,11 +2,9 @@ package result
 
 import (
 	"net/http"
-	"nh-be/constant"
 	"nh-be/utils"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // GetResultByExperimentIDHandler godoc
@@ -25,26 +23,16 @@ import (
 // @Router /experiments/{experimentId}/result [get]
 func GetResultByExperimentIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		experimentID, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
 
-		result, serviceErr := s.GetResultByExperimentID(c.Request.Context(), *parsedId)
-		switch serviceErr {
-		case ErrForbidViewExperimentResult:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment result not found", serviceErr.Error())
-			return
-		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "Experiment result fetched successfully", MapResultToDto(*result))
-			return
-		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get experiment result", serviceErr.Error())
+		result, serviceErr := s.GetResultByExperimentID(c.Request.Context(), *experimentID)
+		if HandleServiceError(c, serviceErr) {
 			return
 		}
+		utils.MakeSuccessResponse(c, http.StatusOK, "Experiment result fetched successfully", MapResultToDto(*result))
 	}
 }
 
@@ -67,7 +55,7 @@ func GetResultByExperimentIDHandler(s Service) gin.HandlerFunc {
 // @Router /experiments/{experimentId}/result [post]
 func CreateResultHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedExperimentId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		experimentID, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
@@ -77,24 +65,11 @@ func CreateResultHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		serviceErr := s.CreateResult(c.Request.Context(), *parsedExperimentId, &dto)
-		switch serviceErr {
-		case ErrForbidCreateExperimentResult:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case ErrExperimentResultAlreadyExists:
-			utils.MakeErrorResponse(c, http.StatusConflict, "Experiment result already exists", serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", serviceErr.Error())
-			return
-		case nil:
-			utils.MakeSuccessResponse(c, http.StatusCreated, "Experiment result created successfully", nil)
-			return
-		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create experiment result", serviceErr.Error())
+		serviceErr := s.CreateResult(c.Request.Context(), *experimentID, &dto)
+		if HandleServiceError(c, serviceErr) {
 			return
 		}
+		utils.MakeSuccessResponse(c, http.StatusCreated, "Experiment result created successfully", nil)
 	}
 }
 
@@ -118,12 +93,12 @@ func CreateResultHandler(s Service) gin.HandlerFunc {
 // @Router /experiments/{experimentId}/result/{resultId} [put]
 func UpdateResultHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedExperimentId, expIdErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		experimentID, expIdErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if expIdErr != nil {
 			return
 		}
 
-		parsedResultId, idErr := utils.ValidateUUID(c, c.Param("resultId"))
+		resultID, idErr := utils.ValidateUUID(c, c.Param("resultId"))
 		if idErr != nil {
 			return
 		}
@@ -133,23 +108,10 @@ func UpdateResultHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		serviceErr := s.UpdateResult(c.Request.Context(), *parsedResultId, *parsedExperimentId, &dto)
-		switch serviceErr {
-		case ErrForbidUpdateExperimentResult:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment result not found", serviceErr.Error())
-			return
-		case ErrOptimisticLockingConflict:
-			utils.MakeErrorResponse(c, http.StatusConflict, "Version conflict", serviceErr.Error())
-			return
-		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "Experiment result updated successfully", nil)
-			return
-		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update experiment result", serviceErr.Error())
+		serviceErr := s.UpdateResult(c.Request.Context(), *resultID, *experimentID, &dto)
+		if HandleServiceError(c, serviceErr) {
 			return
 		}
+		utils.MakeSuccessResponse(c, http.StatusOK, "Experiment result updated successfully", nil)
 	}
 }

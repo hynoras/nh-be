@@ -107,10 +107,7 @@ func TestRepository_Create(t *testing.T) {
 					WillReturnError(errors.New(`pq: insert or update on table "experiment_results" violates foreign key constraint "experiment_results_experiment_id_fkey"`))
 				mock.ExpectRollback()
 			},
-			checkError: func(t *testing.T, err error) {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "foreign key constraint")
-			},
+			expectedError: ErrExperimentNotFound,
 		},
 		{
 			name: "duplicate_experiment_id",
