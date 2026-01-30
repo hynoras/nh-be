@@ -8,8 +8,8 @@ import (
 
 	"nh-be/constant"
 	"nh-be/internal/experiment/result"
-	permissionmocks "nh-be/mocks/permission"
-	resultmocks "nh-be/mocks/result"
+	resultmocks "nh-be/internal/experiment/result/mocks"
+	permissionmocks "nh-be/internal/permission/mocks"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

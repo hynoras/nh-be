@@ -1,0 +1,17 @@
+with-expecter: true
+testonly: false
+inpackage: false
+dir: "{{.InterfaceDir}}/mocks"
+outpkg: mocks
+mockname: "{{.InterfaceName}}"
+filename: "{{.InterfaceName | snakecase}}.go"
+packages:
+  nh-be/internal/experiment/result:
+    interfaces:
+      Repository:
+      Service:
+  nh-be/internal/permission:
+    interfaces:
+      Repository:
+      Service:
+
