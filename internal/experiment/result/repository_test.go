@@ -3,12 +3,12 @@ package result
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -46,189 +46,190 @@ func createValidExperimentResult() *ExperimentResult {
 	}
 }
 
-func TestRepository_Create_Success(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewRepository(db)
-	ctx := context.Background()
-
-	result := createValidExperimentResult()
-
-	mock.ExpectBegin()
-	mock.ExpectExec(`INSERT INTO "experiment_results"`).
-		WithArgs(
-			result.ID,
-			result.ExperimentID,
-			result.Outcome,
-			result.Summary,
-			result.OutcomeReason,
-			result.ConfidenceLevel,
-			result.Version,
-			sqlmock.AnyArg(), // created_at
-			sqlmock.AnyArg(), // updated_at
-		).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-
-	err := repo.Create(ctx, result)
-
-	if err != nil {
-		t.Errorf("expected no error, got: %v", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("unfulfilled expectations: %v", err)
-	}
-}
-
-func TestRepository_Create_FKConstraintViolation(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewRepository(db)
-	ctx := context.Background()
-
-	result := createValidExperimentResult()
-	result.ExperimentID = uuid.New()
-
-	mock.ExpectBegin()
-	mock.ExpectExec(`INSERT INTO "experiment_results"`).
-		WithArgs(
-			result.ID,
-			result.ExperimentID,
-			result.Outcome,
-			result.Summary,
-			result.OutcomeReason,
-			result.ConfidenceLevel,
-			result.Version,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-		).
-		WillReturnError(errors.New("pq: insert or update on table \"experiment_results\" violates foreign key constraint \"experiment_results_experiment_id_fkey\""))
-	mock.ExpectRollback()
-
-	err := repo.Create(ctx, result)
-
-	if err == nil || !strings.Contains(err.Error(), "foreign key constraint") {
-		t.Errorf("expected FK constraint error, got: %v", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("unfulfilled expectations: %v", err)
-	}
-}
-
-func TestRepository_Create_DuplicateExperimentID(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewRepository(db)
-	ctx := context.Background()
-
-	result := createValidExperimentResult()
-
-	mock.ExpectBegin()
-	mock.ExpectExec(`INSERT INTO "experiment_results"`).
-		WithArgs(
-			result.ID,
-			result.ExperimentID,
-			result.Outcome,
-			result.Summary,
-			result.OutcomeReason,
-			result.ConfidenceLevel,
-			result.Version,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-		).
-		WillReturnError(errors.New("pq: duplicate key value violates unique constraint \"experiment_results_experiment_id_key\""))
-	mock.ExpectRollback()
-
-	err := repo.Create(ctx, result)
-
-	if !errors.Is(err, ErrExperimentResultAlreadyExists) {
-		t.Errorf("expected ErrExperimentResultAlreadyExists, got: %v", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("unfulfilled expectations: %v", err)
-	}
-}
-
-// ==================== UPDATE TESTS ====================
-
-func TestRepository_Update_Success(t *testing.T) {
-	db, mock := setupMockDB(t)
-	repo := NewRepository(db)
-	ctx := context.Background()
-
-	resultID := uuid.New()
-	experimentID := uuid.New()
-	currentVersion := 1
-
+func createUpdateFields() *UpdateFields {
 	outcome := OutcomeFailure
 	summary := "Updated summary"
 	outcomeReason := "Updated reason"
 	confidenceLevel := ConfidenceMedium
 
-	fields := &UpdateFields{
+	return &UpdateFields{
 		Outcome:         &outcome,
 		Summary:         &summary,
 		OutcomeReason:   &outcomeReason,
 		ConfidenceLevel: &confidenceLevel,
 	}
-
-	mock.ExpectBegin()
-	mock.ExpectExec(`UPDATE "experiment_results" SET`).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
-
-	err := repo.Update(ctx, resultID, experimentID, fields, currentVersion)
-
-	if err != nil {
-		t.Errorf("expected no error, got: %v", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("unfulfilled expectations: %v", err)
-	}
 }
 
-func TestRepository_Update_OptimisticLockingConflict(t *testing.T) {
-	cases := []struct {
-		name string
+func TestRepository_Create(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupMock     func(mock sqlmock.Sqlmock, result *ExperimentResult)
+		expectedError error
+		checkError    func(t *testing.T, err error)
 	}{
-		{"non-existent experiment"},
-		{"non-existent result"},
-		{"stale version"},
+		{
+			name: "success",
+			setupMock: func(mock sqlmock.Sqlmock, result *ExperimentResult) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO "experiment_results"`).
+					WithArgs(
+						result.ID,
+						result.ExperimentID,
+						result.Outcome,
+						result.Summary,
+						result.OutcomeReason,
+						result.ConfidenceLevel,
+						result.Version,
+						sqlmock.AnyArg(), // created_at
+						sqlmock.AnyArg(), // updated_at
+					).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name: "fk_constraint_violation",
+			setupMock: func(mock sqlmock.Sqlmock, result *ExperimentResult) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO "experiment_results"`).
+					WithArgs(
+						result.ID,
+						result.ExperimentID,
+						result.Outcome,
+						result.Summary,
+						result.OutcomeReason,
+						result.ConfidenceLevel,
+						result.Version,
+						sqlmock.AnyArg(),
+						sqlmock.AnyArg(),
+					).
+					WillReturnError(errors.New(`pq: insert or update on table "experiment_results" violates foreign key constraint "experiment_results_experiment_id_fkey"`))
+				mock.ExpectRollback()
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "foreign key constraint")
+			},
+		},
+		{
+			name: "duplicate_experiment_id",
+			setupMock: func(mock sqlmock.Sqlmock, result *ExperimentResult) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO "experiment_results"`).
+					WithArgs(
+						result.ID,
+						result.ExperimentID,
+						result.Outcome,
+						result.Summary,
+						result.OutcomeReason,
+						result.ConfidenceLevel,
+						result.Version,
+						sqlmock.AnyArg(),
+						sqlmock.AnyArg(),
+					).
+					WillReturnError(errors.New(`pq: duplicate key value violates unique constraint "experiment_results_experiment_id_key"`))
+				mock.ExpectRollback()
+			},
+			expectedError: ErrExperimentResultAlreadyExists,
+		},
 	}
 
-	for _, tc := range cases {
+	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			db, mock := setupMockDB(t)
 			repo := NewRepository(db)
 			ctx := context.Background()
 
-			outcome := OutcomeFailure
-			summary := "Updated summary"
-			outcomeReason := "Updated reason"
-			confidenceLevel := ConfidenceMedium
+			result := createValidExperimentResult()
 
-			fields := &UpdateFields{
-				Outcome:         &outcome,
-				Summary:         &summary,
-				OutcomeReason:   &outcomeReason,
-				ConfidenceLevel: &confidenceLevel,
+			tc.setupMock(mock, result)
+
+			err := repo.Create(ctx, result)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 
-			mock.ExpectBegin()
-			mock.ExpectExec(`UPDATE "experiment_results" SET`).
-				WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
-			mock.ExpectCommit()
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
 
-			err := repo.Update(ctx, uuid.New(), uuid.New(), fields, 1)
+func TestRepository_Update(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupMock     func(mock sqlmock.Sqlmock)
+		expectedError error
+	}{
+		{
+			name: "success",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "experiment_results" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name: "optimistic_lock_non_existent_experiment",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "experiment_results" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
+				mock.ExpectCommit()
+			},
+			expectedError: ErrOptimisticLockingConflict,
+		},
+		{
+			name: "optimistic_lock_non_existent_result",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "experiment_results" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
+				mock.ExpectCommit()
+			},
+			expectedError: ErrOptimisticLockingConflict,
+		},
+		{
+			name: "optimistic_lock_stale_version",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "experiment_results" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
+				mock.ExpectCommit()
+			},
+			expectedError: ErrOptimisticLockingConflict,
+		},
+	}
 
-			if !errors.Is(err, ErrOptimisticLockingConflict) {
-				t.Errorf("expected ErrOptimisticLockingConflict, got: %v", err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := setupMockDB(t)
+			repo := NewRepository(db)
+			ctx := context.Background()
+
+			resultID := uuid.New()
+			experimentID := uuid.New()
+			currentVersion := 1
+			fields := createUpdateFields()
+
+			tc.setupMock(mock)
+
+			err := repo.Update(ctx, resultID, experimentID, fields, currentVersion)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else {
+				assert.NoError(t, err)
 			}
 
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("unfulfilled expectations: %v", err)
-			}
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
