@@ -21,10 +21,9 @@ func contextWithUser(userID uuid.UUID) context.Context {
 	return context.WithValue(context.Background(), constant.CtxUserId, userID)
 }
 
-// createTestResult creates a sample ExperimentResult for testing
 func createTestResult(experimentID uuid.UUID) *result.ExperimentResult {
 	return &result.ExperimentResult{
-		ID:              uuid.New(),
+		ID:              uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 		ExperimentID:    experimentID,
 		Outcome:         result.OutcomeSuccess,
 		Summary:         "Test summary",
@@ -36,7 +35,6 @@ func createTestResult(experimentID uuid.UUID) *result.ExperimentResult {
 	}
 }
 
-// createTestDto creates a sample CreateResultDto for testing
 func createTestDto() *result.CreateResultDto {
 	return &result.CreateResultDto{
 		Outcome:         "success",
@@ -46,7 +44,15 @@ func createTestDto() *result.CreateResultDto {
 	}
 }
 
-// createTestUpdateDto creates a sample UpdateResultDto for testing
+func createInvalidTestDto() *result.CreateResultDto {
+	return &result.CreateResultDto{
+		Outcome:         "not a valid outcome",
+		Summary:         "Test summary for experiment",
+		OutcomeReason:   "Test outcome reason",
+		ConfidenceLevel: "high",
+	}
+}
+
 func createTestUpdateDto() *result.UpdateResultDto {
 	outcome := "failure"
 	summary := "Updated summary"
@@ -57,7 +63,6 @@ func createTestUpdateDto() *result.UpdateResultDto {
 	}
 }
 
-// createEmptyUpdateDto creates an UpdateResultDto with only version (no field changes)
 func createEmptyUpdateDto() *result.UpdateResultDto {
 	return &result.UpdateResultDto{
 		Version: 1,
