@@ -1,10 +1,9 @@
-package result_test
+package result
 
 import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"nh-be/constant"
 	"nh-be/internal/experiment/result"
@@ -15,59 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-// contextWithUser creates a context with a user ID for testing
-func contextWithUser(userID uuid.UUID) context.Context {
-	return context.WithValue(context.Background(), constant.CtxUserId, userID)
-}
-
-func createTestResult(experimentID uuid.UUID) *result.ExperimentResult {
-	return &result.ExperimentResult{
-		ID:              uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-		ExperimentID:    experimentID,
-		Outcome:         result.OutcomeSuccess,
-		Summary:         "Test summary",
-		OutcomeReason:   "Test reason",
-		ConfidenceLevel: result.ConfidenceHigh,
-		Version:         1,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-	}
-}
-
-func createTestDto() *result.CreateResultDto {
-	return &result.CreateResultDto{
-		Outcome:         "success",
-		Summary:         "Test summary for experiment",
-		OutcomeReason:   "Test outcome reason",
-		ConfidenceLevel: "high",
-	}
-}
-
-func createInvalidTestDto() *result.CreateResultDto {
-	return &result.CreateResultDto{
-		Outcome:         "not a valid outcome",
-		Summary:         "Test summary for experiment",
-		OutcomeReason:   "Test outcome reason",
-		ConfidenceLevel: "high",
-	}
-}
-
-func createTestUpdateDto() *result.UpdateResultDto {
-	outcome := "failure"
-	summary := "Updated summary"
-	return &result.UpdateResultDto{
-		Version: 1,
-		Outcome: &outcome,
-		Summary: &summary,
-	}
-}
-
-func createEmptyUpdateDto() *result.UpdateResultDto {
-	return &result.UpdateResultDto{
-		Version: 1,
-	}
-}
 
 func TestService_GetResultByExperimentID(t *testing.T) {
 	experimentID := uuid.New()
@@ -83,31 +29,31 @@ func TestService_GetResultByExperimentID(t *testing.T) {
 	}{
 		{
 			name: "ok_view_permission",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
 				repo.On("FindByExperimentID", mock.Anything, experimentID).
-					Return(createTestResult(experimentID), nil)
+					Return(CreateTestResult(experimentID), nil)
 			},
-			expectedResult: createTestResult(experimentID),
+			expectedResult: CreateTestResult(experimentID),
 			expectedError:  nil,
 		},
 		{
 			name: "ok_manage_permission",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("FindByExperimentID", mock.Anything, experimentID).
-					Return(createTestResult(experimentID), nil)
+					Return(CreateTestResult(experimentID), nil)
 			},
-			expectedResult: createTestResult(experimentID),
+			expectedResult: CreateTestResult(experimentID),
 			expectedError:  nil,
 		},
 		{
 			name: "forbidden_no_permission",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{}, nil)
@@ -118,7 +64,7 @@ func TestService_GetResultByExperimentID(t *testing.T) {
 		},
 		{
 			name: "permission_service_error",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return(nil, errors.New("permission service unavailable"))
@@ -144,7 +90,7 @@ func TestService_GetResultByExperimentID(t *testing.T) {
 		},
 		{
 			name: "result_not_found",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
@@ -156,7 +102,7 @@ func TestService_GetResultByExperimentID(t *testing.T) {
 		},
 		{
 			name: "repo_error",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
@@ -217,7 +163,7 @@ func TestService_CreateResult(t *testing.T) {
 	}{
 		{
 			name: "ok_create",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
@@ -228,7 +174,7 @@ func TestService_CreateResult(t *testing.T) {
 		},
 		{
 			name: "forbidden_no_permission",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{}, nil)
@@ -238,7 +184,7 @@ func TestService_CreateResult(t *testing.T) {
 		},
 		{
 			name: "permission_service_error",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return(nil, errors.New("permission service unavailable"))
@@ -262,7 +208,7 @@ func TestService_CreateResult(t *testing.T) {
 		},
 		{
 			name: "duplicate_result",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
@@ -273,7 +219,7 @@ func TestService_CreateResult(t *testing.T) {
 		},
 		{
 			name: "repo_error",
-			ctx:  contextWithUser(userID),
+			ctx:  ContextWithUser(userID),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
@@ -295,7 +241,7 @@ func TestService_CreateResult(t *testing.T) {
 			tc.setupMocks(mockRepo, mockPermSvc)
 
 			svc := result.NewService(mockRepo, mockPermSvc)
-			dto := createTestDto()
+			dto := CreateTestDto()
 
 			err := svc.CreateResult(tc.ctx, experimentID, dto)
 
@@ -325,13 +271,13 @@ func TestService_UpdateResult(t *testing.T) {
 	}{
 		{
 			name: "ok_partial_update",
-			ctx:  contextWithUser(userID),
-			dto:  createTestUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("FindByIDAndExperimentID", mock.Anything, resultID, experimentID).
-					Return(createTestResult(experimentID), nil)
+					Return(CreateTestResult(experimentID), nil)
 				repo.On("Update", mock.Anything, resultID, experimentID, mock.AnythingOfType("*result.UpdateFields"), 1).
 					Return(nil)
 			},
@@ -339,8 +285,8 @@ func TestService_UpdateResult(t *testing.T) {
 		},
 		{
 			name: "forbidden_no_permission",
-			ctx:  contextWithUser(userID),
-			dto:  createTestUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{}, nil)
@@ -350,8 +296,8 @@ func TestService_UpdateResult(t *testing.T) {
 		},
 		{
 			name: "permission_service_error",
-			ctx:  contextWithUser(userID),
-			dto:  createTestUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return(nil, errors.New("permission service unavailable"))
@@ -365,7 +311,7 @@ func TestService_UpdateResult(t *testing.T) {
 		{
 			name: "no_user_in_context",
 			ctx:  context.Background(),
-			dto:  createTestUpdateDto(),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				// Neither permission service nor repo should be called
 			},
@@ -376,8 +322,8 @@ func TestService_UpdateResult(t *testing.T) {
 		},
 		{
 			name: "result_not_found",
-			ctx:  contextWithUser(userID),
-			dto:  createTestUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
@@ -389,13 +335,13 @@ func TestService_UpdateResult(t *testing.T) {
 		},
 		{
 			name: "optimistic_lock_conflict",
-			ctx:  contextWithUser(userID),
-			dto:  createTestUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("FindByIDAndExperimentID", mock.Anything, resultID, experimentID).
-					Return(createTestResult(experimentID), nil)
+					Return(CreateTestResult(experimentID), nil)
 				repo.On("Update", mock.Anything, resultID, experimentID, mock.AnythingOfType("*result.UpdateFields"), 1).
 					Return(result.ErrOptimisticLockingConflict)
 			},
@@ -403,13 +349,13 @@ func TestService_UpdateResult(t *testing.T) {
 		},
 		{
 			name: "repo_update_error",
-			ctx:  contextWithUser(userID),
-			dto:  createTestUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateTestUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("FindByIDAndExperimentID", mock.Anything, resultID, experimentID).
-					Return(createTestResult(experimentID), nil)
+					Return(CreateTestResult(experimentID), nil)
 				repo.On("Update", mock.Anything, resultID, experimentID, mock.AnythingOfType("*result.UpdateFields"), 1).
 					Return(errors.New("database connection error"))
 			},
@@ -420,13 +366,13 @@ func TestService_UpdateResult(t *testing.T) {
 		},
 		{
 			name: "empty_update_fields",
-			ctx:  contextWithUser(userID),
-			dto:  createEmptyUpdateDto(),
+			ctx:  ContextWithUser(userID),
+			dto:  CreateEmptyUpdateDto(),
 			setupMocks: func(repo *resultmocks.Repository, permSvc *permissionmocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("FindByIDAndExperimentID", mock.Anything, resultID, experimentID).
-					Return(createTestResult(experimentID), nil)
+					Return(CreateTestResult(experimentID), nil)
 				// Update is still called with empty fields (only version incremented)
 				repo.On("Update", mock.Anything, resultID, experimentID, mock.AnythingOfType("*result.UpdateFields"), 1).
 					Return(nil)

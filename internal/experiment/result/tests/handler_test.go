@@ -1,4 +1,4 @@
-package result_test
+package result
 
 import (
 	"bytes"
@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,14 +15,6 @@ import (
 	resHandler "nh-be/internal/experiment/result"
 	resultmocks "nh-be/internal/experiment/result/mocks"
 )
-
-// setupTestRouter creates a test router with the given handler at the specified route
-func setupTestRouter(method, path string, handler gin.HandlerFunc) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	router.Handle(method, path, handler)
-	return router
-}
 
 func TestHandler_GetResultByExperimentID(t *testing.T) {
 	tests := []struct {
@@ -38,7 +29,7 @@ func TestHandler_GetResultByExperimentID(t *testing.T) {
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("GetResultByExperimentID", mock.Anything, mock.Anything).
-					Return(createTestResult(uuid.MustParse("00000000-0000-0000-0000-000000000000")), nil)
+					Return(CreateTestResult(uuid.MustParse("00000000-0000-0000-0000-000000000000")), nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -84,7 +75,7 @@ func TestHandler_GetResultByExperimentID(t *testing.T) {
 			mockSvc := resultmocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := setupTestRouter(http.MethodGet, "/experiments/:experimentId/result",
+			router := SetupTestRouter(http.MethodGet, "/experiments/:experimentId/result",
 				resHandler.GetResultByExperimentIDHandler(mockSvc))
 
 			req := httptest.NewRequest(http.MethodGet,
@@ -112,7 +103,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "success",
 			experimentID: "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestDto(),
+			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
 					Return(nil)
@@ -122,7 +113,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "invalid_uuid",
 			experimentID: "not-a-uuid",
-			requestBody:  createTestDto(),
+			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.AssertNotCalled(t, "CreateResult")
 			},
@@ -131,7 +122,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "invalid_format",
 			experimentID: uuid.New().String(),
-			requestBody:  createInvalidTestDto(),
+			requestBody:  CreateInvalidTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.AssertNotCalled(t, "CreateResult")
 			},
@@ -140,7 +131,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "experiment_not_found",
 			experimentID: "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestDto(),
+			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrExperimentNotFound)
@@ -150,7 +141,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "experiment_result_already_exists",
 			experimentID: "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestDto(),
+			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrExperimentResultAlreadyExists)
@@ -160,7 +151,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "forbidden_no_permission",
 			experimentID: "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestDto(),
+			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrForbidCreateExperimentResult)
@@ -170,7 +161,7 @@ func TestHandler_CreateResult(t *testing.T) {
 		{
 			name:         "internal_server_error",
 			experimentID: "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestDto(),
+			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
 					Return(errors.New("unexpected database error"))
@@ -184,7 +175,7 @@ func TestHandler_CreateResult(t *testing.T) {
 			mockSvc := resultmocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := setupTestRouter(http.MethodPost, "/experiments/:experimentId/result",
+			router := SetupTestRouter(http.MethodPost, "/experiments/:experimentId/result",
 				resHandler.CreateResultHandler(mockSvc))
 
 			body, _ := json.Marshal(tc.requestBody)
@@ -215,7 +206,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "success",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(nil)
@@ -226,7 +217,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "invalid_uuid",
 			experimentID: "not-a-uuid",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.AssertNotCalled(t, "UpdateResult")
 			},
@@ -236,7 +227,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "invalid_format",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createInvalidTestDto(),
+			requestBody:  CreateInvalidTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.AssertNotCalled(t, "UpdateResult")
 			},
@@ -246,7 +237,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "experiment_not_found",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrExperimentNotFound)
@@ -257,7 +248,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "result_not_found",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrExperimentResultNotFound)
@@ -268,7 +259,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "forbidden_no_permission",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrForbidUpdateExperimentResult)
@@ -279,7 +270,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "optimistic_locking_conflict",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(resHandler.ErrOptimisticLockingConflict)
@@ -290,7 +281,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			name:         "internal_server_error",
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			resultID:     "00000000-0000-0000-0000-000000000000",
-			requestBody:  createTestUpdateDto(),
+			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Return(errors.New("unexpected database error"))
@@ -304,7 +295,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			mockSvc := resultmocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := setupTestRouter(http.MethodPut, "/experiments/:experimentId/result/:resultId",
+			router := SetupTestRouter(http.MethodPut, "/experiments/:experimentId/result/:resultId",
 				resHandler.UpdateResultHandler(mockSvc))
 
 			body, _ := json.Marshal(tc.requestBody)
