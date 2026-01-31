@@ -3,6 +3,8 @@ package result
 import (
 	"time"
 
+	"nh-be/internal/experiment/root"
+
 	"github.com/google/uuid"
 )
 
@@ -22,8 +24,9 @@ const (
 )
 
 type ExperimentResult struct {
-	ID           uuid.UUID `gorm:"type:uuid;primaryKey"`
-	ExperimentID uuid.UUID `gorm:"type:uuid;not null;unique;index"`
+	ID           uuid.UUID       `gorm:"type:uuid;primaryKey"`
+	ExperimentID uuid.UUID       `gorm:"type:uuid;not null;unique;index"`
+	Experiment   root.Experiment `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE"`
 
 	Outcome         Outcome         `gorm:"type:varchar(20);not null"`
 	Summary         string          `gorm:"type:text;not null"`
