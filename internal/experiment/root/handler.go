@@ -55,17 +55,17 @@ func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Success 200 {object} utils.SuccessResponse{data=ExperimentResponseDto} "Experiment fetched successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
 // @Failure 403 {object} utils.ErrorResponse "Authorization failed"
 // @Failure 404 {object} utils.ErrorResponse "Experiment not found"
 // @Failure 500 {object} utils.ErrorResponse "Failed to get experiment"
 // @Security SessionAuth
-// @Router /experiments/{id} [get]
+// @Router /experiments/{experimentId} [get]
 func GetExperimentByIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
@@ -130,7 +130,7 @@ func CreateExperimentHandler(s Service) gin.HandlerFunc {
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Param request body UpdateExperimentDto true "Updated experiment details"
 // @Success 200 {object} utils.SuccessResponse "Experiment updated successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID"
@@ -139,10 +139,10 @@ func CreateExperimentHandler(s Service) gin.HandlerFunc {
 // @Failure 422 {object} utils.ErrorResponse "Validation failed"
 // @Failure 500 {object} utils.ErrorResponse "Failed to update experiment"
 // @Security SessionAuth
-// @Router /experiments/{id} [put]
+// @Router /experiments/{experimentId} [put]
 func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}
@@ -170,23 +170,84 @@ func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// UpdateExperimentStatusHandler godoc
+// @Summary Update experiment status
+// @Description Update the status of an existing experiment by its UUID
+// @Tags Experiments
+// @Accept json
+// @Produce json
+// @Param experimentId path string true "Experiment ID (UUID format)"
+// @Param request body UpdateExperimentStatusDto true "New experiment status"
+// @Success 200 {object} utils.SuccessResponse "Experiment status updated successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID or status transition"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 404 {object} utils.ErrorResponse "Experiment not found"
+// @Failure 422 {object} utils.ErrorResponse "Validation failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to update experiment status"
+// @Security SessionAuth
+// @Router /experiments/{experimentId}/status [patch]
+func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
+		if idErr != nil {
+			return
+		}
+
+		var dto UpdateExperimentStatusDto
+		if err := utils.ValidateRequestFormat(c, &dto); err != nil {
+			return
+		}
+
+		status := ExperimentStatus(dto.Status)
+
+		serviceErr := s.UpdateExperimentStatus(c.Request.Context(), *parsedId, status)
+		switch serviceErr {
+		case ErrForbidUpdateExperiment:
+			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			return
+		case gorm.ErrRecordNotFound:
+			utils.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", nil)
+			return
+		case ErrAlreadyInTargetState:
+			utils.MakeErrorResponse(c, http.StatusOK, "Experiment is already in target state", nil)
+			return
+		//for some reasons, stacked case is not working here so i use multiple case
+		case ErrStatusTransitionFromDraftToPlanning:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Invalid status transition", serviceErr.Error())
+			return
+		case ErrStatusTransitionFromPlanningToRunning:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Invalid status transition", serviceErr.Error())
+			return
+		case ErrStatusTransitionFromRunningToCompletedOrAborted:
+			utils.MakeErrorResponse(c, http.StatusConflict, "Invalid status transition", serviceErr.Error())
+			return
+		case nil:
+			utils.MakeSuccessResponse(c, http.StatusOK, "Experiment status updated successfully", nil)
+			return
+		default:
+			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update experiment status", serviceErr.Error())
+			return
+		}
+	}
+}
+
 // DeleteExperimentHandler godoc
 // @Summary Delete an experiment
 // @Description Delete a single experiment by its UUID
 // @Tags Experiments
 // @Accept json
 // @Produce json
-// @Param id path string true "Experiment ID (UUID format)"
+// @Param experimentId path string true "Experiment ID (UUID format)"
 // @Success 200 {object} utils.SuccessResponse "Experiment deleted successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid experiment ID"
 // @Failure 403 {object} utils.ErrorResponse "Authorization failed"
 // @Failure 404 {object} utils.ErrorResponse "Experiment not found"
 // @Failure 500 {object} utils.ErrorResponse "Failed to delete experiment"
 // @Security SessionAuth
-// @Router /experiments/{id} [delete]
+// @Router /experiments/{experimentId} [delete]
 func DeleteExperimentHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := utils.ValidateUUID(c, c.Param("experimentId"))
 		if idErr != nil {
 			return
 		}

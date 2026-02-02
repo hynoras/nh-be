@@ -14,6 +14,7 @@ type Repository interface {
 	FindAll(ctx context.Context, search string, page, pageSize int) ([]Experiment, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*Experiment, error)
 	Update(ctx context.Context, id uuid.UUID, e *Experiment) error
+	UpdateStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus, currentVersion int) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -67,11 +68,34 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, e *Experiment) er
 	if e.Title != "" {
 		fields["title"] = e.Title
 	}
+	if e.Type != "" {
+		fields["type"] = e.Type
+	}
 	if e.Objective != "" {
 		fields["objective"] = e.Objective
 	}
 
 	return r.db.WithContext(ctx).Model(&Experiment{}).Where("id = ?", id).Updates(fields).Error
+}
+
+func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus, currentVersion int) error {
+	result := r.db.WithContext(ctx).
+		Model(&Experiment{}).
+		Where("id = ? AND version = ?", id, currentVersion).
+		Updates(map[string]interface{}{
+			"status":  status,
+			"version": currentVersion + 1,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrOptimisticLockingConflict
+	}
+
+	return nil
 }
 
 func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {

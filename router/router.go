@@ -2,7 +2,7 @@ package router
 
 import (
 	"nh-be/internal/auth"
-	experiment "nh-be/internal/experiment/root"
+	"nh-be/internal/experiment"
 	"nh-be/internal/middleware"
 	"nh-be/internal/permission"
 	"nh-be/internal/user"

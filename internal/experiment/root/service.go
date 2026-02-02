@@ -16,6 +16,7 @@ type Service interface {
 	GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experiment, error)
 	CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error
 	UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error
+	UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error
 	DeleteExperiment(ctx context.Context, id uuid.UUID) error
 }
 
@@ -95,6 +96,7 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 		Title:       dto.Title,
 		Objective:   dto.Objective,
 		Status:      ExperimentDraft,
+		Type:        ExperimentType(dto.Type),
 		CreatedByID: userId,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -127,10 +129,51 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 	experiment := &Experiment{
 		Title:     dto.Title,
 		Objective: dto.Objective,
+		Type:      ExperimentType(dto.Type),
 		UpdatedAt: time.Now(),
 	}
 
 	return s.experimentRepo.Update(ctx, id, experiment)
+}
+
+func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error {
+	userId, err := utils.GetUserIdFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(userPerm, constant.ManageExperiment) {
+		return ErrForbidUpdateExperiment
+	}
+
+	// Check if experiment exists
+	var exp *Experiment
+	exp, err = s.experimentRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if exp.Status == status {
+		return ErrAlreadyInTargetState
+	}
+
+	// validate status
+	if exp.Status == ExperimentDraft && status != ExperimentPlanning {
+		return ErrStatusTransitionFromDraftToPlanning
+	}
+	if exp.Status == ExperimentPlanning && status != ExperimentRunning {
+		return ErrStatusTransitionFromPlanningToRunning
+	}
+	if exp.Status == ExperimentRunning && (status != ExperimentCompleted && status != ExperimentAborted) {
+		return ErrStatusTransitionFromRunningToCompletedOrAborted
+	}
+
+	return s.experimentRepo.UpdateStatus(ctx, id, status, exp.Version)
 }
 
 func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {
