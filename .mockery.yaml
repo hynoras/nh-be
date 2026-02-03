@@ -14,4 +14,8 @@ packages:
     interfaces:
       Repository:
       Service:
+  nh-be/internal/procedure:
+    interfaces:
+      Repository:
+      Service:
 
