@@ -8,6 +8,7 @@ import (
 	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
 	"nh-be/internal/middleware"
+	"nh-be/internal/procedure"
 
 	"github.com/gin-gonic/gin"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -32,6 +33,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel
 	permission.RegisterRoutes(protected, db)
 	experiment.RegisterRoutes(protected, db)
 	result.RegisterRoutes(protected, db)
+	procedure.RegisterRoutes(protected, db)
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{
