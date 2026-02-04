@@ -24,159 +24,6 @@ func (_m *Service) EXPECT() *Service_Expecter {
 	return &Service_Expecter{mock: &_m.Mock}
 }
 
-// Create provides a mock function with given fields: ctx, _a1
-func (_m *Service) Create(ctx context.Context, _a1 *procedure.Procedure) error {
-	ret := _m.Called(ctx, _a1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Create")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *procedure.Procedure) error); ok {
-		r0 = rf(ctx, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Service_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
-type Service_Create_Call struct {
-	*mock.Call
-}
-
-// Create is a helper method to define mock.On call
-//   - ctx context.Context
-//   - _a1 *procedure.Procedure
-func (_e *Service_Expecter) Create(ctx interface{}, _a1 interface{}) *Service_Create_Call {
-	return &Service_Create_Call{Call: _e.mock.On("Create", ctx, _a1)}
-}
-
-func (_c *Service_Create_Call) Run(run func(ctx context.Context, _a1 *procedure.Procedure)) *Service_Create_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*procedure.Procedure))
-	})
-	return _c
-}
-
-func (_c *Service_Create_Call) Return(_a0 error) *Service_Create_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *Service_Create_Call) RunAndReturn(run func(context.Context, *procedure.Procedure) error) *Service_Create_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Delete provides a mock function with given fields: ctx, id
-func (_m *Service) Delete(ctx context.Context, id uuid.UUID) error {
-	ret := _m.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Delete")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = rf(ctx, id)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Service_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
-type Service_Delete_Call struct {
-	*mock.Call
-}
-
-// Delete is a helper method to define mock.On call
-//   - ctx context.Context
-//   - id uuid.UUID
-func (_e *Service_Expecter) Delete(ctx interface{}, id interface{}) *Service_Delete_Call {
-	return &Service_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
-}
-
-func (_c *Service_Delete_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Service_Delete_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *Service_Delete_Call) Return(_a0 error) *Service_Delete_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *Service_Delete_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *Service_Delete_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// FindByID provides a mock function with given fields: ctx, id
-func (_m *Service) FindByID(ctx context.Context, id uuid.UUID) (*procedure.Procedure, error) {
-	ret := _m.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FindByID")
-	}
-
-	var r0 *procedure.Procedure
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*procedure.Procedure, error)); ok {
-		return rf(ctx, id)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *procedure.Procedure); ok {
-		r0 = rf(ctx, id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*procedure.Procedure)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, id)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// Service_FindByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByID'
-type Service_FindByID_Call struct {
-	*mock.Call
-}
-
-// FindByID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - id uuid.UUID
-func (_e *Service_Expecter) FindByID(ctx interface{}, id interface{}) *Service_FindByID_Call {
-	return &Service_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id)}
-}
-
-func (_c *Service_FindByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Service_FindByID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *Service_FindByID_Call) Return(_a0 *procedure.Procedure, _a1 error) *Service_FindByID_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *Service_FindByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*procedure.Procedure, error)) *Service_FindByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetAllProcedures provides a mock function with given fields: ctx, search, offset, limit
 func (_m *Service) GetAllProcedures(ctx context.Context, search string, offset int, limit int) ([]procedure.ProcedureListResponseDto, int64, error) {
 	ret := _m.Called(ctx, search, offset, limit)
@@ -245,49 +92,61 @@ func (_c *Service_GetAllProcedures_Call) RunAndReturn(run func(context.Context, 
 	return _c
 }
 
-// Update provides a mock function with given fields: ctx, _a1
-func (_m *Service) Update(ctx context.Context, _a1 *procedure.Procedure) error {
-	ret := _m.Called(ctx, _a1)
+// GetProcedureByID provides a mock function with given fields: ctx, id
+func (_m *Service) GetProcedureByID(ctx context.Context, id uuid.UUID) (*procedure.ProcedureResponseDto, error) {
+	ret := _m.Called(ctx, id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Update")
+		panic("no return value specified for GetProcedureByID")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *procedure.Procedure) error); ok {
-		r0 = rf(ctx, _a1)
+	var r0 *procedure.ProcedureResponseDto
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*procedure.ProcedureResponseDto, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *procedure.ProcedureResponseDto); ok {
+		r0 = rf(ctx, id)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*procedure.ProcedureResponseDto)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
-// Service_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
-type Service_Update_Call struct {
+// Service_GetProcedureByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProcedureByID'
+type Service_GetProcedureByID_Call struct {
 	*mock.Call
 }
 
-// Update is a helper method to define mock.On call
+// GetProcedureByID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - _a1 *procedure.Procedure
-func (_e *Service_Expecter) Update(ctx interface{}, _a1 interface{}) *Service_Update_Call {
-	return &Service_Update_Call{Call: _e.mock.On("Update", ctx, _a1)}
+//   - id uuid.UUID
+func (_e *Service_Expecter) GetProcedureByID(ctx interface{}, id interface{}) *Service_GetProcedureByID_Call {
+	return &Service_GetProcedureByID_Call{Call: _e.mock.On("GetProcedureByID", ctx, id)}
 }
 
-func (_c *Service_Update_Call) Run(run func(ctx context.Context, _a1 *procedure.Procedure)) *Service_Update_Call {
+func (_c *Service_GetProcedureByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Service_GetProcedureByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*procedure.Procedure))
+		run(args[0].(context.Context), args[1].(uuid.UUID))
 	})
 	return _c
 }
 
-func (_c *Service_Update_Call) Return(_a0 error) *Service_Update_Call {
-	_c.Call.Return(_a0)
+func (_c *Service_GetProcedureByID_Call) Return(_a0 *procedure.ProcedureResponseDto, _a1 error) *Service_GetProcedureByID_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *Service_Update_Call) RunAndReturn(run func(context.Context, *procedure.Procedure) error) *Service_Update_Call {
+func (_c *Service_GetProcedureByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*procedure.ProcedureResponseDto, error)) *Service_GetProcedureByID_Call {
 	_c.Call.Return(run)
 	return _c
 }

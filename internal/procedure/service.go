@@ -12,7 +12,7 @@ import (
 
 type Service interface {
 	GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error)
-	// FindByID(ctx context.Context, id uuid.UUID) (*Procedure, error)
+	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
 	// Create(ctx context.Context, procedure *Procedure) error
 	// Update(ctx context.Context, procedure *Procedure) error
 	// Delete(ctx context.Context, id uuid.UUID) error
@@ -58,9 +58,18 @@ func (s *service) GetAllProcedures(ctx context.Context, search string, offset, l
 	return MapProceduresToDto(procedures), length, nil
 }
 
-// func (s *service) FindByID(ctx context.Context, id uuid.UUID) (*Procedure, error) {
-// 	return s.repository.FindByID(ctx, id)
-// }
+func (s *service) GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error) {
+	permErr := s.CanViewProcedure(ctx, id)
+	if permErr != nil {
+		return nil, permErr
+	}
+	procedure, repoErr := s.repository.FindByID(ctx, id, true, true)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+	mapToProcedure := MapProcedureToDto(procedure)
+	return &mapToProcedure, nil
+}
 
 // func (s *service) Create(ctx context.Context, procedure *Procedure) error {
 // 	return s.repository.Create(ctx, procedure)

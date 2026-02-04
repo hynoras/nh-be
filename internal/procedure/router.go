@@ -17,7 +17,7 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	procedureService := NewService(procedureRepo, permissionService)
 
 	proceduresGroup.GET("", GetAllProceduresHandler(procedureService))
-	// proceduresGroup.GET("/:procedureId", GetProcedureByIDHandler(experimentService))
+	proceduresGroup.GET("/:procedureId", GetProcedureByIDHandler(procedureService))
 	// proceduresGroup.POST("", CreateProcedureHandler(experimentService))
 	// proceduresGroup.PUT("/:procedureId", UpdateProcedureHandler(experimentService))
 	// proceduresGroup.PUT("/:procedureId/status", UpdateProcedureStatusHandler(experimentService))

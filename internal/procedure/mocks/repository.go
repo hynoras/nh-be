@@ -24,100 +24,6 @@ func (_m *Repository) EXPECT() *Repository_Expecter {
 	return &Repository_Expecter{mock: &_m.Mock}
 }
 
-// Create provides a mock function with given fields: ctx, _a1
-func (_m *Repository) Create(ctx context.Context, _a1 *procedure.Procedure) error {
-	ret := _m.Called(ctx, _a1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Create")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *procedure.Procedure) error); ok {
-		r0 = rf(ctx, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Repository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
-type Repository_Create_Call struct {
-	*mock.Call
-}
-
-// Create is a helper method to define mock.On call
-//   - ctx context.Context
-//   - _a1 *procedure.Procedure
-func (_e *Repository_Expecter) Create(ctx interface{}, _a1 interface{}) *Repository_Create_Call {
-	return &Repository_Create_Call{Call: _e.mock.On("Create", ctx, _a1)}
-}
-
-func (_c *Repository_Create_Call) Run(run func(ctx context.Context, _a1 *procedure.Procedure)) *Repository_Create_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*procedure.Procedure))
-	})
-	return _c
-}
-
-func (_c *Repository_Create_Call) Return(_a0 error) *Repository_Create_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *Repository_Create_Call) RunAndReturn(run func(context.Context, *procedure.Procedure) error) *Repository_Create_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Delete provides a mock function with given fields: ctx, id
-func (_m *Repository) Delete(ctx context.Context, id uuid.UUID) error {
-	ret := _m.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Delete")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = rf(ctx, id)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Repository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
-type Repository_Delete_Call struct {
-	*mock.Call
-}
-
-// Delete is a helper method to define mock.On call
-//   - ctx context.Context
-//   - id uuid.UUID
-func (_e *Repository_Expecter) Delete(ctx interface{}, id interface{}) *Repository_Delete_Call {
-	return &Repository_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
-}
-
-func (_c *Repository_Delete_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Repository_Delete_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *Repository_Delete_Call) Return(_a0 error) *Repository_Delete_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *Repository_Delete_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *Repository_Delete_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // FindAll provides a mock function with given fields: ctx, search, offset, limit, withExperiments
 func (_m *Repository) FindAll(ctx context.Context, search string, offset int, limit int, withExperiments bool) ([]procedure.Procedure, int64, error) {
 	ret := _m.Called(ctx, search, offset, limit, withExperiments)
@@ -187,9 +93,9 @@ func (_c *Repository_FindAll_Call) RunAndReturn(run func(context.Context, string
 	return _c
 }
 
-// FindByID provides a mock function with given fields: ctx, id
-func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID) (*procedure.Procedure, error) {
-	ret := _m.Called(ctx, id)
+// FindByID provides a mock function with given fields: ctx, id, withSteps, withExperiments
+func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID, withSteps bool, withExperiments bool) (*procedure.Procedure, error) {
+	ret := _m.Called(ctx, id, withSteps, withExperiments)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
@@ -197,19 +103,19 @@ func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID) (*procedure.Pr
 
 	var r0 *procedure.Procedure
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*procedure.Procedure, error)); ok {
-		return rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool, bool) (*procedure.Procedure, error)); ok {
+		return rf(ctx, id, withSteps, withExperiments)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *procedure.Procedure); ok {
-		r0 = rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool, bool) *procedure.Procedure); ok {
+		r0 = rf(ctx, id, withSteps, withExperiments)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*procedure.Procedure)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, id)
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, bool, bool) error); ok {
+		r1 = rf(ctx, id, withSteps, withExperiments)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -225,13 +131,15 @@ type Repository_FindByID_Call struct {
 // FindByID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-func (_e *Repository_Expecter) FindByID(ctx interface{}, id interface{}) *Repository_FindByID_Call {
-	return &Repository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id)}
+//   - withSteps bool
+//   - withExperiments bool
+func (_e *Repository_Expecter) FindByID(ctx interface{}, id interface{}, withSteps interface{}, withExperiments interface{}) *Repository_FindByID_Call {
+	return &Repository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id, withSteps, withExperiments)}
 }
 
-func (_c *Repository_FindByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Repository_FindByID_Call {
+func (_c *Repository_FindByID_Call) Run(run func(ctx context.Context, id uuid.UUID, withSteps bool, withExperiments bool)) *Repository_FindByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(bool), args[3].(bool))
 	})
 	return _c
 }
@@ -241,54 +149,7 @@ func (_c *Repository_FindByID_Call) Return(_a0 *procedure.Procedure, _a1 error) 
 	return _c
 }
 
-func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*procedure.Procedure, error)) *Repository_FindByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Update provides a mock function with given fields: ctx, _a1
-func (_m *Repository) Update(ctx context.Context, _a1 *procedure.Procedure) error {
-	ret := _m.Called(ctx, _a1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Update")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *procedure.Procedure) error); ok {
-		r0 = rf(ctx, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Repository_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
-type Repository_Update_Call struct {
-	*mock.Call
-}
-
-// Update is a helper method to define mock.On call
-//   - ctx context.Context
-//   - _a1 *procedure.Procedure
-func (_e *Repository_Expecter) Update(ctx interface{}, _a1 interface{}) *Repository_Update_Call {
-	return &Repository_Update_Call{Call: _e.mock.On("Update", ctx, _a1)}
-}
-
-func (_c *Repository_Update_Call) Run(run func(ctx context.Context, _a1 *procedure.Procedure)) *Repository_Update_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*procedure.Procedure))
-	})
-	return _c
-}
-
-func (_c *Repository_Update_Call) Return(_a0 error) *Repository_Update_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *Repository_Update_Call) RunAndReturn(run func(context.Context, *procedure.Procedure) error) *Repository_Update_Call {
+func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.UUID, bool, bool) (*procedure.Procedure, error)) *Repository_FindByID_Call {
 	_c.Call.Return(run)
 	return _c
 }

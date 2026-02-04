@@ -10,6 +10,20 @@ type UsedByExperiment struct {
 	Objective string `json:"objective"`
 }
 
+type Steps struct {
+	ID          string `json:"step_id"`
+	ProcedureID string `json:"procedure_id"`
+
+	Index       int    `json:"step_order"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+
+	StepType string `json:"type"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type ProcedureListResponseDto struct {
 	ID                string             `json:"id"`
 	Title             string             `json:"title"`
@@ -24,7 +38,7 @@ type ProcedureResponseDto struct {
 	Title             string             `json:"title"`
 	Description       string             `json:"description"`
 	UsedByExperiments []UsedByExperiment `json:"used_by_experiments"`
-	Steps             []ProcedureStep    `json:"steps"`
+	Steps             []Steps            `json:"steps"`
 	CreatedAt         time.Time          `json:"created_at"`
 	UpdatedAt         time.Time          `json:"updated_at"`
 }
