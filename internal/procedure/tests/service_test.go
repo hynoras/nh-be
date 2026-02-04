@@ -193,3 +193,170 @@ func TestService_GetAllProcedures(t *testing.T) {
 		})
 	}
 }
+
+func TestService_GetProcedureByID(t *testing.T) {
+	userID := uuid.New()
+	procedureID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+	permissionError := errors.New("permission denied")
+	genericRepoError := errors.New("database error")
+
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		procedureID   uuid.UUID
+		setupMocks    func(repo *procmocks.Repository, permSvc *mocks.Service)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+		checkResult   func(t *testing.T, result *procedure.ProcedureResponseDto)
+	}{
+		{
+			name:        "mapping_success",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				testProc := TestProcedureDetailWithRelations()
+				repo.On("FindByID", mock.Anything, procedureID, true, true).
+					Return(&testProc, nil)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.NotNil(t, result)
+				assert.Equal(t, "12345678-1234-1234-1234-123456789012", result.ID)
+				assert.Equal(t, "Test Procedure", result.Title)
+				assert.Equal(t, "Test Procedure Description", result.Description)
+				assert.Len(t, result.Steps, 2)
+				assert.Len(t, result.UsedByExperiments, 2)
+				// Verify step mapping
+				assert.Equal(t, "33333333-1234-1234-1234-444433332222", result.Steps[0].ID)
+				assert.Equal(t, "Test Step", result.Steps[0].Title)
+				// Verify experiment mapping
+				assert.Equal(t, "aaaaaaaa-1111-1111-1111-111111111111", result.UsedByExperiments[0].ID)
+				assert.Equal(t, "Test Experiment 1", result.UsedByExperiments[0].Title)
+			},
+		},
+		{
+			name:        "repository_called_with_correct_flags",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				testProc := TestProcedureDetailWithRelations()
+				// Assert that both withSteps and withExperiments are true
+				repo.On("FindByID", mock.Anything, procedureID, true, true).
+					Return(&testProc, nil)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.NotNil(t, result)
+			},
+		},
+		{
+			name:        "permission_denied",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{}, permissionError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.ErrorIs(t, err, permissionError)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.Nil(t, result)
+			},
+		},
+		{
+			name:        "procedure_found",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				testProc := TestProcedureDetailWithRelations()
+				repo.On("FindByID", mock.Anything, procedureID, true, true).
+					Return(&testProc, nil)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.NoError(t, err)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.NotNil(t, result)
+				assert.Equal(t, procedureID.String(), result.ID)
+			},
+		},
+		{
+			name:        "procedure_not_found",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("FindByID", mock.Anything, procedureID, true, true).
+					Return(nil, constant.ErrProcedureNotFound)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.ErrorIs(t, err, constant.ErrProcedureNotFound)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.Nil(t, result)
+			},
+		},
+		{
+			name:        "repository_error",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("FindByID", mock.Anything, procedureID, true, true).
+					Return(nil, genericRepoError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, genericRepoError)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.Nil(t, result)
+			},
+		},
+		{
+			name:        "context_cancelled_before_permission",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return(nil, context.Canceled)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, context.Canceled)
+			},
+			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
+				assert.Nil(t, result)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := procmocks.NewRepository(t)
+			mockPermSvc := mocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := procedure.NewService(mockRepo, mockPermSvc)
+
+			result, err := svc.GetProcedureByID(tc.ctx, tc.procedureID)
+
+			tc.checkError(t, err)
+			tc.checkResult(t, result)
+		})
+	}
+}
