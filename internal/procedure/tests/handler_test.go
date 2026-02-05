@@ -146,7 +146,7 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 					UsedByExperiments: []procedure.UsedByExperiment{},
 					Steps:             []procedure.Steps{},
 					CreatedAt:         testProcedure.CreatedAt,
-					UpdatedAt:         testProcedure.UpdatedAt,
+					UpdatedAt:         *testProcedure.UpdatedAt,
 				}
 				svc.On("GetProcedureByID", mock.Anything, validID).
 					Return(testResponseDto, nil)

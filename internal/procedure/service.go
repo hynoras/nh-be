@@ -13,6 +13,7 @@ import (
 type Service interface {
 	GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error)
 	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
+	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
 	// Create(ctx context.Context, procedure *Procedure) error
 	// Update(ctx context.Context, procedure *Procedure) error
 	// Delete(ctx context.Context, id uuid.UUID) error
@@ -45,6 +46,31 @@ func (s *service) CanViewProcedure(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (s *service) CanManageProcedure(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
+	userId, err := utils.GetUserIdFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(userPerm, constant.ManageExperiment) {
+		switch action {
+		case constant.Create:
+			return constant.ErrForbidCreateProcedure
+		case constant.Update:
+			return constant.ErrForbidUpdateProcedure
+		case constant.Delete:
+			return constant.ErrForbidDeleteProcedure
+		}
+	}
+
+	return nil
+}
+
 func (s *service) GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error) {
 	permErr := s.CanViewProcedure(ctx, uuid.Nil)
 	if permErr != nil {
@@ -71,9 +97,15 @@ func (s *service) GetProcedureByID(ctx context.Context, id uuid.UUID) (*Procedur
 	return &mapToProcedure, nil
 }
 
-// func (s *service) Create(ctx context.Context, procedure *Procedure) error {
-// 	return s.repository.Create(ctx, procedure)
-// }
+func (s *service) CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error {
+	permErr := s.CanManageProcedure(ctx, uuid.Nil, constant.Create)
+	if permErr != nil {
+		return permErr
+	}
+
+	repoErr := s.repository.CreateProcedure(ctx, MapCreateDtoToProcedure(procedure))
+	return repoErr
+}
 
 // func (s *service) Update(ctx context.Context, procedure *Procedure) error {
 // 	return s.repository.Update(ctx, procedure)

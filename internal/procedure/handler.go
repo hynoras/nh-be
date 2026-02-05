@@ -68,3 +68,32 @@ func GetProcedureByIDHandler(s Service) gin.HandlerFunc {
 		utils.MakeSuccessResponse(c, http.StatusOK, "Procedures fetched successfully", procedure)
 	}
 }
+
+// CreateProcedureHandler godoc
+// @Summary Create a new procedure
+// @Description Create a new procedure
+// @Tags Procedures
+// @Accept json
+// @Produce json
+// @Param request body CreateProcedureDto true "Procedure creation details"
+// @Success 201 {object} utils.SuccessResponse "Procedure created successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 422 {object} utils.ErrorResponse "Validation failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to create procedure"
+// @Security SessionAuth
+// @Router /procedures [post]
+func CreateProcedureHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var dto CreateProcedureDto
+		if err := utils.ValidateRequestFormat(c, &dto); err != nil {
+			return
+		}
+
+		serviceErr := s.CreateProcedure(c.Request.Context(), &dto)
+		if utils.MakeServiceErrorResponse(c, serviceErr) {
+			return
+		}
+		utils.MakeSuccessResponse(c, http.StatusCreated, "Procedure created successfully", nil)
+	}
+}

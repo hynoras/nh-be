@@ -14,9 +14,10 @@ import (
 type Repository interface {
 	FindAll(ctx context.Context, search string, offset, limit int, withExperiments bool) ([]Procedure, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID, withSteps, withExperiments bool) (*Procedure, error)
-	// Create(ctx context.Context, procedure *Procedure) error
+	CreateProcedure(ctx context.Context, procedure *Procedure) error
 	// Update(ctx context.Context, procedure *Procedure) error
 	// Delete(ctx context.Context, id uuid.UUID) error
+	WithTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
 
 type repository struct {
@@ -72,9 +73,9 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID, withSteps, with
 	return &procedure, nil
 }
 
-// func (r *repository) Create(ctx context.Context, procedure *Procedure) error {
-// 	return r.db.WithContext(ctx).Create(procedure).Error
-// }
+func (r *repository) CreateProcedure(ctx context.Context, procedure *Procedure) error {
+	return r.db.WithContext(ctx).Create(procedure).Error
+}
 
 // func (r *repository) Update(ctx context.Context, procedure *Procedure) error {
 // 	return r.db.WithContext(ctx).Save(procedure).Error

@@ -42,3 +42,21 @@ type ProcedureResponseDto struct {
 	CreatedAt         time.Time          `json:"created_at"`
 	UpdatedAt         time.Time          `json:"updated_at"`
 }
+
+type CreateStepDto struct {
+	Index       int    `json:"step_order" binding:"required"`
+	Title       string `json:"title" binding:"required,min=3,max=200"`
+	Description string `json:"description" binding:"omitempty,min=5,max=255"`
+	StepType    string `json:"type" binding:"required,oneof=action wait decision observe cleanup"`
+}
+
+type CreateExperimentAssignmentDto struct {
+	ID string `json:"id" binding:"required,uuid4"`
+}
+
+type CreateProcedureDto struct {
+	Title                 string                          `json:"title" binding:"required,min=3,max=200"`
+	Description           string                          `json:"description" binding:"omitempty,min=5,max=255"`
+	Steps                 []CreateStepDto                 `json:"steps" binding:"omitempty,dive"`
+	ExperimentAssignments []CreateExperimentAssignmentDto `json:"assigned_experiments" binding:"omitempty,dive"`
+}

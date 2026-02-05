@@ -24,6 +24,147 @@ func (_m *Repository) EXPECT() *Repository_Expecter {
 	return &Repository_Expecter{mock: &_m.Mock}
 }
 
+// CreateProcedure provides a mock function with given fields: ctx, _a1
+func (_m *Repository) CreateProcedure(ctx context.Context, _a1 *procedure.Procedure) error {
+	ret := _m.Called(ctx, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateProcedure")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *procedure.Procedure) error); ok {
+		r0 = rf(ctx, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_CreateProcedure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateProcedure'
+type Repository_CreateProcedure_Call struct {
+	*mock.Call
+}
+
+// CreateProcedure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - _a1 *procedure.Procedure
+func (_e *Repository_Expecter) CreateProcedure(ctx interface{}, _a1 interface{}) *Repository_CreateProcedure_Call {
+	return &Repository_CreateProcedure_Call{Call: _e.mock.On("CreateProcedure", ctx, _a1)}
+}
+
+func (_c *Repository_CreateProcedure_Call) Run(run func(ctx context.Context, _a1 *procedure.Procedure)) *Repository_CreateProcedure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*procedure.Procedure))
+	})
+	return _c
+}
+
+func (_c *Repository_CreateProcedure_Call) Return(_a0 error) *Repository_CreateProcedure_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_CreateProcedure_Call) RunAndReturn(run func(context.Context, *procedure.Procedure) error) *Repository_CreateProcedure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateProcedureExperimentAssignment provides a mock function with given fields: ctx, usedByExperiment
+func (_m *Repository) CreateProcedureExperimentAssignment(ctx context.Context, usedByExperiment *procedure.ProcedureExperimentAssignment) error {
+	ret := _m.Called(ctx, usedByExperiment)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateProcedureExperimentAssignment")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *procedure.ProcedureExperimentAssignment) error); ok {
+		r0 = rf(ctx, usedByExperiment)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_CreateProcedureExperimentAssignment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateProcedureExperimentAssignment'
+type Repository_CreateProcedureExperimentAssignment_Call struct {
+	*mock.Call
+}
+
+// CreateProcedureExperimentAssignment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - usedByExperiment *procedure.ProcedureExperimentAssignment
+func (_e *Repository_Expecter) CreateProcedureExperimentAssignment(ctx interface{}, usedByExperiment interface{}) *Repository_CreateProcedureExperimentAssignment_Call {
+	return &Repository_CreateProcedureExperimentAssignment_Call{Call: _e.mock.On("CreateProcedureExperimentAssignment", ctx, usedByExperiment)}
+}
+
+func (_c *Repository_CreateProcedureExperimentAssignment_Call) Run(run func(ctx context.Context, usedByExperiment *procedure.ProcedureExperimentAssignment)) *Repository_CreateProcedureExperimentAssignment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*procedure.ProcedureExperimentAssignment))
+	})
+	return _c
+}
+
+func (_c *Repository_CreateProcedureExperimentAssignment_Call) Return(_a0 error) *Repository_CreateProcedureExperimentAssignment_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_CreateProcedureExperimentAssignment_Call) RunAndReturn(run func(context.Context, *procedure.ProcedureExperimentAssignment) error) *Repository_CreateProcedureExperimentAssignment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateProcedureStep provides a mock function with given fields: ctx, step
+func (_m *Repository) CreateProcedureStep(ctx context.Context, step *procedure.ProcedureStep) error {
+	ret := _m.Called(ctx, step)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateProcedureStep")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *procedure.ProcedureStep) error); ok {
+		r0 = rf(ctx, step)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_CreateProcedureStep_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateProcedureStep'
+type Repository_CreateProcedureStep_Call struct {
+	*mock.Call
+}
+
+// CreateProcedureStep is a helper method to define mock.On call
+//   - ctx context.Context
+//   - step *procedure.ProcedureStep
+func (_e *Repository_Expecter) CreateProcedureStep(ctx interface{}, step interface{}) *Repository_CreateProcedureStep_Call {
+	return &Repository_CreateProcedureStep_Call{Call: _e.mock.On("CreateProcedureStep", ctx, step)}
+}
+
+func (_c *Repository_CreateProcedureStep_Call) Run(run func(ctx context.Context, step *procedure.ProcedureStep)) *Repository_CreateProcedureStep_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*procedure.ProcedureStep))
+	})
+	return _c
+}
+
+func (_c *Repository_CreateProcedureStep_Call) Return(_a0 error) *Repository_CreateProcedureStep_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_CreateProcedureStep_Call) RunAndReturn(run func(context.Context, *procedure.ProcedureStep) error) *Repository_CreateProcedureStep_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindAll provides a mock function with given fields: ctx, search, offset, limit, withExperiments
 func (_m *Repository) FindAll(ctx context.Context, search string, offset int, limit int, withExperiments bool) ([]procedure.Procedure, int64, error) {
 	ret := _m.Called(ctx, search, offset, limit, withExperiments)
@@ -150,6 +291,53 @@ func (_c *Repository_FindByID_Call) Return(_a0 *procedure.Procedure, _a1 error) 
 }
 
 func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.UUID, bool, bool) (*procedure.Procedure, error)) *Repository_FindByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// WithTransaction provides a mock function with given fields: ctx, fn
+func (_m *Repository) WithTransaction(ctx context.Context, fn func(procedure.Repository) error) error {
+	ret := _m.Called(ctx, fn)
+
+	if len(ret) == 0 {
+		panic("no return value specified for WithTransaction")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, func(procedure.Repository) error) error); ok {
+		r0 = rf(ctx, fn)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_WithTransaction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WithTransaction'
+type Repository_WithTransaction_Call struct {
+	*mock.Call
+}
+
+// WithTransaction is a helper method to define mock.On call
+//   - ctx context.Context
+//   - fn func(procedure.Repository) error
+func (_e *Repository_Expecter) WithTransaction(ctx interface{}, fn interface{}) *Repository_WithTransaction_Call {
+	return &Repository_WithTransaction_Call{Call: _e.mock.On("WithTransaction", ctx, fn)}
+}
+
+func (_c *Repository_WithTransaction_Call) Run(run func(ctx context.Context, fn func(procedure.Repository) error)) *Repository_WithTransaction_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(func(procedure.Repository) error))
+	})
+	return _c
+}
+
+func (_c *Repository_WithTransaction_Call) Return(_a0 error) *Repository_WithTransaction_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_WithTransaction_Call) RunAndReturn(run func(context.Context, func(procedure.Repository) error) error) *Repository_WithTransaction_Call {
 	_c.Call.Return(run)
 	return _c
 }

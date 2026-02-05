@@ -1,5 +1,9 @@
 package procedure
 
+import (
+	"github.com/google/uuid"
+)
+
 func MapProcedureListToDto(p Procedure) ProcedureListResponseDto {
 	return ProcedureListResponseDto{
 		ID:                p.ID.String(),
@@ -7,7 +11,7 @@ func MapProcedureListToDto(p Procedure) ProcedureListResponseDto {
 		Description:       p.Description,
 		UsedByExperiments: MapUsedByExperimentsToDto(p.Experiments),
 		CreatedAt:         p.CreatedAt,
-		UpdatedAt:         p.UpdatedAt,
+		UpdatedAt:         *p.UpdatedAt,
 	}
 }
 
@@ -33,7 +37,7 @@ func MapStepsToDto(step []ProcedureStep) []Steps {
 			Index:       s.Index,
 			StepType:    s.StepType,
 			CreatedAt:   s.CreatedAt,
-			UpdatedAt:   s.UpdatedAt,
+			UpdatedAt:   *s.UpdatedAt,
 		})
 	}
 	return result
@@ -47,7 +51,7 @@ func MapProcedureToDto(p *Procedure) ProcedureResponseDto {
 		UsedByExperiments: MapUsedByExperimentsToDto(p.Experiments),
 		Steps:             MapStepsToDto(p.Steps),
 		CreatedAt:         p.CreatedAt,
-		UpdatedAt:         p.UpdatedAt,
+		UpdatedAt:         *p.UpdatedAt,
 	}
 }
 
@@ -60,7 +64,39 @@ func MapProceduresToDto(procedures []Procedure) []ProcedureListResponseDto {
 			Description:       p.Description,
 			UsedByExperiments: MapUsedByExperimentsToDto(p.Experiments),
 			CreatedAt:         p.CreatedAt,
-			UpdatedAt:         p.UpdatedAt,
+			UpdatedAt:         *p.UpdatedAt,
+		})
+	}
+	return result
+}
+
+func MapCreateDtoToProcedure(p *CreateProcedureDto) *Procedure {
+	return &Procedure{
+		Title:       p.Title,
+		Description: p.Description,
+		Steps:       MapCreateDtoToProcedureStep(p.Steps),
+		Experiments: MapCreateDtoToProcedureExperimentAssignment(p.ExperimentAssignments),
+	}
+}
+
+func MapCreateDtoToProcedureStep(s []CreateStepDto) []ProcedureStep {
+	result := make([]ProcedureStep, 0, len(s))
+	for _, step := range s {
+		result = append(result, ProcedureStep{
+			Title:       step.Title,
+			Description: step.Description,
+			Index:       step.Index,
+			StepType:    step.StepType,
+		})
+	}
+	return result
+}
+
+func MapCreateDtoToProcedureExperimentAssignment(u []CreateExperimentAssignmentDto) []ProcedureExperimentAssignment {
+	result := make([]ProcedureExperimentAssignment, 0, len(u))
+	for _, usedByExperiment := range u {
+		result = append(result, ProcedureExperimentAssignment{
+			ExperimentID: uuid.MustParse(usedByExperiment.ID),
 		})
 	}
 	return result
