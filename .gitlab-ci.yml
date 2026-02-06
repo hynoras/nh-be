@@ -27,7 +27,6 @@ default:
 # Lint
 # -------------------------
 lint:
-
   extends: .go-default
   stage: lint
   script:
