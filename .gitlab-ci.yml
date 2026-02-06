@@ -27,7 +27,7 @@ default:
 # Lint
 # -------------------------
 lint:
-  extends: .go-default
+  extends: .go_default
   stage: lint
   script:
     - echo "Checking code..."
@@ -42,7 +42,7 @@ lint:
 # Unit Tests
 # -------------------------
 unit_test:
-  extends: .go-default
+  extends: .go_default
   stage: test
   script:
     - echo "Running experiment result..."
@@ -72,7 +72,6 @@ build:
 # Deploy (production)
 # -------------------------
 deploy_production:
-  extends: .go-default
   stage: deploy
   environment:
     name: production
