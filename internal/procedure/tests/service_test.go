@@ -360,3 +360,98 @@ func TestService_GetProcedureByID(t *testing.T) {
 		})
 	}
 }
+
+func TestService_CreateProcedure(t *testing.T) {
+	userID := uuid.New()
+	permissionError := errors.New("permission service unavailable")
+	repoError := errors.New("database error")
+
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		dto           *procedure.CreateProcedureDto
+		setupMocks    func(repo *procmocks.Repository, permSvc *mocks.Service)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name: "success_create",
+			ctx:  ContextWithUser(userID),
+			dto:  TestCreateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.Procedure")).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "forbidden_create",
+			ctx:  ContextWithUser(userID),
+			dto:  TestCreateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				// Repo should NOT be called
+			},
+			expectedError: constant.ErrForbidCreateProcedure,
+		},
+		{
+			name: "missing_user_in_context",
+			ctx:  context.Background(), // No user in context
+			dto:  TestCreateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				// Permission service and repo should NOT be called
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "user ID not found in context")
+			},
+		},
+		{
+			name: "permission_service_error",
+			ctx:  ContextWithUser(userID),
+			dto:  TestCreateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return(nil, permissionError)
+				// Repo should NOT be called
+			},
+			expectedError: permissionError,
+		},
+		{
+			name: "repo_error_propagated",
+			ctx:  ContextWithUser(userID),
+			dto:  TestCreateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.Procedure")).
+					Return(repoError)
+			},
+			expectedError: repoError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := procmocks.NewRepository(t)
+			mockPermSvc := mocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := procedure.NewService(mockRepo, mockPermSvc)
+
+			err := svc.CreateProcedure(tc.ctx, tc.dto)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

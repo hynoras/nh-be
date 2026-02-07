@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -166,6 +167,80 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet,
 				"/procedures/"+tc.procedureID,
 				nil)
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestHandler_CreateProcedure(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestBody    string
+		setupMocks     func(svc *proceduremocks.Service)
+		expectedStatus int
+	}{
+		{
+			name:        "success_created",
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
+					Return(nil)
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:        "invalid_request_body",
+			requestBody: `{"title":""}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "CreateProcedure")
+			},
+			expectedStatus: http.StatusUnprocessableEntity,
+		},
+		{
+			name:        "forbidden_create",
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
+					Return(constant.ErrForbidCreateProcedure)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:        "procedure_already_exists",
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
+					Return(constant.ErrProcedureAlreadyExists)
+			},
+			expectedStatus: http.StatusConflict,
+		},
+		{
+			name:        "internal_server_error",
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
+					Return(errors.New("internal server error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := proceduremocks.NewService(t)
+			tc.setupMocks(mockSvc)
+
+			router := utils.SetupTestRouter(http.MethodPost, "/procedures",
+				procedure.CreateProcedureHandler(mockSvc))
+
+			req := httptest.NewRequest(http.MethodPost,
+				"/procedures",
+				strings.NewReader(tc.requestBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()

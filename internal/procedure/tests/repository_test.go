@@ -580,3 +580,242 @@ func TestRepository_FindByID(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_CreateProcedure(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupMock     func(mock sqlmock.Sqlmock, proc *procedure.Procedure)
+		procedureFunc func() *procedure.Procedure
+		ctx           func() context.Context
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name: "success_minimal",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(proc.ID, time.Now()))
+				mock.ExpectCommit()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				return CreateValidProcedure()
+			},
+			ctx:           func() context.Context { return context.Background() },
+			expectedError: nil,
+		},
+		{
+			name: "success_full",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+
+				// Insert procedure
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(proc.ID, time.Now()))
+
+				// Insert steps
+				for _, step := range proc.Steps {
+					mock.ExpectQuery(`INSERT INTO "procedure_steps"`).
+						WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+							AddRow(step.ID, time.Now()))
+				}
+
+				// Insert experiment assignments
+				for _, exp := range proc.Experiments {
+					mock.ExpectQuery(`INSERT INTO "procedure_experiment_assignments"`).
+						WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+							AddRow(exp.ID, time.Now()))
+				}
+
+				mock.ExpectCommit()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				procID := uuid.New()
+				exp1ID := uuid.New()
+
+				return &procedure.Procedure{
+					ID:          procID,
+					Title:       "Full Test Procedure",
+					Description: "Full Test Description",
+					Version:     1,
+					ParentID:    nil,
+					Steps: []procedure.ProcedureStep{
+						{
+							ID:          uuid.New(),
+							ProcedureID: procID,
+							Index:       1,
+							Title:       "Step 1",
+							Description: "Desc 1",
+							StepType:    "manual",
+						},
+					},
+					Experiments: []procedure.ProcedureExperimentAssignment{
+						{
+							ID:           uuid.New(),
+							ProcedureID:  procID,
+							ExperimentID: exp1ID,
+						},
+					},
+				}
+			},
+			ctx:           func() context.Context { return context.Background() },
+			expectedError: nil,
+		},
+		{
+			name: "duplicate_title",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				return CreateValidProcedure()
+			},
+			ctx: func() context.Context { return context.Background() },
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+		{
+			name: "success_with_steps",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(proc.ID, time.Now()))
+
+				// GORM batches the steps insert into a single query
+				if len(proc.Steps) > 0 {
+					rows := sqlmock.NewRows([]string{"id", "created_at"})
+					for _, step := range proc.Steps {
+						rows.AddRow(step.ID, time.Now())
+					}
+					mock.ExpectQuery(`INSERT INTO "procedure_steps"`).
+						WillReturnRows(rows)
+				}
+
+				mock.ExpectCommit()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				return CreateProcedureWithSteps()
+			},
+			ctx:           func() context.Context { return context.Background() },
+			expectedError: nil,
+		},
+		{
+			name: "duplicate_proc_exp_assignment",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(proc.ID, time.Now()))
+
+				mock.ExpectQuery(`INSERT INTO "procedure_experiment_assignments"`).
+					WillReturnError(assert.AnError)
+
+				mock.ExpectRollback()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				return CreateProcedureWithExperiments()
+			},
+			ctx: func() context.Context { return context.Background() },
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+		{
+			name: "success_with_parent",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(proc.ID, time.Now()))
+				mock.ExpectCommit()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				parentID := uuid.New()
+				return CreateProcedureWithParent(parentID)
+			},
+			ctx:           func() context.Context { return context.Background() },
+			expectedError: nil,
+		},
+		{
+			name: "invalid_parent_id",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				invalidParentID := uuid.New()
+				return CreateProcedureWithParent(invalidParentID)
+			},
+			ctx: func() context.Context { return context.Background() },
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+		{
+			name: "context_cancelled",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				// No DB expectations since context is cancelled
+			},
+			procedureFunc: func() *procedure.Procedure {
+				return CreateValidProcedure()
+			},
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+		{
+			name: "db_error",
+			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedures"`).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			procedureFunc: func() *procedure.Procedure {
+				return CreateValidProcedure()
+			},
+			ctx: func() context.Context { return context.Background() },
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := utils.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			proc := tc.procedureFunc()
+			tc.setupMock(mock, proc)
+
+			err := repo.CreateProcedure(ctx, proc)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

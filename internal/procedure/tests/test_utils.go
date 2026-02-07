@@ -116,3 +116,112 @@ func TestProcedureDetailWithRelations() procedure.Procedure {
 		},
 	}
 }
+
+func CreateValidProcedure() *procedure.Procedure {
+	return &procedure.Procedure{
+		ID:          uuid.New(),
+		Title:       "Test Procedure",
+		Description: "Test Procedure Description",
+		Version:     1,
+		ParentID:    nil,
+	}
+}
+
+func CreateProcedureWithSteps() *procedure.Procedure {
+	procID := uuid.New()
+	return &procedure.Procedure{
+		ID:          procID,
+		Title:       "Test Procedure with Steps",
+		Description: "Test Procedure Description",
+		Version:     1,
+		ParentID:    nil,
+		Steps: []procedure.ProcedureStep{
+			{
+				ID:          uuid.New(),
+				ProcedureID: procID,
+				Index:       1,
+				Title:       "Step 1",
+				Description: "Description 1",
+				StepType:    "manual",
+			},
+			{
+				ID:          uuid.New(),
+				ProcedureID: procID,
+				Index:       2,
+				Title:       "Step 2",
+				Description: "Description 2",
+				StepType:    "manual",
+			},
+			{
+				ID:          uuid.New(),
+				ProcedureID: procID,
+				Index:       3,
+				Title:       "Step 3",
+				Description: "Description 3",
+				StepType:    "manual",
+			},
+		},
+	}
+}
+
+func CreateProcedureWithExperiments() *procedure.Procedure {
+	procID := uuid.New()
+	exp1ID := uuid.New()
+	exp2ID := uuid.New()
+
+	return &procedure.Procedure{
+		ID:          procID,
+		Title:       "Test Procedure with Experiments",
+		Description: "Test Procedure Description",
+		Version:     1,
+		ParentID:    nil,
+		Experiments: []procedure.ProcedureExperimentAssignment{
+			{
+				ID:           uuid.New(),
+				ProcedureID:  procID,
+				ExperimentID: exp1ID,
+			},
+			{
+				ID:           uuid.New(),
+				ProcedureID:  procID,
+				ExperimentID: exp2ID,
+			},
+		},
+	}
+}
+
+func CreateProcedureWithParent(parentID uuid.UUID) *procedure.Procedure {
+	return &procedure.Procedure{
+		ID:          uuid.New(),
+		Title:       "Child Procedure",
+		Description: "Child Procedure Description",
+		Version:     2,
+		ParentID:    &parentID,
+	}
+}
+
+func TestCreateProcedureDto() *procedure.CreateProcedureDto {
+	return &procedure.CreateProcedureDto{
+		Title:       "Test Procedure",
+		Description: "Test Procedure Description",
+		Steps: []procedure.CreateStepDto{
+			{
+				Index:       1,
+				Title:       "Step 1",
+				Description: "Step 1 Description",
+				StepType:    "action",
+			},
+			{
+				Index:       2,
+				Title:       "Step 2",
+				Description: "Step 2 Description",
+				StepType:    "wait",
+			},
+		},
+		ExperimentAssignments: []procedure.CreateExperimentAssignmentDto{
+			{
+				ID: uuid.New().String(),
+			},
+		},
+	}
+}
