@@ -455,3 +455,105 @@ func TestService_CreateProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestService_UpdateProcedure(t *testing.T) {
+	userID := uuid.New()
+	procedureID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+	dbError := errors.New("database error")
+
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		procedureID   uuid.UUID
+		dto           *procedure.UpdateProcedureDto
+		setupMocks    func(repo *procmocks.Repository, permSvc *mocks.Service)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name:        "permission_denied",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			dto:         TestUpdateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				// Repo should NOT be called
+			},
+			expectedError: constant.ErrForbidUpdateProcedure,
+		},
+		{
+			name:        "update_success",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			dto:         TestUpdateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "repo_returns_not_found",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			dto:         TestUpdateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
+					Return(constant.ErrProcedureNotFound)
+			},
+			expectedError: constant.ErrProcedureNotFound,
+		},
+		{
+			name:        "repo_returns_conflict",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			dto:         TestUpdateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
+					Return(constant.ErrOptimisticLockingConflict)
+			},
+			expectedError: constant.ErrOptimisticLockingConflict,
+		},
+		{
+			name:        "repo_returns_db_error",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			dto:         TestUpdateProcedureDto(),
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
+					Return(dbError)
+			},
+			expectedError: dbError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := procmocks.NewRepository(t)
+			mockPermSvc := mocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := procedure.NewService(mockRepo, mockPermSvc)
+
+			err := svc.UpdateProcedure(tc.ctx, tc.procedureID, tc.dto)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

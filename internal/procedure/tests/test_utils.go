@@ -225,3 +225,11 @@ func TestCreateProcedureDto() *procedure.CreateProcedureDto {
 		},
 	}
 }
+
+func TestUpdateProcedureDto() *procedure.UpdateProcedureDto {
+	return &procedure.UpdateProcedureDto{
+		Title:       "Updated Procedure Title",
+		Description: "Updated Procedure Description",
+		Version:     1,
+	}
+}

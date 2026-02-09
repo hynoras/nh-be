@@ -198,6 +198,54 @@ func (_c *Service_GetProcedureByID_Call) RunAndReturn(run func(context.Context, 
 	return _c
 }
 
+// UpdateProcedure provides a mock function with given fields: ctx, id, _a2
+func (_m *Service) UpdateProcedure(ctx context.Context, id uuid.UUID, _a2 *procedure.UpdateProcedureDto) error {
+	ret := _m.Called(ctx, id, _a2)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateProcedure")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *procedure.UpdateProcedureDto) error); ok {
+		r0 = rf(ctx, id, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Service_UpdateProcedure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProcedure'
+type Service_UpdateProcedure_Call struct {
+	*mock.Call
+}
+
+// UpdateProcedure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - _a2 *procedure.UpdateProcedureDto
+func (_e *Service_Expecter) UpdateProcedure(ctx interface{}, id interface{}, _a2 interface{}) *Service_UpdateProcedure_Call {
+	return &Service_UpdateProcedure_Call{Call: _e.mock.On("UpdateProcedure", ctx, id, _a2)}
+}
+
+func (_c *Service_UpdateProcedure_Call) Run(run func(ctx context.Context, id uuid.UUID, _a2 *procedure.UpdateProcedureDto)) *Service_UpdateProcedure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(*procedure.UpdateProcedureDto))
+	})
+	return _c
+}
+
+func (_c *Service_UpdateProcedure_Call) Return(_a0 error) *Service_UpdateProcedure_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Service_UpdateProcedure_Call) RunAndReturn(run func(context.Context, uuid.UUID, *procedure.UpdateProcedureDto) error) *Service_UpdateProcedure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewService creates a new instance of Service. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewService(t interface {

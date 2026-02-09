@@ -250,3 +250,104 @@ func TestHandler_CreateProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_UpdateProcedure(t *testing.T) {
+	validID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name           string
+		procedureID    string
+		requestBody    string
+		setupMocks     func(svc *proceduremocks.Service)
+		expectedStatus int
+	}{
+		{
+			name:        "invalid_uuid",
+			procedureID: "invalid",
+			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "UpdateProcedure")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_body",
+			procedureID: validID.String(),
+			requestBody: `{"title":""}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "UpdateProcedure")
+			},
+			expectedStatus: http.StatusUnprocessableEntity,
+		},
+		{
+			name:        "update_success",
+			procedureID: validID.String(),
+			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "forbidden_update",
+			procedureID: validID.String(),
+			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
+					Return(constant.ErrForbidUpdateProcedure)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:        "procedure_not_found",
+			procedureID: validID.String(),
+			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
+					Return(constant.ErrProcedureNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:        "version_conflict",
+			procedureID: validID.String(),
+			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
+					Return(constant.ErrOptimisticLockingConflict)
+			},
+			expectedStatus: http.StatusConflict,
+		},
+		{
+			name:        "unexpected_error",
+			procedureID: validID.String(),
+			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
+					Return(errors.New("unexpected database error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := proceduremocks.NewService(t)
+			tc.setupMocks(mockSvc)
+
+			router := utils.SetupTestRouter(http.MethodPut, "/procedures/:procedureId",
+				procedure.UpdateProcedureHandler(mockSvc))
+
+			req := httptest.NewRequest(http.MethodPut,
+				"/procedures/"+tc.procedureID,
+				strings.NewReader(tc.requestBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}

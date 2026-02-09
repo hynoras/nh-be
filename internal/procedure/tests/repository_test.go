@@ -819,3 +819,164 @@ func TestRepository_CreateProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_UpdateProcedure(t *testing.T) {
+	testID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name          string
+		id            uuid.UUID
+		procedureFunc func() *procedure.Procedure
+		setupMock     func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name: "update_success",
+			id:   testID,
+			procedureFunc: func() *procedure.Procedure {
+				return &procedure.Procedure{
+					Title:       "Updated Title",
+					Description: "Updated Description",
+					Version:     1,
+					UpdatedAt:   utils.TimePtr(time.Now()),
+				}
+			},
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
+				// GORM wraps Updates in a transaction
+				mock.ExpectBegin()
+				// Expect UPDATE query to succeed with 1 row affected
+				// Don't use WithArgs for Updates() with map - GORM handles it internally
+				mock.ExpectExec(`UPDATE "procedures" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name: "update_db_error",
+			id:   testID,
+			procedureFunc: func() *procedure.Procedure {
+				return &procedure.Procedure{
+					Title:       "Updated Title",
+					Description: "Updated Description",
+					Version:     1,
+					UpdatedAt:   utils.TimePtr(time.Now()),
+				}
+			},
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				// Expect UPDATE query to return error
+				mock.ExpectExec(`UPDATE "procedures" SET`).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name: "update_not_found",
+			id:   testID,
+			procedureFunc: func() *procedure.Procedure {
+				return &procedure.Procedure{
+					Title:       "Updated Title",
+					Description: "Updated Description",
+					Version:     1,
+					UpdatedAt:   utils.TimePtr(time.Now()),
+				}
+			},
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				// UPDATE succeeds but affects 0 rows
+				mock.ExpectExec(`UPDATE "procedures" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+
+				// COUNT query returns 0 (procedure not found)
+				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedures" WHERE id = \$1`).
+					WithArgs(id).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+			},
+			expectedError: constant.ErrProcedureNotFound,
+		},
+		{
+			name: "update_version_conflict",
+			id:   testID,
+			procedureFunc: func() *procedure.Procedure {
+				return &procedure.Procedure{
+					Title:       "Updated Title",
+					Description: "Updated Description",
+					Version:     1, // Version mismatch
+					UpdatedAt:   utils.TimePtr(time.Now()),
+				}
+			},
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				// UPDATE succeeds but affects 0 rows (version mismatch)
+				mock.ExpectExec(`UPDATE "procedures" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+
+				// COUNT query returns 1 (procedure exists but version mismatch)
+				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedures" WHERE id = \$1`).
+					WithArgs(id).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+			},
+			expectedError: constant.ErrOptimisticLockingConflict,
+		},
+		{
+			name: "update_count_error",
+			id:   testID,
+			procedureFunc: func() *procedure.Procedure {
+				return &procedure.Procedure{
+					Title:       "Updated Title",
+					Description: "Updated Description",
+					Version:     1,
+					UpdatedAt:   utils.TimePtr(time.Now()),
+				}
+			},
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
+				mock.ExpectBegin()
+				// UPDATE succeeds but affects 0 rows
+				mock.ExpectExec(`UPDATE "procedures" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+
+				// COUNT query returns error
+				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedures" WHERE id = \$1`).
+					WithArgs(id).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				// The error should be the count query error, not wrapped
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := utils.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := context.Background()
+
+			proc := tc.procedureFunc()
+			tc.setupMock(mock, tc.id, proc)
+
+			err := repo.UpdateProcedure(ctx, tc.id, proc)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
