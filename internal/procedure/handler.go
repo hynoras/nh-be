@@ -97,3 +97,37 @@ func CreateProcedureHandler(s Service) gin.HandlerFunc {
 		utils.MakeSuccessResponse(c, http.StatusCreated, "Procedure created successfully", nil)
 	}
 }
+
+// UpdateProcedureHandler godoc
+// @Summary Update a procedure
+// @Description Update a procedure
+// @Tags Procedures
+// @Accept json
+// @Produce json
+// @Param request body UpdateProcedureDto true "Procedure update details"
+// @Success 200 {object} utils.SuccessResponse "Procedure updated successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
+// @Failure 422 {object} utils.ErrorResponse "Validation failed"
+// @Failure 500 {object} utils.ErrorResponse "Failed to update procedure"
+// @Security SessionAuth
+// @Router /procedures/:procedureId [put]
+func UpdateProcedureHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		procedureId, idErr := utils.ValidateUUID(c, c.Param("procedureId"))
+		if idErr != nil {
+			return
+		}
+
+		var dto UpdateProcedureDto
+		if err := utils.ValidateRequestFormat(c, &dto); err != nil {
+			return
+		}
+
+		serviceErr := s.UpdateProcedure(c.Request.Context(), *procedureId, &dto)
+		if utils.MakeServiceErrorResponse(c, serviceErr) {
+			return
+		}
+		utils.MakeSuccessResponse(c, http.StatusOK, "Procedure updated successfully", nil)
+	}
+}

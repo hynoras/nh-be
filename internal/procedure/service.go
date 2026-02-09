@@ -14,8 +14,7 @@ type Service interface {
 	GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error)
 	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
 	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
-	// Create(ctx context.Context, procedure *Procedure) error
-	// Update(ctx context.Context, procedure *Procedure) error
+	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error
 	// Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -107,9 +106,14 @@ func (s *service) CreateProcedure(ctx context.Context, procedure *CreateProcedur
 	return repoErr
 }
 
-// func (s *service) Update(ctx context.Context, procedure *Procedure) error {
-// 	return s.repository.Update(ctx, procedure)
-// }
+func (s *service) UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error {
+	permErr := s.CanManageProcedure(ctx, id, constant.Update)
+	if permErr != nil {
+		return permErr
+	}
+	repoErr := s.repository.UpdateProcedure(ctx, id, MapUpdateDtoToProcedure(procedure))
+	return repoErr
+}
 
 // func (s *service) Delete(ctx context.Context, id uuid.UUID) error {
 // 	return s.repository.Delete(ctx, id)

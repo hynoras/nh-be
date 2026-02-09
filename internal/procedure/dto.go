@@ -60,3 +60,9 @@ type CreateProcedureDto struct {
 	Steps                 []CreateStepDto                 `json:"steps" binding:"omitempty,dive"`
 	ExperimentAssignments []CreateExperimentAssignmentDto `json:"assigned_experiments" binding:"omitempty,dive"`
 }
+
+type UpdateProcedureDto struct {
+	Title       string `json:"title" binding:"omitempty,gt=0,min=3,max=200"`
+	Description string `json:"description" binding:"omitempty,min=5,max=255"`
+	Version     int    `json:"version" binding:"required"`
+}

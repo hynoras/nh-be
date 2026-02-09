@@ -15,7 +15,7 @@ type Repository interface {
 	FindAll(ctx context.Context, search string, offset, limit int, withExperiments bool) ([]Procedure, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID, withSteps, withExperiments bool) (*Procedure, error)
 	CreateProcedure(ctx context.Context, procedure *Procedure) error
-	// Update(ctx context.Context, procedure *Procedure) error
+	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
 	// Delete(ctx context.Context, id uuid.UUID) error
 	WithTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
@@ -77,9 +77,33 @@ func (r *repository) CreateProcedure(ctx context.Context, procedure *Procedure) 
 	return r.db.WithContext(ctx).Create(procedure).Error
 }
 
-// func (r *repository) Update(ctx context.Context, procedure *Procedure) error {
-// 	return r.db.WithContext(ctx).Save(procedure).Error
-// }
+func (r *repository) UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error {
+	fields := map[string]interface{}{
+		"title":       procedure.Title,
+		"description": procedure.Description,
+		"updated_at":  procedure.UpdatedAt,
+		"version":     gorm.Expr("version + 1"),
+	}
+
+	dbResult := r.db.WithContext(ctx).Model(&Procedure{}).Where("id = ? AND version = ?", id, procedure.Version).Updates(fields)
+	if dbResult.Error != nil {
+		return dbResult.Error
+	}
+
+	if dbResult.RowsAffected == 0 {
+		var count int64
+		err := r.db.Model(&Procedure{}).Where("id = ?", id).Count(&count).Error
+		if err != nil {
+			return err
+		}
+
+		if count == 0 {
+			return constant.ErrProcedureNotFound
+		}
+		return constant.ErrOptimisticLockingConflict
+	}
+	return nil
+}
 
 // func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {
 // 	return r.db.WithContext(ctx).Delete(&Procedure{}, id).Error

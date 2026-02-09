@@ -1,6 +1,9 @@
 package procedure
 
 import (
+	"nh-be/utils"
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -100,4 +103,13 @@ func MapCreateDtoToProcedureExperimentAssignment(u []CreateExperimentAssignmentD
 		})
 	}
 	return result
+}
+
+func MapUpdateDtoToProcedure(p *UpdateProcedureDto) *Procedure {
+	return &Procedure{
+		Title:       p.Title,
+		Description: p.Description,
+		UpdatedAt:   utils.TimePtr(time.Now()),
+		Version:     p.Version,
+	}
 }
