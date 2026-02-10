@@ -46,6 +46,6 @@ func ConnectDatabase() *gorm.DB {
 	sqlDB.SetMaxOpenConns(10)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
-	log.Println("Connected to PostgreSQL")
+	log.Println("Successfully connected to PostgreSQL")
 	return db
 }

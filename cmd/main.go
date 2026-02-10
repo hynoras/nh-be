@@ -71,6 +71,7 @@ func main() {
 		&experiment.Experiment{},
 		&experimentResult.ExperimentResult{},
 	)
+	config.ConnectRabbitMQ()
 	sqlDB, _ := db.DB()
 	defer func() {
 		if sqlDB != nil {
