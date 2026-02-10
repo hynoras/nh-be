@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"nh-be/config/mq"
 	docs "nh-be/docs"
 
 	swaggerfiles "github.com/swaggo/files"
@@ -71,14 +72,25 @@ func main() {
 		&experiment.Experiment{},
 		&experimentResult.ExperimentResult{},
 	)
-	config.ConnectRabbitMQ()
+
+	conn, err := mq.NewRabbitMQConnection()
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+
 	sqlDB, _ := db.DB()
 	defer func() {
 		if sqlDB != nil {
 			sqlDB.Close()
 			log.Println("Database connection closed")
 		}
+		if conn != nil {
+			conn.Close()
+			log.Println("RabbitMQ connection closed")
+		}
 	}()
+
+	//utils.SendEmail("Resend <onboarding@resend.dev>", "hynoras1@gmail.com", "Test", "<h1>Test</h1>")
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{

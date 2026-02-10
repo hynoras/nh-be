@@ -20,6 +20,8 @@ require (
 	gorm.io/gorm v1.31.0
 )
 
+require github.com/resend/resend-go/v3 v3.1.0 // indirect
+
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
