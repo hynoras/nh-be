@@ -1,17 +1,15 @@
 package utils
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/resend/resend-go/v3"
 )
 
-func SendEmail(from, to, subject, htmlContent string) {
-
+func NewResendClient() *resend.Client {
 	apiKey := MustEnv("RESEND_API_KEY")
+	return resend.NewClient(apiKey)
+}
 
-	client := resend.NewClient(apiKey)
+func SendEmail(client *resend.Client, from, to, subject, htmlContent string) error {
 
 	params := &resend.SendEmailRequest{
 		From:    from,
@@ -22,8 +20,8 @@ func SendEmail(from, to, subject, htmlContent string) {
 
 	_, err := client.Emails.Send(params)
 	if err != nil {
-		log.Fatalf("Failed to send email: %v", err)
+		return err
 	}
 
-	fmt.Println("Email sent successfully")
+	return nil
 }

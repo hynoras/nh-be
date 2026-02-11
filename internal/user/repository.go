@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"nh-be/internal/permission"
 	"nh-be/utils"
 	"strings"
@@ -53,6 +54,9 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&u)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, ErrUserNotFound
+	}
 	if result.Error != nil {
 		return nil, result.Error
 	}

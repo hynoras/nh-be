@@ -8,16 +8,17 @@ import (
 	"nh-be/internal/user"
 
 	"github.com/gin-gonic/gin"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
 // SetupRoutes initializes all application routes
-func SetupRoutes(r *gin.Engine, db *gorm.DB) {
+func SetupRoutes(r *gin.Engine, db *gorm.DB, ch *amqp.Channel) {
 	// API version 1 group
 	v1 := r.Group("/api/v1")
 
 	// Register auth routes (public)
-	auth.RegisterRoutes(v1, db)
+	auth.RegisterRoutes(v1, db, ch)
 
 	// Protected routes group
 	protected := v1.Group("")

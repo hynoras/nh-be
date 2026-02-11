@@ -15,6 +15,7 @@ import (
 )
 
 type Service interface {
+	SignUp(ctx context.Context, req SignUpDto) (*user.User, error)
 	Login(ctx context.Context, email, password string) (*user.User, []string, error)
 	Logout(c *gin.Context) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
@@ -23,10 +24,45 @@ type Service interface {
 type service struct {
 	userRepo          user.Repository
 	permissionService permission.Service
+	authPublisher     AuthPublisher
 }
 
-func NewService(userRepo user.Repository, permissionService permission.Service) Service {
-	return &service{userRepo: userRepo, permissionService: permissionService}
+func NewService(userRepo user.Repository, permissionService permission.Service, authPublisher AuthPublisher) Service {
+	return &service{userRepo: userRepo, permissionService: permissionService, authPublisher: authPublisher}
+}
+
+func (s *service) SignUp(ctx context.Context, req SignUpDto) (*user.User, error) {
+	u, err := s.userRepo.FindByEmail(ctx, req.Email)
+
+	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
+		return nil, err
+	}
+	if u != nil {
+		return nil, errors.New("email already exists")
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &user.User{
+		Email:    req.Email,
+		Password: hashedPassword,
+	}
+
+	// repoErr := s.userRepo.Create(ctx, user)
+	// if repoErr != nil {
+	// 	return nil, repoErr
+	// }
+
+	// Publish event to RabbitMQ
+	err = s.authPublisher.PublishSendVerificationEmail(ctx, user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, error) {

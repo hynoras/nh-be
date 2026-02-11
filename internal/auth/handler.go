@@ -130,3 +130,20 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 		utils.MakeSuccessResponse(c, http.StatusOK, "User password changed successfully", nil)
 	}
 }
+
+func SignUpHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req SignUpDto
+		if err := c.ShouldBindJSON(&req); err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
+			return
+		}
+
+		user, err := s.SignUp(c.Request.Context(), req)
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Failed to create user", err.Error())
+			return
+		}
+		utils.MakeSuccessResponse(c, http.StatusOK, "User created successfully", user)
+	}
+}

@@ -28,13 +28,14 @@ import (
 	"syscall"
 	"time"
 
-	"nh-be/config/mq"
 	docs "nh-be/docs"
+	"nh-be/mq"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/config"
+	"nh-be/internal/auth"
 	experimentResult "nh-be/internal/experiment/result"
 	experiment "nh-be/internal/experiment/root"
 	"nh-be/internal/permission"
@@ -78,19 +79,60 @@ func main() {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
 
+	pubCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a publisher channel: %v", err)
+	}
+
+	conCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a consumer channel: %v", err)
+	}
+
+	dqErr := mq.DeclareQueues(pubCh, auth.SendVerificationEmailQueue)
+	if dqErr != nil {
+		log.Fatalf("Failed to declare queue: %v", dqErr)
+	}
+
+	deErr := mq.DeclareExchange(conCh, auth.AuthExchangeName)
+	if deErr != nil {
+		log.Fatalf("Failed to declare exchange: %v", deErr)
+	}
+
+	bqErr := mq.BindQueue(
+		conCh,
+		auth.SendVerificationEmailQueue,
+		auth.UserRegisteredRoutingKey,
+		auth.AuthExchangeName,
+	)
+	if bqErr != nil {
+		log.Fatalf("Failed to bind queue: %v", bqErr)
+	}
+
+	conCtx, conCancel := context.WithCancel(context.Background())
+	authConsumer := auth.NewAuthConsumer(conCh)
+	go authConsumer.ConsumeSendVerificationEmail(conCtx)
+	defer conCancel()
+
 	sqlDB, _ := db.DB()
 	defer func() {
-		if sqlDB != nil {
-			sqlDB.Close()
-			log.Println("Database connection closed")
+		if pubCh != nil {
+			pubCh.Close()
+			log.Println("RabbitMQ publisher channel closed")
+		}
+		if conCh != nil {
+			conCh.Close()
+			log.Println("RabbitMQ consumer channel closed")
 		}
 		if conn != nil {
 			conn.Close()
 			log.Println("RabbitMQ connection closed")
 		}
+		if sqlDB != nil {
+			sqlDB.Close()
+			log.Println("Database connection closed")
+		}
 	}()
-
-	//utils.SendEmail("Resend <onboarding@resend.dev>", "hynoras1@gmail.com", "Test", "<h1>Test</h1>")
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
@@ -123,7 +165,7 @@ func main() {
 		})
 	})
 
-	router.SetupRoutes(r, db)
+	router.SetupRoutes(r, db, pubCh)
 
 	port := os.Getenv("PORT")
 	if port == "" {

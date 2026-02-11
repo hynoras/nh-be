@@ -6,16 +6,19 @@ import (
 	"nh-be/internal/user"
 
 	"github.com/gin-gonic/gin"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, ch *amqp.Channel) {
 	authGroup := rg.Group("/auth")
 	userRepo := user.NewRepository(db)
 	permissionRepo := permission.NewRepository(db)
 	permissionService := permission.NewService(permissionRepo)
-	authService := NewService(userRepo, permissionService)
+	authPublisher := NewAuthPublisher(ch)
+	authService := NewService(userRepo, permissionService, authPublisher)
 
+	authGroup.POST("/signup", SignUpHandler(authService))
 	authGroup.POST("/login", LoginHandler(authService))
 	authGroup.POST("/logout", LogoutHandler(authService))
 	authGroup.Use(middleware.RequireAuth()).PUT("change-password/:id", ChangePasswordHandler((authService)))
