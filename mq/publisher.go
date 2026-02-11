@@ -6,11 +6,11 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func Publish(ctx context.Context, ch *amqp.Channel, exchange, name string, body string, mandatory, immediate bool) error {
+func Publish(ctx context.Context, ch *amqp.Channel, exchange, key, body string, mandatory, immediate bool) error {
 	return ch.PublishWithContext(
 		ctx,
 		exchange,
-		name,
+		key,
 		mandatory,
 		immediate,
 		amqp.Publishing{

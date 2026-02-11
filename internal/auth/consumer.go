@@ -28,7 +28,7 @@ func (s *authConsumer) ConsumeSendVerificationEmail(ctx context.Context) error {
 		ctx,
 		s.channel,
 		amqp.Queue{
-			Name: "email",
+			Name: SendVerificationEmailQueue,
 		},
 	)
 
@@ -57,7 +57,6 @@ func (s *authConsumer) ConsumeSendVerificationEmail(ctx context.Context) error {
 				d.Nack(false, false)
 				continue
 			}
-			log.Println("Email sent successfully")
 			d.Ack(false)
 		}
 	}()

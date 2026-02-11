@@ -29,7 +29,7 @@ func (s *authPublisher) PublishSendVerificationEmail(ctx context.Context, email 
 		return err
 	}
 
-	err = mq.Publish(ctx, s.channel, AuthExchangeName, SendVerificationEmailQueue, string(body), false, false)
+	err = mq.Publish(ctx, s.channel, AuthExchangeName, UserRegisteredRoutingKey, string(body), false, false)
 	if err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		return err
