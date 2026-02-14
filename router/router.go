@@ -3,33 +3,34 @@ package router
 import (
 	"nh-be/internal/auth"
 	"nh-be/internal/experiment"
+	"nh-be/internal/infra"
 	"nh-be/internal/middleware"
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
 
 	"github.com/gin-gonic/gin"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 // SetupRoutes initializes all application routes
-func SetupRoutes(r *gin.Engine, db *gorm.DB, ch *amqp.Channel) {
+func SetupRoutes(r *gin.Engine, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel) {
+	sessionStore := infra.NewSessionStore(rdb)
 	// API version 1 group
 	v1 := r.Group("/api/v1")
 
 	// Register auth routes (public)
-	auth.RegisterRoutes(v1, db, ch)
+	auth.RegisterRoutes(v1, db, rdb, ch)
 
 	// Protected routes group
 	protected := v1.Group("")
-	protected.Use(middleware.RequireAuth())
+	protected.Use(middleware.RequireAuth(sessionStore))
 
-	// Register protected user routes
-	user.RegisterRoutes(protected, db)
+	user.RegisterRoutes(protected, db, rdb)
 	permission.RegisterRoutes(protected, db)
 	experiment.RegisterRoutes(protected, db)
 
-	// 404 handler for undefined routes
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{
 			"success": false,
@@ -38,7 +39,6 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, ch *amqp.Channel) {
 		})
 	})
 
-	// 405 handler for unsupported methods on existing routes
 	r.NoMethod(func(c *gin.Context) {
 		c.JSON(405, gin.H{
 			"success": false,

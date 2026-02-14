@@ -125,6 +125,9 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, u *User) error {
 		if u.Email != "" {
 			basicFields["email"] = u.Email
 		}
+		if u.IsVerified {
+			basicFields["is_verified"] = u.IsVerified
+		}
 		basicFields["updated_at"] = u.UpdatedAt
 
 		if err := tx.Model(&User{}).Where("id = ?", id).Updates(basicFields).Error; err != nil {

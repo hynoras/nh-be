@@ -3,27 +3,28 @@ package auth
 import (
 	"context"
 	"errors"
+	"time"
 
 	"nh-be/utils"
 
+	"nh-be/internal/infra"
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type Service interface {
 	SignUp(ctx context.Context, req SignUpDto) error
-	//VerifyEmail(ctx context.Context, token string) error
-	Login(ctx context.Context, email, password string) (*user.User, []string, error)
-	Logout(c *gin.Context) error
+	VerifyEmail(ctx context.Context, token string) error
+	Login(ctx context.Context, email, password string) (*user.User, []string, string, error)
+	Logout(ctx context.Context, sessionId string) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 	CreateVerificationToken(ctx context.Context, userId uuid.UUID, tokenType VerificationTokenType) (CreatedTokenDto, error)
 }
 
 type service struct {
+	sessionStore      infra.SessionStore
 	authRepo          Repository
 	userRepo          user.Repository
 	permissionService permission.Service
@@ -31,12 +32,14 @@ type service struct {
 }
 
 func NewService(
+	sessionStore infra.SessionStore,
 	authRepo Repository,
 	userRepo user.Repository,
 	permissionService permission.Service,
 	authPublisher AuthPublisher,
 ) Service {
 	return &service{
+		sessionStore:      sessionStore,
 		authRepo:          authRepo,
 		userRepo:          userRepo,
 		permissionService: permissionService,
@@ -131,30 +134,70 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	return nil
 }
 
-func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, error) {
+func (s *service) VerifyEmail(ctx context.Context, token string) error {
+	hashedToken := utils.HashToken(token)
+	existingToken, findErr := s.authRepo.FindVerificationTokenByCodeHash(hashedToken)
+	if findErr != nil {
+		return findErr
+	}
+	if existingToken.Type != VerifyEmail {
+		return ErrInvalidVerificationToken
+	}
+	if existingToken.ExpireAt.Before(time.Now()) {
+		return ErrVerificationTokenExpired
+	}
+
+	updateErr := s.userRepo.Update(ctx, existingToken.UserID, &user.User{
+		IsVerified: true,
+	})
+	if updateErr != nil {
+		return updateErr
+	}
+
+	deleteErr := s.authRepo.DeleteVerificationToken(existingToken)
+	if deleteErr != nil {
+		return deleteErr
+	}
+	return nil
+}
+
+func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, string, error) {
 	u, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, []string{}, err
+		return nil, []string{}, "", err
 	}
 	if u == nil {
-		return nil, []string{}, errors.New("invalid credentials")
+		return nil, []string{}, "", errors.New("invalid credentials")
 	}
 	if !utils.CheckPasswordHash(password, u.Password) {
-		return nil, []string{}, errors.New("invalid credentials")
+		return nil, []string{}, "", errors.New("invalid credentials")
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)
 	if err != nil {
-		return nil, []string{}, err
+		return nil, []string{}, "", err
 	}
 
-	return u, permissions, nil
+	sessionId, genErr := utils.GenerateVerificationToken()
+	if genErr != nil {
+		return nil, []string{}, "", genErr
+	}
+
+	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, u.ID)
+	if sessionErr != nil {
+		return nil, []string{}, "", sessionErr
+	}
+
+	return u, permissions, sessionId, nil
 }
 
-func (s *service) Logout(c *gin.Context) error {
-	sess := sessions.Default(c)
-	sess.Clear()
-	return sess.Save()
+func (s *service) Logout(ctx context.Context, sessionId string) error {
+	err := s.sessionStore.DeleteUserSession(ctx, sessionId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error {

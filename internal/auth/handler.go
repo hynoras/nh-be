@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"nh-be/utils"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +32,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		userRes, permRes, err := s.Login(c.Request.Context(), req.Email, req.Password)
+		userRes, permRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
 		if err != nil {
 			utils.MakeErrorResponse(
 				c,
@@ -44,18 +43,15 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		// Save user id to session
-		sess := sessions.Default(c)
-		sess.Set("user_id", userRes.ID.String())
-		if err := sess.Save(); err != nil {
-			utils.MakeErrorResponse(
-				c,
-				http.StatusInternalServerError,
-				"Session save failed",
-				err.Error(),
-			)
-			return
-		}
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "auth_session",
+			Value:    sessionId,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   8 * 60 * 60,
+		})
 
 		resp := LoginResponseDto{
 			User: UserResponseDto{
@@ -83,7 +79,18 @@ func LoginHandler(s Service) gin.HandlerFunc {
 // @Router /auth/logout [post]
 func LogoutHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if err := s.Logout(c); err != nil {
+		cookie, err := c.Request.Cookie("auth_session")
+		if err != nil {
+			utils.MakeErrorResponse(
+				c,
+				http.StatusUnauthorized,
+				"Unauthorized",
+				ErrSessionNotFound.Error(),
+			)
+			return
+		}
+
+		if err := s.Logout(c.Request.Context(), cookie.Value); err != nil {
 			utils.MakeErrorResponse(
 				c,
 				http.StatusInternalServerError,
