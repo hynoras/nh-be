@@ -41,11 +41,8 @@ import (
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
 	"nh-be/router"
-	"nh-be/utils"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -74,6 +71,8 @@ func main() {
 		&experiment.Experiment{},
 		&experimentResult.ExperimentResult{},
 	)
+
+	rdb := config.NewRedisClient()
 
 	conn, err := mq.NewRabbitMQConnection()
 	if err != nil {
@@ -133,6 +132,10 @@ func main() {
 			sqlDB.Close()
 			log.Println("Database connection closed")
 		}
+		if rdb != nil {
+			rdb.Close()
+			log.Println("Redis connection closed")
+		}
 	}()
 
 	r := gin.Default()
@@ -145,18 +148,6 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	secret := utils.MustEnv("SESSION_SECRET")
-
-	store := cookie.NewStore([]byte(secret))
-	store.Options(sessions.Options{
-		MaxAge:   8 * 60 * 60, // 8 hours
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	})
-	r.Use(sessions.Sessions("auth_session", store))
-
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -166,7 +157,7 @@ func main() {
 		})
 	})
 
-	router.SetupRoutes(r, db, pubCh)
+	router.SetupRoutes(r, db, rdb, pubCh)
 
 	port := os.Getenv("PORT")
 	if port == "" {
