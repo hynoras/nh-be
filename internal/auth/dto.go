@@ -27,3 +27,26 @@ type ChangePasswordDto struct {
 	NewPassword     string `json:"new_password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
+
+type SignUpDto struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+type CreatedTokenDto struct {
+	UserID    uuid.UUID             `json:"user_id"`
+	Type      VerificationTokenType `json:"type"`
+	Token     string                `json:"token"`
+	CreatedAt time.Time             `json:"created_at"`
+	ExpireAt  time.Time             `json:"expire_at"`
+}
+
+type CreateVerificationTokenDto struct {
+	Email string `json:"email" binding:"required,email"`
+	Type  string `json:"type" binding:"required, oneof=verify_email reset_password"`
+}
+
+type SendVerificationEmailDto struct {
+	Email string
+	Token string
+}

@@ -120,7 +120,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 			AssignedPermissionGroups: permissionGroups,
 			CreatedAt:                time.Now(),
 		}
-		err := txRepo.Create(ctx, userToCreate)
+		_, err := txRepo.Create(ctx, userToCreate)
 		if err != nil {
 			return err
 		}

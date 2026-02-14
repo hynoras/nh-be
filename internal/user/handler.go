@@ -6,7 +6,8 @@ import (
 	"nh-be/utils"
 	"strings"
 
-	"github.com/gin-contrib/sessions"
+	"nh-be/internal/infra"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -166,20 +167,20 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 // @Failure 500 {object} utils.ErrorResponse "Failed to get me"
 // @Security SessionAuth
 // @Router /users/me [get]
-func GetMeHandler(s Service) gin.HandlerFunc {
+func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var userId = sessions.Default(c).Get("user_id")
-		if userId == nil {
+		cookie, err := c.Request.Cookie("auth_session")
+		if err != nil {
+			utils.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
+			return
+		}
+		userId, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
+		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
 			return
 		}
 
-		parsedId, idErr := utils.ValidateUUID(c, userId.(string))
-		if idErr != nil {
-			return
-		}
-
-		user, perm, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, true)
+		user, perm, serviceErr := s.GetUserById(c.Request.Context(), userId, true)
 		switch serviceErr {
 		case gorm.ErrRecordNotFound:
 			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())

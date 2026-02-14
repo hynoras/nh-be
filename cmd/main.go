@@ -29,21 +29,20 @@ import (
 	"time"
 
 	docs "nh-be/docs"
+	"nh-be/mq"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/config"
+	"nh-be/internal/auth"
 	experimentResult "nh-be/internal/experiment/result"
 	experiment "nh-be/internal/experiment/root"
 	"nh-be/internal/permission"
 	"nh-be/internal/user"
 	"nh-be/router"
-	"nh-be/utils"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -64,6 +63,7 @@ func main() {
 
 	db := config.ConnectDatabase()
 	db.AutoMigrate(
+		&auth.VerificationToken{},
 		&user.User{},
 		&permission.Permission{},
 		&permission.PermissionGroup{},
@@ -71,11 +71,70 @@ func main() {
 		&experiment.Experiment{},
 		&experimentResult.ExperimentResult{},
 	)
+
+	rdb := config.NewRedisClient()
+
+	conn, err := mq.NewRabbitMQConnection()
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+
+	pubCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a publisher channel: %v", err)
+	}
+
+	conCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a consumer channel: %v", err)
+	}
+
+	dqErr := mq.DeclareQueues(pubCh, auth.SendVerificationEmailQueue)
+	if dqErr != nil {
+		log.Fatalf("Failed to declare queue: %v", dqErr)
+	}
+
+	deErr := mq.DeclareExchange(conCh, auth.AuthExchangeName)
+	if deErr != nil {
+		log.Fatalf("Failed to declare exchange: %v", deErr)
+	}
+
+	bqErr := mq.BindQueue(
+		conCh,
+		auth.SendVerificationEmailQueue,
+		auth.UserRegisteredRoutingKey,
+		auth.AuthExchangeName,
+	)
+	if bqErr != nil {
+		log.Fatalf("Failed to bind queue: %v", bqErr)
+	}
+
+	conCtx, conCancel := context.WithCancel(context.Background())
+	authConsumer := auth.NewAuthConsumer(conCh)
+	go authConsumer.ConsumeSendVerificationEmail(conCtx)
+	defer conCancel()
+
 	sqlDB, _ := db.DB()
 	defer func() {
+		if pubCh != nil {
+			pubCh.Close()
+			log.Println("RabbitMQ publisher channel closed")
+		}
+		if conCh != nil {
+			conCh.Close()
+			log.Println("RabbitMQ consumer channel closed")
+		}
+		if conn != nil {
+			conn.Close()
+			log.Println("RabbitMQ connection closed")
+		}
 		if sqlDB != nil {
 			sqlDB.Close()
 			log.Println("Database connection closed")
+		}
+		if rdb != nil {
+			rdb.Close()
+			log.Println("Redis connection closed")
 		}
 	}()
 
@@ -89,18 +148,6 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	secret := utils.MustEnv("SESSION_SECRET")
-
-	store := cookie.NewStore([]byte(secret))
-	store.Options(sessions.Options{
-		MaxAge:   8 * 60 * 60, // 8 hours
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	})
-	r.Use(sessions.Sessions("auth_session", store))
-
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -110,7 +157,7 @@ func main() {
 		})
 	})
 
-	router.SetupRoutes(r, db)
+	router.SetupRoutes(r, db, rdb, pubCh)
 
 	port := os.Getenv("PORT")
 	if port == "" {

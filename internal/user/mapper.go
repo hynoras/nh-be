@@ -65,3 +65,13 @@ func MapUserToDto(user User) UserResponseDto {
 		CreatedAt:        user.CreatedAt,
 	}
 }
+
+func MapUserToCreatedUser(user User) CreatedUserDto {
+	return CreatedUserDto{
+		ID:         user.ID,
+		Username:   user.Username,
+		Email:      user.Email,
+		IsVerified: user.IsVerified,
+		CreatedAt:  user.CreatedAt,
+	}
+}

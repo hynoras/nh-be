@@ -2,4 +2,17 @@ package auth
 
 import "errors"
 
-var ErrUnauthenticated = errors.New("unauthenticated")
+var (
+	ErrVerficationTokenNotFound = errors.New("token not found")
+	ErrUnauthenticated          = errors.New("unauthenticated")
+	ErrEmailAlreadyExists       = errors.New("email already exists")
+	ErrVerificationTokenExpired = errors.New("token expired")
+	ErrInvalidVerificationToken = errors.New("invalid token, please check token type")
+	ErrSessionNotFound          = errors.New("session not found")
+)
+
+const (
+	AuthExchangeName           = "auth"
+	UserRegisteredRoutingKey   = "user.registered"
+	SendVerificationEmailQueue = "send-verification-email"
+)
