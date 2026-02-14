@@ -66,6 +66,7 @@ func main() {
 
 	db := config.ConnectDatabase()
 	db.AutoMigrate(
+		&auth.VerificationToken{},
 		&user.User{},
 		&permission.Permission{},
 		&permission.PermissionGroup{},

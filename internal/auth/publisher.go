@@ -10,7 +10,7 @@ import (
 )
 
 type AuthPublisher interface {
-	PublishSendVerificationEmail(ctx context.Context, email string) error
+	PublishSendVerificationEmail(ctx context.Context, dto SendVerificationEmailDto) error
 }
 
 type authPublisher struct {
@@ -21,10 +21,8 @@ func NewAuthPublisher(ch *amqp.Channel) AuthPublisher {
 	return &authPublisher{channel: ch}
 }
 
-func (s *authPublisher) PublishSendVerificationEmail(ctx context.Context, email string) error {
-	body, err := json.Marshal(map[string]string{
-		"email": email,
-	})
+func (s *authPublisher) PublishSendVerificationEmail(ctx context.Context, dto SendVerificationEmailDto) error {
+	body, err := json.Marshal(dto)
 	if err != nil {
 		return err
 	}

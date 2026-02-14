@@ -15,54 +15,120 @@ import (
 )
 
 type Service interface {
-	SignUp(ctx context.Context, req SignUpDto) (*user.User, error)
+	SignUp(ctx context.Context, req SignUpDto) error
+	//VerifyEmail(ctx context.Context, token string) error
 	Login(ctx context.Context, email, password string) (*user.User, []string, error)
 	Logout(c *gin.Context) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
+	CreateVerificationToken(ctx context.Context, userId uuid.UUID, tokenType VerificationTokenType) (CreatedTokenDto, error)
 }
 
 type service struct {
+	authRepo          Repository
 	userRepo          user.Repository
 	permissionService permission.Service
 	authPublisher     AuthPublisher
 }
 
-func NewService(userRepo user.Repository, permissionService permission.Service, authPublisher AuthPublisher) Service {
-	return &service{userRepo: userRepo, permissionService: permissionService, authPublisher: authPublisher}
+func NewService(
+	authRepo Repository,
+	userRepo user.Repository,
+	permissionService permission.Service,
+	authPublisher AuthPublisher,
+) Service {
+	return &service{
+		authRepo:          authRepo,
+		userRepo:          userRepo,
+		permissionService: permissionService,
+		authPublisher:     authPublisher,
+	}
 }
 
-func (s *service) SignUp(ctx context.Context, req SignUpDto) (*user.User, error) {
+func (s *service) sendVerificationEmail(ctx context.Context, userId uuid.UUID, email string, tokenType VerificationTokenType) error {
+	createdToken, tokenErr := s.CreateVerificationToken(ctx, userId, tokenType)
+	if tokenErr != nil {
+		return tokenErr
+	}
+
+	sendVerificationEmailDto := MapToSendVerificationEmailDto(email, createdToken.Token)
+
+	err := s.authPublisher.PublishSendVerificationEmail(ctx, sendVerificationEmailDto)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) CreateVerificationToken(
+	ctx context.Context,
+	userId uuid.UUID,
+	tokenType VerificationTokenType,
+) (CreatedTokenDto, error) {
+	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(userId)
+	if findErr != nil && !errors.Is(findErr, user.ErrUserNotFound) {
+		return CreatedTokenDto{}, findErr
+	}
+
+	if existingToken != nil {
+		deleteErr := s.authRepo.DeleteVerificationToken(existingToken)
+		if deleteErr != nil {
+			return CreatedTokenDto{}, deleteErr
+		}
+	}
+
+	generatedToken, genErr := utils.GenerateVerificationToken()
+	if genErr != nil {
+		return CreatedTokenDto{}, genErr
+	}
+
+	hashedToken := utils.HashToken(generatedToken)
+	verificationToken := MapCreateDtoToVerficationToken(userId, hashedToken, tokenType)
+
+	createdToken, createErr := s.authRepo.CreateVerificationToken(verificationToken)
+	if createErr != nil {
+		return CreatedTokenDto{}, createErr
+	}
+	mapToken := MapVerificationTokenToCreatedTokenDto(createdToken, generatedToken)
+
+	return mapToken, nil
+}
+
+func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	u, err := s.userRepo.FindByEmail(ctx, req.Email)
 
 	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
-		return nil, err
+		return err
 	}
+
 	if u != nil {
-		return nil, errors.New("email already exists")
+		err := s.sendVerificationEmail(ctx, u.ID, u.Email, VerifyEmail)
+		if err != nil {
+			return err
+		}
+	} else {
+		hashedPassword, err := utils.HashPassword(req.Password)
+		if err != nil {
+			return err
+		}
+
+		username := utils.ExtractUsernameFromEmail(req.Email)
+		userForm := MapSignUpDtoToUser(username, req.Email, hashedPassword)
+
+		createdUser, createErr := s.userRepo.Create(ctx, &userForm)
+		if createErr != nil {
+			return createErr
+		}
+
+		mapUser := user.MapUserToCreatedUser(createdUser)
+
+		sendEmailErr := s.sendVerificationEmail(ctx, mapUser.ID, mapUser.Email, VerifyEmail)
+		if sendEmailErr != nil {
+			return sendEmailErr
+		}
 	}
 
-	hashedPassword, err := utils.HashPassword(req.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	user := &user.User{
-		Email:    req.Email,
-		Password: hashedPassword,
-	}
-
-	// repoErr := s.userRepo.Create(ctx, user)
-	// if repoErr != nil {
-	// 	return nil, repoErr
-	// }
-
-	// Publish event to RabbitMQ
-	err = s.authPublisher.PublishSendVerificationEmail(ctx, user.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	return nil
 }
 
 func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, error) {

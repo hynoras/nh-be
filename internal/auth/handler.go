@@ -139,11 +139,11 @@ func SignUpHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		user, err := s.SignUp(c.Request.Context(), req)
+		err := s.SignUp(c.Request.Context(), req)
 		if err != nil {
 			utils.MakeErrorResponse(c, http.StatusBadRequest, "Failed to create user", err.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "User created successfully", user)
+		utils.MakeSuccessResponse(c, http.StatusOK, "User created successfully", nil)
 	}
 }

@@ -58,3 +58,11 @@ type UserInput struct {
 type DeleteUsersDto struct {
 	IDs []string `json:"ids"`
 }
+
+type CreatedUserDto struct {
+	ID         uuid.UUID `json:"id"`
+	Username   string    `json:"username"`
+	Email      string    `json:"email"`
+	IsVerified bool      `json:"is_verified"`
+	CreatedAt  time.Time `json:"created_at"`
+}

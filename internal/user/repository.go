@@ -12,7 +12,7 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, u *User) error
+	Create(ctx context.Context, u *User) (User, error)
 	FindAll(ctx context.Context, search string, page, pageSize int) ([]User, int64, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByUsername(ctx context.Context, username string) (*User, error)
@@ -33,8 +33,12 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, u *User) error {
-	return r.db.WithContext(ctx).Create(&u).Error
+func (r *repository) Create(ctx context.Context, u *User) (User, error) {
+	err := r.db.WithContext(ctx).Create(&u).Error
+	if err != nil {
+		return User{}, err
+	}
+	return *u, nil
 }
 
 func (r *repository) FindAll(ctx context.Context, search string, page, pageSize int) ([]User, int64, error) {

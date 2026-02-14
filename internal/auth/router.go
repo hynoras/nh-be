@@ -12,11 +12,12 @@ import (
 
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, ch *amqp.Channel) {
 	authGroup := rg.Group("/auth")
+	authRepo := NewRepository(db)
 	userRepo := user.NewRepository(db)
 	permissionRepo := permission.NewRepository(db)
 	permissionService := permission.NewService(permissionRepo)
 	authPublisher := NewAuthPublisher(ch)
-	authService := NewService(userRepo, permissionService, authPublisher)
+	authService := NewService(authRepo, userRepo, permissionService, authPublisher)
 
 	authGroup.POST("/signup", SignUpHandler(authService))
 	authGroup.POST("/login", LoginHandler(authService))
