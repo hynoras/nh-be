@@ -25,10 +25,10 @@ func NewRepository(db *gorm.DB) Repository {
 
 func (r *repository) FindVerificationTokenByUserId(userId uuid.UUID) (*VerificationToken, error) {
 	var token VerificationToken
-	err := r.db.Model(&VerificationToken{}).Where("code_hash = ?", userId).First(&token).Error
+	err := r.db.Model(&VerificationToken{}).Where("user_id = ?", userId).First(&token).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, ErrVerficationTokenNotFound
+			return nil, user.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (r *repository) FindVerificationTokenByCodeHash(codeHash string) (*Verifica
 	err := r.db.Model(&VerificationToken{}).Where("code_hash = ?", codeHash).First(&token).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, user.ErrUserNotFound
+			return nil, ErrVerficationTokenNotFound
 		}
 		return nil, err
 	}

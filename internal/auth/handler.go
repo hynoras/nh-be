@@ -7,6 +7,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func VerifyTokenHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Param("token")
+		sessionId, err := s.VerifyEmail(c.Request.Context(), token)
+		if err != nil {
+			utils.MakeErrorResponse(
+				c,
+				http.StatusUnauthorized,
+				"Failed to verify token",
+				err.Error(),
+			)
+			return
+		}
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "auth_session",
+			Value:    sessionId,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   8 * 60 * 60,
+		})
+
+		utils.MakeSuccessResponse(c, http.StatusOK, "User verified successfully", nil)
+	}
+}
+
 // LoginHandler godoc
 // @Summary User login
 // @Description Authenticate user with email and password, returns user information with permissions and creates a session
@@ -148,9 +176,9 @@ func SignUpHandler(s Service) gin.HandlerFunc {
 
 		err := s.SignUp(c.Request.Context(), req)
 		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Failed to create user", err.Error())
+			utils.MakeErrorResponse(c, http.StatusBadRequest, "Failed to sign up", err.Error())
 			return
 		}
-		utils.MakeSuccessResponse(c, http.StatusOK, "User created successfully", nil)
+		utils.MakeSuccessResponse(c, http.StatusOK, "User signed up successfully", nil)
 	}
 }

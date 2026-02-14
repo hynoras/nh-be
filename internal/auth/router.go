@@ -26,4 +26,5 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client, ch *amq
 	authGroup.POST("/login", LoginHandler(authService))
 	authGroup.POST("/logout", LogoutHandler(authService))
 	authGroup.Use(middleware.RequireAuth(sessionStore)).PUT("change-password/:id", ChangePasswordHandler((authService)))
+	authGroup.GET("verify/:token", VerifyTokenHandler(authService))
 }

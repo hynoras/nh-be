@@ -16,7 +16,7 @@ import (
 
 type Service interface {
 	SignUp(ctx context.Context, req SignUpDto) error
-	VerifyEmail(ctx context.Context, token string) error
+	VerifyEmail(ctx context.Context, token string) (string, error)
 	Login(ctx context.Context, email, password string) (*user.User, []string, string, error)
 	Logout(ctx context.Context, sessionId string) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
@@ -134,31 +134,41 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	return nil
 }
 
-func (s *service) VerifyEmail(ctx context.Context, token string) error {
+func (s *service) VerifyEmail(ctx context.Context, token string) (string, error) {
 	hashedToken := utils.HashToken(token)
 	existingToken, findErr := s.authRepo.FindVerificationTokenByCodeHash(hashedToken)
 	if findErr != nil {
-		return findErr
+		return "", findErr
 	}
 	if existingToken.Type != VerifyEmail {
-		return ErrInvalidVerificationToken
+		return "", ErrInvalidVerificationToken
 	}
 	if existingToken.ExpireAt.Before(time.Now()) {
-		return ErrVerificationTokenExpired
+		return "", ErrVerificationTokenExpired
 	}
 
 	updateErr := s.userRepo.Update(ctx, existingToken.UserID, &user.User{
 		IsVerified: true,
 	})
 	if updateErr != nil {
-		return updateErr
+		return "", updateErr
 	}
 
 	deleteErr := s.authRepo.DeleteVerificationToken(existingToken)
 	if deleteErr != nil {
-		return deleteErr
+		return "", deleteErr
 	}
-	return nil
+
+	sessionId, genErr := utils.GenerateVerificationToken()
+	if genErr != nil {
+		return "", genErr
+	}
+
+	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, existingToken.UserID)
+	if sessionErr != nil {
+		return "", sessionErr
+	}
+	return sessionId, nil
 }
 
 func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, string, error) {
