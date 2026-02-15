@@ -5,21 +5,15 @@ tmp_dir = "tmp"
 
 [build]
   # Command to build your app binary
-  pre_cmd = [
-    "pkill -f 'tmp/noheir' 2>/dev/null || true",
-    "sleep 0.5"
-  ]
-  full_bin = "go build -o tmp/noheir ./cmd/main.go"
+  cmd = "go build -o tmp/noheir.exe ./cmd/main.go"
 
   # Binary output
-  bin = "tmp/noheir"
-  # Command to run your app binary
-  cmd = "tmp/noheir"
+  bin = "tmp/noheir.exe"
   
   # Watch directories for changes
-  include_dir = ["cmd", "internal", "config", "router", "utils"]
+  include_dir = ["cmd", "internal", "config", "router"]
   # Exclude directories/files that don't need watching
-  exclude_dir = ["tmp", "vendor", "node_modules", ".git"]
+  exclude_dir = ["tmp", "vendor", ".git"]
   # File types to watch
   include_ext = ["go", "tpl", "tmpl", "html"]
   delay = 1500
