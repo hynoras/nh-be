@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"nh-be/constant"
+	"nh-be/internal/ctxutil"
 	"nh-be/internal/features/permission"
-	"nh-be/utils"
 	"slices"
 	"time"
 
@@ -66,7 +66,7 @@ func (s *service) CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) (
 }
 
 func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 }
 
 func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -152,7 +152,7 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 }
 
 func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, []string{}, err
 	}
@@ -186,7 +186,7 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*Us
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 }
 
 func (s *service) DeleteUsers(ctx context.Context, ids []uuid.UUID) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}

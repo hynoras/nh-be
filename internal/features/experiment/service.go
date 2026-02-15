@@ -3,8 +3,8 @@ package experiment
 import (
 	"context"
 	"nh-be/constant"
+	"nh-be/internal/ctxutil"
 	"nh-be/internal/features/permission"
-	"nh-be/utils"
 	"slices"
 	"time"
 
@@ -33,7 +33,7 @@ func NewService(experimentRepo Repository, permissionService permission.Service)
 }
 
 func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]Experiment, int64, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -55,7 +55,7 @@ func (s *service) GetAllExperiments(ctx context.Context, search string, page, pa
 }
 
 func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experiment, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experim
 }
 
 func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 }
 
 func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 }
 
 func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 }
 
 func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}

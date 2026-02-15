@@ -3,8 +3,8 @@ package result
 import (
 	"context"
 	"nh-be/constant"
+	"nh-be/internal/ctxutil"
 	"nh-be/internal/features/permission"
-	"nh-be/utils"
 	"slices"
 	"time"
 
@@ -30,7 +30,7 @@ func NewService(resultRepo Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid
 }
 
 func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto *CreateResultDto) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto 
 }
 
 func (s *service) UpdateResult(ctx context.Context, resultID uuid.UUID, experimentID uuid.UUID, dto *UpdateResultDto) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}

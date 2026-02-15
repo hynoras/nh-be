@@ -3,7 +3,7 @@ package permission
 import (
 	"context"
 	"nh-be/constant"
-	"nh-be/utils"
+	"nh-be/internal/ctxutil"
 	"slices"
 	"time"
 
@@ -55,7 +55,7 @@ func (s *service) GetPermissionGroupsByIDs(ctx context.Context, permissionGroupI
 
 // Permission Implementations
 func (s *service) GetAllPermissions(ctx context.Context, search string) ([]Permission, int64, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -82,7 +82,7 @@ func (s *service) GetUserPermissionCodeNames(ctx context.Context, userId uuid.UU
 
 // Permission Group Implementations
 func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *PermissionGroupInput) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 }
 
 func (s *service) GetAllPermissionGroups(ctx context.Context, search string, permissionIds []uuid.UUID, page, pageSize int) ([]PermissionGroup, int64, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -148,7 +148,7 @@ func (s *service) GetAllPermissionGroups(ctx context.Context, search string, per
 }
 
 func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*PermissionGroup, error) {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*Pe
 }
 
 func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permissionGroup *PermissionGroupInput) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 }
 
 func (s *service) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
