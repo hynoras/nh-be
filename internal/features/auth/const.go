@@ -10,9 +10,3 @@ var (
 	ErrInvalidVerificationToken  = errors.New("invalid token, please check token type")
 	ErrSessionNotFound           = errors.New("session not found")
 )
-
-const (
-	AuthExchangeName           = "auth"
-	UserRegisteredRoutingKey   = "user.registered"
-	SendVerificationEmailQueue = "send-verification-email"
-)

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
@@ -16,11 +17,11 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client, ch *amq
 	authGroup := rg.Group("/auth")
 	authRepo := NewRepository(db)
 	userRepo := user.NewRepository(db)
+	emailPublisher := email.NewEmailPublisher(ch)
 	permissionRepo := permission.NewRepository(db)
 	permissionService := permission.NewService(permissionRepo)
-	authPublisher := NewAuthPublisher(ch)
 	sessionStore := infra.NewSessionStore(rdb)
-	authService := NewService(sessionStore, authRepo, userRepo, permissionService, authPublisher)
+	authService := NewService(sessionStore, authRepo, userRepo, permissionService, emailPublisher)
 
 	authGroup.POST("/signup", SignUpHandler(authService))
 	authGroup.POST("/login", LoginHandler(authService))

@@ -45,8 +45,3 @@ type CreateVerificationTokenDto struct {
 	Email string `json:"email" binding:"required,email"`
 	Type  string `json:"type" binding:"required, oneof=verify_email reset_password"`
 }
-
-type SendVerificationEmailDto struct {
-	Email string
-	Token string
-}

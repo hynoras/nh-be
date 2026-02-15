@@ -8,6 +8,7 @@ import (
 	"nh-be/utils"
 
 	"nh-be/internal/crypto"
+	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
@@ -29,7 +30,7 @@ type service struct {
 	authRepo          Repository
 	userRepo          user.Repository
 	permissionService permission.Service
-	authPublisher     AuthPublisher
+	emailPublisher    email.EmailPublisher
 }
 
 func NewService(
@@ -37,26 +38,26 @@ func NewService(
 	authRepo Repository,
 	userRepo user.Repository,
 	permissionService permission.Service,
-	authPublisher AuthPublisher,
+	emailPublisher email.EmailPublisher,
 ) Service {
 	return &service{
 		sessionStore:      sessionStore,
 		authRepo:          authRepo,
 		userRepo:          userRepo,
 		permissionService: permissionService,
-		authPublisher:     authPublisher,
+		emailPublisher:    emailPublisher,
 	}
 }
 
-func (s *service) sendVerificationEmail(ctx context.Context, userId uuid.UUID, email string, tokenType VerificationTokenType) error {
+func (s *service) publishSendVerificationEmail(ctx context.Context, userId uuid.UUID, toEmail string, tokenType VerificationTokenType) error {
 	createdToken, tokenErr := s.CreateVerificationToken(ctx, userId, tokenType)
 	if tokenErr != nil {
 		return tokenErr
 	}
 
-	sendVerificationEmailDto := MapToSendVerificationEmailDto(email, createdToken.Token)
+	sendVerificationEmailDto := email.MapToSendVerificationEmailDto(toEmail, createdToken.Token)
 
-	err := s.authPublisher.PublishSendVerificationEmail(ctx, sendVerificationEmailDto)
+	err := s.emailPublisher.SendVerificationEmail(ctx, sendVerificationEmailDto)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	}
 
 	if u != nil {
-		err := s.sendVerificationEmail(ctx, u.ID, u.Email, VerifyEmail)
+		err := s.publishSendVerificationEmail(ctx, u.ID, u.Email, VerifyEmail)
 		if err != nil {
 			return err
 		}
@@ -126,7 +127,7 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 
 		mapUser := user.MapUserToCreatedUser(createdUser)
 
-		sendEmailErr := s.sendVerificationEmail(ctx, mapUser.ID, mapUser.Email, VerifyEmail)
+		sendEmailErr := s.publishSendVerificationEmail(ctx, mapUser.ID, mapUser.Email, VerifyEmail)
 		if sendEmailErr != nil {
 			return sendEmailErr
 		}

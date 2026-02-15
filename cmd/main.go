@@ -35,6 +35,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/config"
+	"nh-be/internal/email"
 	"nh-be/internal/features/auth"
 	experiment "nh-be/internal/features/experiment"
 	experimentResult "nh-be/internal/features/experiment/result"
@@ -89,29 +90,29 @@ func main() {
 		log.Fatalf("Failed to open a consumer channel: %v", err)
 	}
 
-	dqErr := mq.DeclareQueues(pubCh, auth.SendVerificationEmailQueue)
+	dqErr := mq.DeclareQueues(pubCh, email.SendVerificationEmailQueue)
 	if dqErr != nil {
 		log.Fatalf("Failed to declare queue: %v", dqErr)
 	}
 
-	deErr := mq.DeclareExchange(conCh, auth.AuthExchangeName)
+	deErr := mq.DeclareExchange(conCh, email.AuthExchangeName)
 	if deErr != nil {
 		log.Fatalf("Failed to declare exchange: %v", deErr)
 	}
 
 	bqErr := mq.BindQueue(
 		conCh,
-		auth.SendVerificationEmailQueue,
-		auth.UserRegisteredRoutingKey,
-		auth.AuthExchangeName,
+		email.SendVerificationEmailQueue,
+		email.UserRegisteredRoutingKey,
+		email.AuthExchangeName,
 	)
 	if bqErr != nil {
 		log.Fatalf("Failed to bind queue: %v", bqErr)
 	}
 
 	conCtx, conCancel := context.WithCancel(context.Background())
-	authConsumer := auth.NewAuthConsumer(conCh)
-	go authConsumer.ConsumeSendVerificationEmail(conCtx)
+	emailConsumer := email.NewEmailConsumer(conCh)
+	go emailConsumer.SendVerificationEmail(conCtx)
 	defer conCancel()
 
 	sqlDB, _ := db.DB()

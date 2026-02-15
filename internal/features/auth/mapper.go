@@ -34,10 +34,3 @@ func MapVerificationTokenToCreatedTokenDto(token VerificationToken, rawToken str
 		ExpireAt:  token.ExpireAt,
 	}
 }
-
-func MapToSendVerificationEmailDto(email string, hashedToken string) SendVerificationEmailDto {
-	return SendVerificationEmailDto{
-		Email: email,
-		Token: hashedToken,
-	}
-}

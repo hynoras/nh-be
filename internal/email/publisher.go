@@ -1,4 +1,4 @@
-package auth
+package email
 
 import (
 	"context"
@@ -9,19 +9,19 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type AuthPublisher interface {
-	PublishSendVerificationEmail(ctx context.Context, dto SendVerificationEmailDto) error
+type EmailPublisher interface {
+	SendVerificationEmail(ctx context.Context, dto SendVerificationEmailDto) error
 }
 
-type authPublisher struct {
+type emailPublisher struct {
 	channel *amqp.Channel
 }
 
-func NewAuthPublisher(ch *amqp.Channel) AuthPublisher {
-	return &authPublisher{channel: ch}
+func NewEmailPublisher(ch *amqp.Channel) EmailPublisher {
+	return &emailPublisher{channel: ch}
 }
 
-func (s *authPublisher) PublishSendVerificationEmail(ctx context.Context, dto SendVerificationEmailDto) error {
+func (s *emailPublisher) SendVerificationEmail(ctx context.Context, dto SendVerificationEmailDto) error {
 	body, err := json.Marshal(dto)
 	if err != nil {
 		return err

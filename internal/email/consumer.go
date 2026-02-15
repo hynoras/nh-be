@@ -1,4 +1,4 @@
-package auth
+package email
 
 import (
 	"context"
@@ -11,20 +11,20 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type AuthConsumer interface {
-	ConsumeSendVerificationEmail(ctx context.Context) error
+type EmailConsumer interface {
+	SendVerificationEmail(ctx context.Context) error
 }
 
-type authConsumer struct {
+type emailConsumer struct {
 	channel *amqp.Channel
 }
 
-func NewAuthConsumer(ch *amqp.Channel) AuthConsumer {
-	return &authConsumer{channel: ch}
+func NewEmailConsumer(ch *amqp.Channel) EmailConsumer {
+	return &emailConsumer{channel: ch}
 }
 
-func (s *authConsumer) ConsumeSendVerificationEmail(ctx context.Context) error {
-	resendClient := utils.NewResendClient()
+func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
+	resendClient := NewResendClient()
 	frontendURL := utils.MustEnv("FRONTEND_URL")
 	verifyEmailSuffixURL := utils.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
 	msgs, err := mq.Consumer(
@@ -53,7 +53,7 @@ func (s *authConsumer) ConsumeSendVerificationEmail(ctx context.Context) error {
 			verificationURL := fmt.Sprintf("%s%s?token=%s", frontendURL, verifyEmailSuffixURL, req.Token)
 
 			htmlContent, htmlErr := utils.ConvertHtmlToString("verification_email.html", map[string]string{
-				"UserName":        utils.ExtractUsernameFromEmail(req.Email),
+				"UserName":        utils.ExtractUsernameFromEmail(req.ToEmail),
 				"VerificationURL": verificationURL,
 			})
 
@@ -63,10 +63,10 @@ func (s *authConsumer) ConsumeSendVerificationEmail(ctx context.Context) error {
 				continue
 			}
 
-			sendEmailErr := utils.SendEmail(
+			sendEmailErr := SendEmail(
 				resendClient,
 				"Acme <onboarding@resend.dev>",
-				req.Email,
+				req.ToEmail,
 				"Verify your email",
 				htmlContent,
 			)
