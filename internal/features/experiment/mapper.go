@@ -1,4 +1,4 @@
-package root
+package experiment
 
 func MapExperimentToDto(e Experiment) ExperimentResponseDto {
 	return ExperimentResponseDto{

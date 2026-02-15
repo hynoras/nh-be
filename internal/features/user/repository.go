@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 	"errors"
-	"nh-be/internal/permission"
+	"nh-be/internal/features/permission"
 	"nh-be/utils"
 	"strings"
 

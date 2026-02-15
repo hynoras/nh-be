@@ -1,9 +1,9 @@
-package root
+package experiment
 
 import (
 	"time"
 
-	"nh-be/internal/user"
+	"nh-be/internal/features/user"
 
 	"github.com/google/uuid"
 )

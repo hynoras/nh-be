@@ -1,12 +1,12 @@
 package router
 
 import (
-	"nh-be/internal/auth"
-	"nh-be/internal/experiment"
+	"nh-be/internal/features/auth"
+	"nh-be/internal/features/experiment"
+	"nh-be/internal/features/permission"
+	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
 	"nh-be/internal/middleware"
-	"nh-be/internal/permission"
-	"nh-be/internal/user"
 
 	"github.com/gin-gonic/gin"
 	amqp "github.com/rabbitmq/amqp091-go"

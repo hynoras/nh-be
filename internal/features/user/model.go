@@ -1,7 +1,7 @@
 package user
 
 import (
-	"nh-be/internal/permission"
+	"nh-be/internal/features/permission"
 	"time"
 
 	"github.com/google/uuid"

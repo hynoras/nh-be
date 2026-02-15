@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"nh-be/constant"
-	"nh-be/internal/permission"
+	"nh-be/internal/features/permission"
 	"nh-be/utils"
 	"slices"
 	"time"

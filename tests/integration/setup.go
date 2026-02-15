@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"nh-be/constant"
-	"nh-be/internal/experiment/result"
-	"nh-be/internal/experiment/root"
-	"nh-be/internal/permission"
-	"nh-be/internal/user"
+	root "nh-be/internal/features/experiment"
+	"nh-be/internal/features/experiment/result"
+	"nh-be/internal/features/permission"
+	"nh-be/internal/features/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
