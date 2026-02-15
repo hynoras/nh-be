@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	resHandler "nh-be/internal/experiment/result"
-	resultmocks "nh-be/internal/experiment/result/mocks"
+	resHandler "nh-be/internal/features/experiment/result"
+	resultmocks "nh-be/internal/features/experiment/result/mocks"
 )
 
 func TestHandler_GetResultByExperimentID(t *testing.T) {

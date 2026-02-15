@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"nh-be/constant"
-	"nh-be/internal/experiment/result"
-	resultmocks "nh-be/internal/experiment/result/mocks"
-	permissionmocks "nh-be/internal/permission/mocks"
+	"nh-be/internal/features/experiment/result"
+	resultmocks "nh-be/internal/features/experiment/result/mocks"
+	permissionmocks "nh-be/internal/features/permission/mocks"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

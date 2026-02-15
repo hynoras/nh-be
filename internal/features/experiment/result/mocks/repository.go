@@ -4,7 +4,7 @@ package mocks
 
 import (
 	context "context"
-	result "nh-be/internal/experiment/result"
+	result "nh-be/internal/features/experiment/result"
 
 	mock "github.com/stretchr/testify/mock"
 

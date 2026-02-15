@@ -4,7 +4,7 @@ package mocks
 
 import (
 	context "context"
-	permission "nh-be/internal/permission"
+	permission "nh-be/internal/features/permission"
 
 	mock "github.com/stretchr/testify/mock"
 

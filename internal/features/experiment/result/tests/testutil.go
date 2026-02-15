@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"nh-be/constant"
-	"nh-be/internal/experiment/result"
+	"nh-be/internal/features/experiment/result"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
