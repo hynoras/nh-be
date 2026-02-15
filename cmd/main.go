@@ -29,18 +29,11 @@ import (
 	"time"
 
 	docs "nh-be/docs"
-	"nh-be/mq"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"nh-be/config"
-	"nh-be/internal/email"
-	"nh-be/internal/features/auth"
-	experiment "nh-be/internal/features/experiment"
-	experimentResult "nh-be/internal/features/experiment/result"
-	"nh-be/internal/features/permission"
-	"nh-be/internal/features/user"
+	"nh-be/internal/app"
 	"nh-be/router"
 
 	"github.com/gin-contrib/cors"
@@ -62,82 +55,10 @@ func main() {
 
 	log.Printf("Starting app in %s mode\n", env)
 
-	db := config.ConnectDatabase()
-	db.AutoMigrate(
-		&auth.VerificationToken{},
-		&user.User{},
-		&permission.Permission{},
-		&permission.PermissionGroup{},
-		&user.UserPermission{},
-		&experiment.Experiment{},
-		&experimentResult.ExperimentResult{},
-	)
-
-	rdb := config.NewRedisClient()
-
-	conn, err := mq.NewRabbitMQConnection()
+	db, rdb, pubCh, err := app.InitializeServices()
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("Failed to initialize services: %v", err)
 	}
-
-	pubCh, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a publisher channel: %v", err)
-	}
-
-	conCh, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a consumer channel: %v", err)
-	}
-
-	dqErr := mq.DeclareQueues(pubCh, email.SendVerificationEmailQueue)
-	if dqErr != nil {
-		log.Fatalf("Failed to declare queue: %v", dqErr)
-	}
-
-	deErr := mq.DeclareExchange(conCh, email.AuthExchangeName)
-	if deErr != nil {
-		log.Fatalf("Failed to declare exchange: %v", deErr)
-	}
-
-	bqErr := mq.BindQueue(
-		conCh,
-		email.SendVerificationEmailQueue,
-		email.UserRegisteredRoutingKey,
-		email.AuthExchangeName,
-	)
-	if bqErr != nil {
-		log.Fatalf("Failed to bind queue: %v", bqErr)
-	}
-
-	conCtx, conCancel := context.WithCancel(context.Background())
-	emailConsumer := email.NewEmailConsumer(conCh)
-	go emailConsumer.SendVerificationEmail(conCtx)
-	defer conCancel()
-
-	sqlDB, _ := db.DB()
-	defer func() {
-		if pubCh != nil {
-			pubCh.Close()
-			log.Println("RabbitMQ publisher channel closed")
-		}
-		if conCh != nil {
-			conCh.Close()
-			log.Println("RabbitMQ consumer channel closed")
-		}
-		if conn != nil {
-			conn.Close()
-			log.Println("RabbitMQ connection closed")
-		}
-		if sqlDB != nil {
-			sqlDB.Close()
-			log.Println("Database connection closed")
-		}
-		if rdb != nil {
-			rdb.Close()
-			log.Println("Redis connection closed")
-		}
-	}()
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
