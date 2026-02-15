@@ -35,11 +35,11 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/config"
-	"nh-be/internal/auth"
-	experimentResult "nh-be/internal/experiment/result"
-	experiment "nh-be/internal/experiment/root"
-	"nh-be/internal/permission"
-	"nh-be/internal/user"
+	"nh-be/internal/features/auth"
+	experiment "nh-be/internal/features/experiment"
+	experimentResult "nh-be/internal/features/experiment/result"
+	"nh-be/internal/features/permission"
+	"nh-be/internal/features/user"
 	"nh-be/router"
 
 	"github.com/gin-contrib/cors"

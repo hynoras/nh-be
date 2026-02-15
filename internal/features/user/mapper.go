@@ -1,5 +1,7 @@
 package user
 
+import "nh-be/internal/features/permission"
+
 func MapUsersToDto(users []User) []UserResponseDto {
 	var userDtos []UserResponseDto
 	for _, user := range users {
@@ -15,7 +17,7 @@ func MapUserToListDto(user User) UserResponseDto {
 			ID:          permissionGroup.ID.String(),
 			Name:        permissionGroup.Name,
 			Description: permissionGroup.Description,
-			Permissions: []PermissionResponseDto{}, // Omit permissions in list view
+			Permissions: []permission.PermissionResponseDto{}, // Omit permissions in list view
 		})
 	}
 
@@ -41,12 +43,12 @@ func MapUserToMeDto(user User, permissionCodes []string) MeResponseDto {
 func MapUserToDto(user User) UserResponseDto {
 	var permissionGroups []PermissionGroupResponseDto
 	for _, permissionGroup := range user.AssignedPermissionGroups {
-		var permissions []PermissionResponseDto
-		for _, permission := range permissionGroup.Permissions {
-			permissions = append(permissions, PermissionResponseDto{
-				ID:          permission.ID.String(),
-				Name:        permission.Name,
-				Description: permission.Description,
+		var permissions []permission.PermissionResponseDto
+		for _, perm := range permissionGroup.Permissions {
+			permissions = append(permissions, permission.PermissionResponseDto{
+				ID:          perm.ID.String(),
+				Name:        perm.Name,
+				Description: perm.Description,
 			})
 		}
 		permissionGroups = append(permissionGroups, PermissionGroupResponseDto{

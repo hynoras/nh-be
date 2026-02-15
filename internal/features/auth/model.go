@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"nh-be/internal/user"
+	"nh-be/internal/features/user"
 	"time"
 
 	"github.com/google/uuid"

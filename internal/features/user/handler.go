@@ -207,7 +207,7 @@ func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 // @Failure 500 {object} utils.ErrorResponse "Failed to update user"
 // @Security SessionAuth
 // @Router /users/{id} [put]
-func UpdateUserHander(s Service) gin.HandlerFunc {
+func UpdateUserHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := utils.ParseStringToUUID(c.Param("id"))
 		if err != nil {

@@ -7,9 +7,9 @@ import (
 
 	"nh-be/utils"
 
+	"nh-be/internal/features/permission"
+	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
-	"nh-be/internal/permission"
-	"nh-be/internal/user"
 
 	"github.com/google/uuid"
 )
@@ -69,7 +69,7 @@ func (s *service) CreateVerificationToken(
 	tokenType VerificationTokenType,
 ) (CreatedTokenDto, error) {
 	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(userId)
-	if findErr != nil && !errors.Is(findErr, user.ErrUserNotFound) {
+	if findErr != nil && !errors.Is(findErr, ErrVerificationTokenNotFound) {
 		return CreatedTokenDto{}, findErr
 	}
 

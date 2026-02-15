@@ -1,22 +1,23 @@
 package user
 
 import (
+	"nh-be/internal/features/permission"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type PermissionResponseDto struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
+// type PermissionResponseDto struct {
+// 	ID          string `json:"id"`
+// 	Name        string `json:"name"`
+// 	Description string `json:"description"`
+// }
 
 type PermissionGroupResponseDto struct {
-	ID          string                  `json:"id"`
-	Name        string                  `json:"name"`
-	Description string                  `json:"description"`
-	Permissions []PermissionResponseDto `json:"permissions"`
+	ID          string                             `json:"id"`
+	Name        string                             `json:"name"`
+	Description string                             `json:"description"`
+	Permissions []permission.PermissionResponseDto `json:"permissions"`
 }
 
 type UserResponseDto struct {

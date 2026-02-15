@@ -22,6 +22,6 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	usersGroup.GET("/:id", GetUserByIDHandler(userService))
 	usersGroup.GET("/me", GetMeHandler(userService, sessionStore))
 	usersGroup.POST("", CreateUserHandler(userService))
-	usersGroup.PUT("/:id", UpdateUserHander(userService))
+	usersGroup.PUT("/:id", UpdateUserHandler(userService))
 	usersGroup.DELETE("", DeleteUsersHandler(userService))
 }
