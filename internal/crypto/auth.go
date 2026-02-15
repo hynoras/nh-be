@@ -1,4 +1,4 @@
-package utils
+package crypto
 
 import (
 	"golang.org/x/crypto/bcrypt"
@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 )
 
-func GenerateVerificationToken() (string, error) {
+func GenerateToken() (string, error) {
 	token := make([]byte, 32)
 	_, err := rand.Read(token)
 	if err != nil {

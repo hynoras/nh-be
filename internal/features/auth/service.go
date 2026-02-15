@@ -7,6 +7,7 @@ import (
 
 	"nh-be/utils"
 
+	"nh-be/internal/crypto"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
@@ -80,12 +81,12 @@ func (s *service) CreateVerificationToken(
 		}
 	}
 
-	generatedToken, genErr := utils.GenerateVerificationToken()
+	generatedToken, genErr := crypto.GenerateToken()
 	if genErr != nil {
 		return CreatedTokenDto{}, genErr
 	}
 
-	hashedToken := utils.HashToken(generatedToken)
+	hashedToken := crypto.HashToken(generatedToken)
 	verificationToken := MapCreateDtoToVerificationToken(userId, hashedToken, tokenType)
 
 	createdToken, createErr := s.authRepo.CreateVerificationToken(verificationToken)
@@ -110,7 +111,7 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 			return err
 		}
 	} else {
-		hashedPassword, err := utils.HashPassword(req.Password)
+		hashedPassword, err := crypto.HashPassword(req.Password)
 		if err != nil {
 			return err
 		}
@@ -135,7 +136,7 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 }
 
 func (s *service) VerifyEmail(ctx context.Context, token string) (string, error) {
-	hashedToken := utils.HashToken(token)
+	hashedToken := crypto.HashToken(token)
 	existingToken, findErr := s.authRepo.FindVerificationTokenByCodeHash(hashedToken)
 	if findErr != nil {
 		return "", findErr
@@ -159,7 +160,7 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 		return "", deleteErr
 	}
 
-	sessionId, genErr := utils.GenerateVerificationToken()
+	sessionId, genErr := crypto.GenerateToken()
 	if genErr != nil {
 		return "", genErr
 	}
@@ -179,7 +180,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*user.User
 	if u == nil {
 		return nil, []string{}, "", errors.New("invalid credentials")
 	}
-	if !utils.CheckPasswordHash(password, u.Password) {
+	if !crypto.CheckPasswordHash(password, u.Password) {
 		return nil, []string{}, "", errors.New("invalid credentials")
 	}
 
@@ -188,7 +189,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*user.User
 		return nil, []string{}, "", err
 	}
 
-	sessionId, genErr := utils.GenerateVerificationToken()
+	sessionId, genErr := crypto.GenerateToken()
 	if genErr != nil {
 		return nil, []string{}, "", genErr
 	}
@@ -223,12 +224,12 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
 		return errors.New("new password and confirm password do not match")
 	}
 
-	newHashedPassword, err := utils.HashPassword(changePasswordDto.NewPassword)
+	newHashedPassword, err := crypto.HashPassword(changePasswordDto.NewPassword)
 	if err != nil {
 		return err
 	}
 
-	if utils.CheckPasswordHash(changePasswordDto.NewPassword, *oldPassword) {
+	if crypto.CheckPasswordHash(changePasswordDto.NewPassword, *oldPassword) {
 		return errors.New("new password is the same as the old password")
 	}
 
