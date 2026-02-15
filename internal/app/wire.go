@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"log"
+	"database/sql"
 	"nh-be/config"
 	"nh-be/internal/email"
 	"nh-be/internal/features/auth"
@@ -18,7 +18,7 @@ import (
 )
 
 // InitializeServices initializes all the services and returns the database, redis, and rabbitmq publisher channel
-func InitializeServices() (*gorm.DB, *redis.Client, *amqp.Channel, error) {
+func InitializeServices() (*gorm.DB, *sql.DB, *redis.Client, *amqp.Connection, *amqp.Channel, *amqp.Channel, context.CancelFunc, error) {
 	db := config.ConnectDatabase()
 	db.AutoMigrate(
 		&auth.VerificationToken{},
@@ -34,27 +34,27 @@ func InitializeServices() (*gorm.DB, *redis.Client, *amqp.Channel, error) {
 
 	conn, err := mq.NewRabbitMQConnection()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	pubCh, err := conn.Channel()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	conCh, err := conn.Channel()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, nil, nil, err
 	}
 
 	dqErr := mq.DeclareQueues(pubCh, email.SendVerificationEmailQueue)
 	if dqErr != nil {
-		return nil, nil, nil, dqErr
+		return nil, nil, nil, nil, nil, nil, nil, dqErr
 	}
 
 	deErr := mq.DeclareExchange(conCh, email.AuthExchangeName)
 	if deErr != nil {
-		return nil, nil, nil, deErr
+		return nil, nil, nil, nil, nil, nil, nil, deErr
 	}
 
 	bqErr := mq.BindQueue(
@@ -64,37 +64,14 @@ func InitializeServices() (*gorm.DB, *redis.Client, *amqp.Channel, error) {
 		email.AuthExchangeName,
 	)
 	if bqErr != nil {
-		return nil, nil, nil, bqErr
+		return nil, nil, nil, nil, nil, nil, nil, bqErr
 	}
 
 	conCtx, conCancel := context.WithCancel(context.Background())
 	emailConsumer := email.NewEmailConsumer(conCh)
 	go emailConsumer.SendVerificationEmail(conCtx)
-	defer conCancel()
 
 	sqlDB, _ := db.DB()
-	defer func() {
-		if pubCh != nil {
-			pubCh.Close()
-			log.Println("RabbitMQ publisher channel closed")
-		}
-		if conCh != nil {
-			conCh.Close()
-			log.Println("RabbitMQ consumer channel closed")
-		}
-		if conn != nil {
-			conn.Close()
-			log.Println("RabbitMQ connection closed")
-		}
-		if sqlDB != nil {
-			sqlDB.Close()
-			log.Println("Database connection closed")
-		}
-		if rdb != nil {
-			rdb.Close()
-			log.Println("Redis connection closed")
-		}
-	}()
 
-	return db, rdb, pubCh, nil
+	return db, sqlDB, rdb, conn, pubCh, conCh, conCancel, nil
 }

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"nh-be/constant"
+	"nh-be/internal/constant"
 	"nh-be/internal/features/experiment/result"
 	resultmocks "nh-be/internal/features/experiment/result/mocks"
 	permissionmocks "nh-be/internal/features/permission/mocks"

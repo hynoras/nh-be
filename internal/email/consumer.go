@@ -53,7 +53,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			verificationURL := fmt.Sprintf("%s%s?token=%s", frontendURL, verifyEmailSuffixURL, req.Token)
 
-			htmlContent, htmlErr := stringutil.ConvertHtmlToString("verification_email.html", map[string]string{
+			htmlContent, htmlErr := ConvertHtmlToString("verification_email.html", map[string]string{
 				"UserName":        stringutil.ExtractUsernameFromEmail(req.ToEmail),
 				"VerificationURL": verificationURL,
 			})

@@ -3,8 +3,6 @@ package httputil
 import (
 	"errors"
 	"net/http"
-	"nh-be/internal/utils/stringutil"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -74,7 +72,7 @@ func MakeErrorResponse(c *gin.Context, statusCode int, message string, error int
 }
 
 func ValidateUUID(c *gin.Context, id string) (*uuid.UUID, error) {
-	parsedID, err := stringutil.ParseStringToUUID(id)
+	parsedID, err := ParseStringToUUID(id)
 	if err != nil {
 		MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID format", err.Error())
 		return nil, err
@@ -98,7 +96,7 @@ func ValidateUUIDs(c *gin.Context, uuids []string) ([]uuid.UUID, error) {
 		}
 
 		// Attempt to parse UUID
-		parsedID, err := stringutil.ParseStringToUUID(uuidStr)
+		parsedID, err := ParseStringToUUID(uuidStr)
 		if err != nil {
 			validationErrors = append(validationErrors, ValidationError{
 				Index: i,
@@ -141,29 +139,4 @@ func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
 		return err
 	}
 	return nil
-}
-
-func ParsePaginationParams(c *gin.Context) (int, int, error) {
-	pageStr := c.DefaultQuery("page", "1")
-	pageSizeStr := c.DefaultQuery("pageSize", "10")
-
-	if pageStr == "" {
-		pageStr = "1"
-	}
-	if pageSizeStr == "" {
-		pageSizeStr = "10"
-	}
-
-	var err error
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid page value", err.Error())
-		return 0, 0, err
-	}
-	pageSize, err := strconv.Atoi(pageSizeStr)
-	if err != nil {
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid page size value", err.Error())
-		return 0, 0, err
-	}
-	return page, pageSize, nil
 }

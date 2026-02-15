@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"nh-be/constant"
-	root "nh-be/internal/features/experiment"
+	"nh-be/internal/constant"
+	"nh-be/internal/features/experiment"
 	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
@@ -34,7 +34,7 @@ func SetupTestDB(ctx context.Context) (*TestContext, error) {
 	envPaths := []string{
 		"../../.env",    // from tests/integration/
 		"../../../.env", // from tests/integration/experiment/
-		".env",          // from project root
+		".env",          // from project experiment
 	}
 	loaded := false
 	for _, path := range envPaths {
@@ -143,13 +143,13 @@ func CreateTestUser(ctx context.Context, tx *gorm.DB) (*user.User, error) {
 	return testUser, nil
 }
 
-func CreateTestExperiment(ctx context.Context, tx *gorm.DB, userID uuid.UUID) (*root.Experiment, error) {
-	exp := &root.Experiment{
+func CreateTestExperiment(ctx context.Context, tx *gorm.DB, userID uuid.UUID) (*experiment.Experiment, error) {
+	exp := &experiment.Experiment{
 		ID:          uuid.New(),
 		Title:       "Test Experiment",
 		Objective:   "Test objective for integration testing",
-		Status:      root.ExperimentDraft,
-		Type:        root.ExperimentExploratoryType,
+		Status:      experiment.ExperimentDraft,
+		Type:        experiment.ExperimentExploratoryType,
 		Version:     1,
 		CreatedByID: userID,
 		CreatedAt:   time.Now(),

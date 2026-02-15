@@ -1,10 +1,14 @@
 package email
 
 import (
+	"bytes"
 	"nh-be/pkg/env"
+	"text/template"
 
 	"github.com/resend/resend-go/v3"
 )
+
+var tmpl = template.Must(template.ParseGlob("templates/*.html"))
 
 func NewResendClient() *resend.Client {
 	apiKey := env.MustEnv("RESEND_API_KEY")
@@ -26,4 +30,10 @@ func SendEmail(client *resend.Client, from, to, subject, htmlContent string) err
 	}
 
 	return nil
+}
+
+func ConvertHtmlToString(name string, data any) (string, error) {
+	var buf bytes.Buffer
+	err := tmpl.ExecuteTemplate(&buf, name, data)
+	return buf.String(), err
 }

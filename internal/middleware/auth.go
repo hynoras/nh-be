@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"nh-be/constant"
+	"nh-be/internal/constant"
 	"nh-be/internal/infra"
 
 	"github.com/gin-gonic/gin"

@@ -2,9 +2,8 @@ package permission
 
 import (
 	"net/http"
-	"nh-be/constant"
+	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
-	"nh-be/internal/utils/stringutil"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -258,7 +257,7 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		var parsedPermissions []uuid.UUID
-		parsedPermissions, validationErr = stringutil.ParseStringsToUUIDs(dto.Permissions)
+		parsedPermissions, validationErr = httputil.ParseStringsToUUIDs(dto.Permissions)
 		if validationErr != nil {
 			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
 			return

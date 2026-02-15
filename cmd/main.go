@@ -55,7 +55,32 @@ func main() {
 
 	log.Printf("Starting app in %s mode\n", env)
 
-	db, rdb, pubCh, err := app.InitializeServices()
+	db, sqlDB, rdb, conn, pubCh, conCh, conCancel, err := app.InitializeServices()
+
+	defer func() {
+		conCancel()
+		if pubCh != nil {
+			pubCh.Close()
+			log.Println("RabbitMQ publisher channel closed")
+		}
+		if conCh != nil {
+			conCh.Close()
+			log.Println("RabbitMQ consumer channel closed")
+		}
+		if conn != nil {
+			conn.Close()
+			log.Println("RabbitMQ connection closed")
+		}
+		if sqlDB != nil {
+			sqlDB.Close()
+			log.Println("Database connection closed")
+		}
+		if rdb != nil {
+			rdb.Close()
+			log.Println("Redis connection closed")
+		}
+	}()
+
 	if err != nil {
 		log.Fatalf("Failed to initialize services: %v", err)
 	}

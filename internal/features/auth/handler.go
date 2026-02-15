@@ -3,7 +3,6 @@ package auth
 import (
 	"net/http"
 	"nh-be/internal/utils/httputil"
-	"nh-be/internal/utils/stringutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -146,7 +145,7 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 // @Router /auth/users/{id}/change-password [put]
 func ChangePasswordHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := stringutil.ParseStringToUUID(c.Param("id"))
+		userID, err := httputil.ParseStringToUUID(c.Param("id"))
 		if err != nil {
 			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
 			return

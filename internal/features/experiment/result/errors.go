@@ -2,7 +2,7 @@ package result
 
 import (
 	"net/http"
-	"nh-be/constant"
+	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"

@@ -3,7 +3,7 @@ package ctxutil
 import (
 	"context"
 	"errors"
-	"nh-be/constant"
+	"nh-be/internal/constant"
 
 	"github.com/google/uuid"
 )

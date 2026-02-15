@@ -165,7 +165,7 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 		return "", genErr
 	}
 
-	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, existingToken.UserID)
+	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, stringutil.ConvertUUIDToString(existingToken.UserID))
 	if sessionErr != nil {
 		return "", sessionErr
 	}
@@ -194,7 +194,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*user.User
 		return nil, []string{}, "", genErr
 	}
 
-	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, u.ID)
+	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, stringutil.ConvertUUIDToString(u.ID))
 	if sessionErr != nil {
 		return nil, []string{}, "", sessionErr
 	}
