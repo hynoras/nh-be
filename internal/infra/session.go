@@ -2,7 +2,7 @@ package infra
 
 import (
 	"context"
-	"nh-be/utils"
+	"nh-be/internal/utils/stringutil"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,7 +37,7 @@ func (s *sessionStore) GetUserSession(ctx context.Context, sessionId string) (uu
 		return uuid.Nil, err
 	}
 
-	parsedUuid, err := utils.ParseStringToUUID(userId)
+	parsedUuid, err := stringutil.ParseStringToUUID(userId)
 	if err != nil {
 		return uuid.Nil, err
 	}

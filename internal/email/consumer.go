@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"nh-be/internal/utils/stringutil"
 	"nh-be/mq"
 	"nh-be/utils"
 
@@ -52,8 +53,8 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			verificationURL := fmt.Sprintf("%s%s?token=%s", frontendURL, verifyEmailSuffixURL, req.Token)
 
-			htmlContent, htmlErr := utils.ConvertHtmlToString("verification_email.html", map[string]string{
-				"UserName":        utils.ExtractUsernameFromEmail(req.ToEmail),
+			htmlContent, htmlErr := stringutil.ConvertHtmlToString("verification_email.html", map[string]string{
+				"UserName":        stringutil.ExtractUsernameFromEmail(req.ToEmail),
 				"VerificationURL": verificationURL,
 			})
 

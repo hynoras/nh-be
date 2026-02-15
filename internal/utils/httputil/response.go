@@ -3,7 +3,7 @@ package httputil
 import (
 	"errors"
 	"net/http"
-	"nh-be/utils"
+	"nh-be/internal/utils/stringutil"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -74,7 +74,7 @@ func MakeErrorResponse(c *gin.Context, statusCode int, message string, error int
 }
 
 func ValidateUUID(c *gin.Context, id string) (*uuid.UUID, error) {
-	parsedID, err := utils.ParseStringToUUID(id)
+	parsedID, err := stringutil.ParseStringToUUID(id)
 	if err != nil {
 		MakeErrorResponse(c, http.StatusBadRequest, "Invalid ID format", err.Error())
 		return nil, err
@@ -98,7 +98,7 @@ func ValidateUUIDs(c *gin.Context, uuids []string) ([]uuid.UUID, error) {
 		}
 
 		// Attempt to parse UUID
-		parsedID, err := utils.ParseStringToUUID(uuidStr)
+		parsedID, err := stringutil.ParseStringToUUID(uuidStr)
 		if err != nil {
 			validationErrors = append(validationErrors, ValidationError{
 				Index: i,

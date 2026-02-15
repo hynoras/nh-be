@@ -5,13 +5,12 @@ import (
 	"errors"
 	"time"
 
-	"nh-be/utils"
-
 	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
 	"nh-be/internal/utils/crypto"
+	"nh-be/internal/utils/stringutil"
 
 	"github.com/google/uuid"
 )
@@ -117,7 +116,7 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 			return err
 		}
 
-		username := utils.ExtractUsernameFromEmail(req.Email)
+		username := stringutil.ExtractUsernameFromEmail(req.Email)
 		userForm := MapSignUpDtoToUser(username, req.Email, hashedPassword)
 
 		createdUser, createErr := s.userRepo.Create(ctx, &userForm)

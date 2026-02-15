@@ -3,11 +3,10 @@ package user
 import (
 	"net/http"
 	"nh-be/constant"
-	"nh-be/utils"
-	"strings"
-
 	"nh-be/internal/infra"
 	"nh-be/internal/utils/httputil"
+	"nh-be/internal/utils/stringutil"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -47,7 +46,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 
 		var parsedPermissions []uuid.UUID
 		if dto.Permissions != nil {
-			parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
+			parsedPermissions, validationErr = stringutil.ParseStringsToUUIDs(dto.Permissions)
 			if validationErr != nil {
 				httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
 				return
@@ -210,7 +209,7 @@ func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 // @Router /users/{id} [put]
 func UpdateUserHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := utils.ParseStringToUUID(c.Param("id"))
+		userID, err := stringutil.ParseStringToUUID(c.Param("id"))
 		if err != nil {
 			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
 			return
@@ -234,7 +233,7 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 		}
 
 		var parsedPermissions []uuid.UUID
-		parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
+		parsedPermissions, validationErr = stringutil.ParseStringsToUUIDs(dto.Permissions)
 		if validationErr != nil {
 			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
 			return
@@ -282,7 +281,7 @@ func DeleteUsersHandler(s Service) gin.HandlerFunc {
 		}
 		ids := make([]uuid.UUID, len(req.IDs))
 		for i, id := range req.IDs {
-			parsedId, err := utils.ParseStringToUUID(id)
+			parsedId, err := stringutil.ParseStringToUUID(id)
 			if err != nil {
 				httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
 				return
