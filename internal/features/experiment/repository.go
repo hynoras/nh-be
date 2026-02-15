@@ -2,7 +2,7 @@ package experiment
 
 import (
 	"context"
-	"nh-be/internal/dbutil"
+	"nh-be/internal/utils/dbutil"
 	"strings"
 
 	"github.com/google/uuid"

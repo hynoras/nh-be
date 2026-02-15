@@ -3,8 +3,8 @@ package user
 import (
 	"context"
 	"errors"
-	"nh-be/internal/dbutil"
 	"nh-be/internal/features/permission"
+	"nh-be/internal/utils/dbutil"
 	"strings"
 
 	"github.com/google/uuid"

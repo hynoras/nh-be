@@ -3,7 +3,7 @@ package permission
 import (
 	"context"
 	"nh-be/constant"
-	"nh-be/internal/ctxutil"
+	"nh-be/internal/utils/ctxutil"
 	"slices"
 	"time"
 

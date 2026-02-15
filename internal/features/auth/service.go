@@ -7,11 +7,11 @@ import (
 
 	"nh-be/utils"
 
-	"nh-be/internal/crypto"
 	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/infra"
+	"nh-be/internal/utils/crypto"
 
 	"github.com/google/uuid"
 )

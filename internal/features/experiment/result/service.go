@@ -3,8 +3,8 @@ package result
 import (
 	"context"
 	"nh-be/constant"
-	"nh-be/internal/ctxutil"
 	"nh-be/internal/features/permission"
+	"nh-be/internal/utils/ctxutil"
 	"slices"
 	"time"
 

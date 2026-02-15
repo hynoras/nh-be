@@ -3,7 +3,7 @@ package permission
 import (
 	"net/http"
 	"nh-be/constant"
-	"nh-be/internal/httputil"
+	"nh-be/internal/utils/httputil"
 	"nh-be/utils"
 
 	"github.com/gin-gonic/gin"

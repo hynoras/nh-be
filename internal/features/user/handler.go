@@ -6,8 +6,8 @@ import (
 	"nh-be/utils"
 	"strings"
 
-	"nh-be/internal/httputil"
 	"nh-be/internal/infra"
+	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
