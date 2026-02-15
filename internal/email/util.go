@@ -1,13 +1,13 @@
 package email
 
 import (
-	"nh-be/utils"
+	"nh-be/pkg/env"
 
 	"github.com/resend/resend-go/v3"
 )
 
 func NewResendClient() *resend.Client {
-	apiKey := utils.MustEnv("RESEND_API_KEY")
+	apiKey := env.MustEnv("RESEND_API_KEY")
 	return resend.NewClient(apiKey)
 }
 

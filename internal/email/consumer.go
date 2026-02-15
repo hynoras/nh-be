@@ -7,7 +7,7 @@ import (
 	"log"
 	"nh-be/internal/utils/stringutil"
 	"nh-be/mq"
-	"nh-be/utils"
+	"nh-be/pkg/env"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -26,8 +26,8 @@ func NewEmailConsumer(ch *amqp.Channel) EmailConsumer {
 
 func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 	resendClient := NewResendClient()
-	frontendURL := utils.MustEnv("FRONTEND_URL")
-	verifyEmailSuffixURL := utils.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
+	frontendURL := env.MustEnv("FRONTEND_URL")
+	verifyEmailSuffixURL := env.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
 	msgs, err := mq.Consumer(
 		ctx,
 		s.channel,

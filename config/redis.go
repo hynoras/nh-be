@@ -2,15 +2,15 @@ package config
 
 import (
 	"log"
-	"nh-be/utils"
+	"nh-be/pkg/env"
 
 	"github.com/redis/go-redis/v9"
 )
 
 func NewRedisClient() *redis.Client {
-	host := utils.MustEnv("REDIS_HOST")
-	port := utils.MustEnv("REDIS_PORT")
-	pass := utils.MustEnv("REDIS_PASSWORD")
+	host := env.MustEnv("REDIS_HOST")
+	port := env.MustEnv("REDIS_PORT")
+	pass := env.MustEnv("REDIS_PASSWORD")
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     host + ":" + port,
