@@ -192,7 +192,7 @@ func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 	}
 }
 
-// UpdateUserHander godoc
+// UpdateUserHandler godoc
 // @Summary Update a user
 // @Description Update an existing user by their UUID
 // @Tags Users

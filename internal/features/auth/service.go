@@ -86,7 +86,7 @@ func (s *service) CreateVerificationToken(
 	}
 
 	hashedToken := utils.HashToken(generatedToken)
-	verificationToken := MapCreateDtoToVerficationToken(userId, hashedToken, tokenType)
+	verificationToken := MapCreateDtoToVerificationToken(userId, hashedToken, tokenType)
 
 	createdToken, createErr := s.authRepo.CreateVerificationToken(verificationToken)
 	if createErr != nil {

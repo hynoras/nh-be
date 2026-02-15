@@ -11,9 +11,9 @@ func MapUsersToDto(users []User) []UserResponseDto {
 }
 
 func MapUserToListDto(user User) UserResponseDto {
-	var permissionGroups []PermissionGroupResponseDto
+	var permissionGroups []permission.PermissionGroupResponseDto
 	for _, permissionGroup := range user.AssignedPermissionGroups {
-		permissionGroups = append(permissionGroups, PermissionGroupResponseDto{
+		permissionGroups = append(permissionGroups, permission.PermissionGroupResponseDto{
 			ID:          permissionGroup.ID.String(),
 			Name:        permissionGroup.Name,
 			Description: permissionGroup.Description,
@@ -41,7 +41,7 @@ func MapUserToMeDto(user User, permissionCodes []string) MeResponseDto {
 }
 
 func MapUserToDto(user User) UserResponseDto {
-	var permissionGroups []PermissionGroupResponseDto
+	var permissionGroups []permission.PermissionGroupResponseDto
 	for _, permissionGroup := range user.AssignedPermissionGroups {
 		var permissions []permission.PermissionResponseDto
 		for _, perm := range permissionGroup.Permissions {
@@ -51,7 +51,7 @@ func MapUserToDto(user User) UserResponseDto {
 				Description: perm.Description,
 			})
 		}
-		permissionGroups = append(permissionGroups, PermissionGroupResponseDto{
+		permissionGroups = append(permissionGroups, permission.PermissionGroupResponseDto{
 			ID:          permissionGroup.ID.String(),
 			Name:        permissionGroup.Name,
 			Description: permissionGroup.Description,

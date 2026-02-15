@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func MapCreateDtoToVerficationToken(userId uuid.UUID, codeHash string, tokenType VerificationTokenType) *VerificationToken {
+func MapCreateDtoToVerificationToken(userId uuid.UUID, codeHash string, tokenType VerificationTokenType) *VerificationToken {
 	return &VerificationToken{
 		UserID:    userId,
 		Type:      tokenType,

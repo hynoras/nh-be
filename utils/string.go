@@ -26,10 +26,6 @@ func ParseStringsToUUIDs(ss []string) ([]uuid.UUID, error) {
 	return ids, nil
 }
 
-func ParseUUIDToString(id uuid.UUID) string {
-	return id.String()
-}
-
 func ExtractUsernameFromEmail(email string) string {
 	return email[:strings.Index(email, "@")]
 }
