@@ -3,8 +3,9 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"nh-be/constant"
+	"nh-be/internal/constant"
 	"nh-be/internal/infra"
+	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,7 +33,16 @@ func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(c.Request.Context(), constant.CtxUserId, userID)
+		parsedUserId, err := httputil.ParseStringToUUID(userID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"error":   "invalid_user_id",
+				"message": "Invalid user ID in session",
+			})
+			return
+		}
+		ctx := context.WithValue(c.Request.Context(), constant.CtxUserId, parsedUserId)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

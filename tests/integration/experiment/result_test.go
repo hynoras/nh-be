@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"nh-be/internal/experiment/result"
+	"nh-be/internal/features/experiment/result"
 	setup "nh-be/tests/integration"
 
 	"github.com/google/uuid"

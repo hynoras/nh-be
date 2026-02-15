@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
-	"nh-be/utils"
+	"nh-be/pkg/env"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,11 +14,11 @@ import (
 )
 
 func ConnectDatabase() *gorm.DB {
-	host := utils.MustEnv("DB_HOST")
-	port := utils.MustEnvInt("DB_PORT")
-	user := utils.MustEnv("DB_USERNAME")
-	dbname := utils.MustEnv("DB_NAME")
-	pass := utils.MustEnv("DB_PASSWORD")
+	host := env.MustEnv("DB_HOST")
+	port := env.MustEnvInt("DB_PORT")
+	user := env.MustEnv("DB_USERNAME")
+	dbname := env.MustEnv("DB_NAME")
+	pass := env.MustEnv("DB_PASSWORD")
 
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=require",

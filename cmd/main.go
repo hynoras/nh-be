@@ -29,17 +29,11 @@ import (
 	"time"
 
 	docs "nh-be/docs"
-	"nh-be/mq"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"nh-be/config"
-	"nh-be/internal/auth"
-	experimentResult "nh-be/internal/experiment/result"
-	experiment "nh-be/internal/experiment/root"
-	"nh-be/internal/permission"
-	"nh-be/internal/user"
+	"nh-be/internal/app"
 	"nh-be/router"
 
 	"github.com/gin-contrib/cors"
@@ -61,61 +55,10 @@ func main() {
 
 	log.Printf("Starting app in %s mode\n", env)
 
-	db := config.ConnectDatabase()
-	db.AutoMigrate(
-		&auth.VerificationToken{},
-		&user.User{},
-		&permission.Permission{},
-		&permission.PermissionGroup{},
-		&user.UserPermission{},
-		&experiment.Experiment{},
-		&experimentResult.ExperimentResult{},
-	)
+	db, sqlDB, rdb, conn, pubCh, conCh, conCancel, err := app.InitializeServices()
 
-	rdb := config.NewRedisClient()
-
-	conn, err := mq.NewRabbitMQConnection()
-	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
-	}
-
-	pubCh, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a publisher channel: %v", err)
-	}
-
-	conCh, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a consumer channel: %v", err)
-	}
-
-	dqErr := mq.DeclareQueues(pubCh, auth.SendVerificationEmailQueue)
-	if dqErr != nil {
-		log.Fatalf("Failed to declare queue: %v", dqErr)
-	}
-
-	deErr := mq.DeclareExchange(conCh, auth.AuthExchangeName)
-	if deErr != nil {
-		log.Fatalf("Failed to declare exchange: %v", deErr)
-	}
-
-	bqErr := mq.BindQueue(
-		conCh,
-		auth.SendVerificationEmailQueue,
-		auth.UserRegisteredRoutingKey,
-		auth.AuthExchangeName,
-	)
-	if bqErr != nil {
-		log.Fatalf("Failed to bind queue: %v", bqErr)
-	}
-
-	conCtx, conCancel := context.WithCancel(context.Background())
-	authConsumer := auth.NewAuthConsumer(conCh)
-	go authConsumer.ConsumeSendVerificationEmail(conCtx)
-	defer conCancel()
-
-	sqlDB, _ := db.DB()
 	defer func() {
+		conCancel()
 		if pubCh != nil {
 			pubCh.Close()
 			log.Println("RabbitMQ publisher channel closed")
@@ -137,6 +80,10 @@ func main() {
 			log.Println("Redis connection closed")
 		}
 	}()
+
+	if err != nil {
+		log.Fatalf("Failed to initialize services: %v", err)
+	}
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
