@@ -2,7 +2,7 @@ package permission
 
 import (
 	"context"
-	"nh-be/utils"
+	"nh-be/internal/dbutil"
 	"strings"
 
 	"github.com/google/uuid"
@@ -141,7 +141,7 @@ func (r *repository) FindAllPermissionGroups(
 
 	result := query.
 		Preload("Permissions").
-		Scopes(utils.Paginate(offset, limit)).
+		Scopes(dbutil.Paginate(offset, limit)).
 		Find(&groups)
 
 	return groups, length, result.Error

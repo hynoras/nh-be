@@ -2,7 +2,7 @@ package experiment
 
 import (
 	"context"
-	"nh-be/utils"
+	"nh-be/internal/dbutil"
 	"strings"
 
 	"github.com/google/uuid"
@@ -42,7 +42,7 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 		return nil, 0, err
 	}
 
-	result := query.Scopes(utils.Paginate(page, pageSize)).
+	result := query.Scopes(dbutil.Paginate(page, pageSize)).
 		Order("created_at DESC").
 		Find(&experiments)
 

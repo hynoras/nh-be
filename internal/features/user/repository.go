@@ -3,8 +3,8 @@ package user
 import (
 	"context"
 	"errors"
+	"nh-be/internal/dbutil"
 	"nh-be/internal/features/permission"
-	"nh-be/utils"
 	"strings"
 
 	"github.com/google/uuid"
@@ -51,7 +51,7 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 		Select("id", "username", "email", "created_at").
 		Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
 
-	result := query.Scopes(utils.Paginate(page, pageSize)).Find(&users).Error
+	result := query.Scopes(dbutil.Paginate(page, pageSize)).Find(&users).Error
 	return users, length, result
 }
 
