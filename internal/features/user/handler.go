@@ -6,6 +6,7 @@ import (
 	"nh-be/utils"
 	"strings"
 
+	"nh-be/internal/httputil"
 	"nh-be/internal/infra"
 
 	"github.com/gin-gonic/gin"
@@ -20,19 +21,19 @@ import (
 // @Accept json
 // @Produce json
 // @Param request body CreateUserDto true "User creation details"
-// @Success 201 {object} utils.SuccessResponse "User created successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid username or invalid permissions"
-// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
-// @Failure 409 {object} utils.ErrorResponse "Username or email already exists"
-// @Failure 422 {object} utils.ErrorResponse "Validation failed"
-// @Failure 500 {object} utils.ErrorResponse "Failed to create user"
+// @Success 201 {object} httputil.SuccessResponse "User created successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid username or invalid permissions"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 409 {object} httputil.ErrorResponse "Username or email already exists"
+// @Failure 422 {object} httputil.ErrorResponse "Validation failed"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to create user"
 // @Security SessionAuth
 // @Router /users [post]
 func CreateUserHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var dto CreateUserDto
 		var validationErr error
-		validationErr = utils.ValidateRequestFormat(c, &dto)
+		validationErr = httputil.ValidateRequestFormat(c, &dto)
 		if validationErr != nil {
 			return
 		}
@@ -40,7 +41,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		// Normalize username to lowercase and validate
 		dto.Username = strings.ToLower(dto.Username)
 		if err := ValidateUsername(dto.Username); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
 			return
 		}
 
@@ -48,7 +49,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		if dto.Permissions != nil {
 			parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
 			if validationErr != nil {
-				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
+				httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
 				return
 			}
 		}
@@ -62,17 +63,17 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 		serviceErr := s.CreateUser(c.Request.Context(), &cleanInput)
 		switch serviceErr {
 		case ErrForbidCreateUser:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		//using the same message to avoid attacker from knowing the exact error
 		case ErrDuplicateUsername:
 		case ErrDuplicateEmail:
-			utils.MakeErrorResponse(c, http.StatusConflict, "Username or email already exists", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusConflict, "Username or email already exists", serviceErr.Error())
 			return
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
+			httputil.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
 		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", serviceErr.Error())
 			return
 		}
 	}
@@ -87,17 +88,17 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 // @Param search query string false "Search term to filter users by username or email"
 // @Param page query int false "Page number" default(1)
 // @Param pageSize query int false "Number of items per page" default(10)
-// @Success 200 {object} utils.SuccessResponse{data=[]UserResponseDto} "Users fetched successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid pagination parameters"
-// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
-// @Failure 500 {object} utils.ErrorResponse "Failed to get all users"
+// @Success 200 {object} httputil.SuccessResponse{data=[]UserResponseDto} "Users fetched successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid pagination parameters"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to get all users"
 // @Security SessionAuth
 // @Router /users [get]
 func GetAllUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
 
-		pageInt, pageSizeInt, err := utils.ParsePaginationParams(c)
+		pageInt, pageSizeInt, err := httputil.ParsePaginationParams(c)
 		if err != nil {
 			return
 		}
@@ -105,14 +106,14 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, pageInt, pageSizeInt)
 		switch serviceErr {
 		case ErrForbidViewUsers:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case nil:
 			userResp := MapUsersToDto(users)
-			utils.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
+			httputil.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
 			return
 		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", serviceErr.Error())
 			return
 		}
 	}
@@ -125,31 +126,31 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID (UUID format)"
-// @Success 200 {object} utils.SuccessResponse{data=UserResponseDto} "User fetched successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
-// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
-// @Failure 404 {object} utils.ErrorResponse "User not found"
-// @Failure 500 {object} utils.ErrorResponse "Failed to get user"
+// @Success 200 {object} httputil.SuccessResponse{data=UserResponseDto} "User fetched successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid ID format"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 404 {object} httputil.ErrorResponse "User not found"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to get user"
 // @Security SessionAuth
 // @Router /users/{id} [get]
 func GetUserByIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := utils.ValidateUUID(c, c.Param("id"))
+		parsedId, idErr := httputil.ValidateUUID(c, c.Param("id"))
 		if idErr != nil {
 			return
 		}
 		user, _, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
 		switch serviceErr {
 		case ErrForbidViewUser:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case gorm.ErrRecordNotFound:
-			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
 			return
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
+			httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
 		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
 		}
 	}
 }
@@ -160,34 +161,34 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Success 200 {object} utils.SuccessResponse{data=MeResponseDto} "User fetched successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid ID format"
-// @Failure 401 {object} utils.ErrorResponse "Unauthorized"
-// @Failure 404 {object} utils.ErrorResponse "User not found"
-// @Failure 500 {object} utils.ErrorResponse "Failed to get me"
+// @Success 200 {object} httputil.SuccessResponse{data=MeResponseDto} "User fetched successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid ID format"
+// @Failure 401 {object} httputil.ErrorResponse "Unauthorized"
+// @Failure 404 {object} httputil.ErrorResponse "User not found"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to get me"
 // @Security SessionAuth
 // @Router /users/me [get]
 func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Request.Cookie("auth_session")
 		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
+			httputil.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
 			return
 		}
 		userId, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
 		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
+			httputil.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
 			return
 		}
 
 		user, perm, serviceErr := s.GetUserById(c.Request.Context(), userId, true)
 		switch serviceErr {
 		case gorm.ErrRecordNotFound:
-			utils.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToMeDto(*user, perm))
+			httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToMeDto(*user, perm))
 		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get me", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get me", serviceErr.Error())
 		}
 	}
 }
@@ -200,24 +201,24 @@ func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 // @Produce json
 // @Param id path string true "User ID (UUID format)"
 // @Param request body UpdateUserDto true "Updated user details"
-// @Success 200 {object} utils.SuccessResponse "User updated successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid user ID, invalid username, or invalid permissions"
-// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
-// @Failure 422 {object} utils.ErrorResponse "Validation failed"
-// @Failure 500 {object} utils.ErrorResponse "Failed to update user"
+// @Success 200 {object} httputil.SuccessResponse "User updated successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid user ID, invalid username, or invalid permissions"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 422 {object} httputil.ErrorResponse "Validation failed"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to update user"
 // @Security SessionAuth
 // @Router /users/{id} [put]
 func UpdateUserHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := utils.ParseStringToUUID(c.Param("id"))
 		if err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
 			return
 		}
 
 		var dto UpdateUserDto
 		var validationErr error
-		validationErr = utils.ValidateRequestFormat(c, &dto)
+		validationErr = httputil.ValidateRequestFormat(c, &dto)
 		if validationErr != nil {
 			return
 		}
@@ -227,7 +228,7 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 			// Normalize username to lowercase and validate
 			dto.Username = strings.ToLower(dto.Username)
 			if err := ValidateUsername(dto.Username); err != nil {
-				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
+				httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
 				return
 			}
 		}
@@ -235,7 +236,7 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 		var parsedPermissions []uuid.UUID
 		parsedPermissions, validationErr = utils.ParseStringsToUUIDs(dto.Permissions)
 		if validationErr != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid permissions", validationErr.Error())
 			return
 		}
 
@@ -248,12 +249,12 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 		serviceErr := s.UpdateUser(c.Request.Context(), userID, &cleanInput)
 		switch serviceErr {
 		case ErrForbidUpdateUser:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
+			httputil.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
 		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", serviceErr.Error())
 			return
 		}
 	}
@@ -266,24 +267,24 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param request body DeleteUsersDto true "Array of user IDs to delete"
-// @Success 200 {object} utils.SuccessResponse "Users deleted successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid request body or invalid user ID"
-// @Failure 403 {object} utils.ErrorResponse "Authorization failed"
-// @Failure 500 {object} utils.ErrorResponse "Failed to delete users"
+// @Success 200 {object} httputil.SuccessResponse "Users deleted successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid request body or invalid user ID"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to delete users"
 // @Security SessionAuth
 // @Router /users [delete]
 func DeleteUsersHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req DeleteUsersDto
 		if err := c.ShouldBindJSON(&req); err != nil {
-			utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
 			return
 		}
 		ids := make([]uuid.UUID, len(req.IDs))
 		for i, id := range req.IDs {
 			parsedId, err := utils.ParseStringToUUID(id)
 			if err != nil {
-				utils.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
+				httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
 				return
 			}
 			ids[i] = parsedId
@@ -291,12 +292,12 @@ func DeleteUsersHandler(s Service) gin.HandlerFunc {
 		serviceErr := s.DeleteUsers(c.Request.Context(), ids)
 		switch serviceErr {
 		case ErrForbidDeleteUser:
-			utils.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
 			return
 		case nil:
-			utils.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
+			httputil.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
 		default:
-			utils.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete users", serviceErr.Error())
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete users", serviceErr.Error())
 			return
 		}
 	}
