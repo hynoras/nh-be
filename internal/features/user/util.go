@@ -3,7 +3,7 @@ package user
 import (
 	"regexp"
 
-	strvalidate "nh-be/utils/string"
+	"nh-be/internal/utils/httputil"
 )
 
 const (
@@ -32,27 +32,27 @@ func ValidateUsername(username string) error {
 	}
 
 	// Must start with a letter
-	if !strvalidate.ValidateStartLetter(username, []string{strvalidate.IS_LETTER}) {
+	if !httputil.ValidateStartLetter(username, []string{httputil.IS_LETTER}) {
 		return ErrUsernameMustStartWithLetter
 	}
 
 	// Must end with a letter or number
-	if !strvalidate.ValidateEndChar(username, []string{strvalidate.IS_LETTER, strvalidate.IS_NUMBER}) {
+	if !httputil.ValidateEndChar(username, []string{httputil.IS_LETTER, httputil.IS_NUMBER}) {
 		return ErrUsernameMustEndWithLetterOrNumber
 	}
 
 	// No consecutive dots or underscores
-	if !strvalidate.ValidateNoConsecutive(username) {
+	if !httputil.ValidateNoConsecutive(username) {
 		return ErrUsernameNoConsecutiveSpecialChars
 	}
 
 	// No adjacent dot/underscore combinations
-	if !strvalidate.ValidateNoAdjacentSpecialChars(username) {
+	if !httputil.ValidateNoAdjacentSpecialChars(username) {
 		return ErrUsernameNoAdjacentSpecialChars
 	}
 
 	// Check reserved names
-	if !strvalidate.ValidateNotReservedName(username) {
+	if !httputil.ValidateNotReservedName(username) {
 		return ErrReservedUsername
 	}
 
