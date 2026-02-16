@@ -7,6 +7,17 @@ import (
 	"github.com/google/uuid"
 )
 
+func MapUserDtoToLoginResponse(user user.User, permissions []string) UserResponseDto {
+	return UserResponseDto{
+		ID:          user.ID,
+		Username:    user.Username,
+		Email:       user.Email,
+		Permissions: permissions,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+	}
+}
+
 func MapCreateDtoToVerificationToken(userId uuid.UUID, codeHash string, tokenType VerificationTokenType) *VerificationToken {
 	return &VerificationToken{
 		UserID:    userId,

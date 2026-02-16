@@ -18,7 +18,7 @@ import (
 type Service interface {
 	SignUp(ctx context.Context, req SignUpDto) error
 	VerifyEmail(ctx context.Context, token string) (string, error)
-	Login(ctx context.Context, email, password string) (*user.User, []string, string, error)
+	Login(ctx context.Context, email, password string) (*UserResponseDto, string, error)
 	Logout(ctx context.Context, sessionId string) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 	CreateVerificationToken(ctx context.Context, userId uuid.UUID, tokenType VerificationTokenType) (CreatedTokenDto, error)
@@ -172,34 +172,36 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 	return sessionId, nil
 }
 
-func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, string, error) {
+func (s *service) Login(ctx context.Context, email, password string) (*UserResponseDto, string, error) {
 	u, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, []string{}, "", err
+		return nil, "", err
 	}
 	if u == nil {
-		return nil, []string{}, "", errors.New("invalid credentials")
+		return nil, "", ErrInvalidCredentials
 	}
 	if !crypto.CheckPasswordHash(password, u.Password) {
-		return nil, []string{}, "", errors.New("invalid credentials")
+		return nil, "", ErrInvalidCredentials
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)
 	if err != nil {
-		return nil, []string{}, "", err
+		return nil, "", err
 	}
 
 	sessionId, genErr := crypto.GenerateToken()
 	if genErr != nil {
-		return nil, []string{}, "", genErr
+		return nil, "", genErr
 	}
 
 	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, u.ID.String())
 	if sessionErr != nil {
-		return nil, []string{}, "", sessionErr
+		return nil, "", sessionErr
 	}
 
-	return u, permissions, sessionId, nil
+	mappedUser := MapUserDtoToLoginResponse(*u, permissions)
+
+	return &mappedUser, sessionId, nil
 }
 
 func (s *service) Logout(ctx context.Context, sessionId string) error {

@@ -60,7 +60,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		userRes, permRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
+		userRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
 		if err != nil {
 			httputil.MakeErrorResponse(
 				c,
@@ -81,17 +81,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			MaxAge:   8 * 60 * 60,
 		})
 
-		resp := LoginResponseDto{
-			User: UserResponseDto{
-				ID:          userRes.ID,
-				Username:    userRes.Username,
-				Email:       userRes.Email,
-				Permissions: permRes,
-				CreatedAt:   userRes.CreatedAt,
-				UpdatedAt:   userRes.UpdatedAt,
-			},
-		}
-		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", resp)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", userRes)
 	}
 }
 

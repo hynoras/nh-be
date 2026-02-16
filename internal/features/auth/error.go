@@ -3,6 +3,7 @@ package auth
 import "errors"
 
 var (
+	ErrInvalidCredentials        = errors.New("invalid credentials")
 	ErrVerificationTokenNotFound = errors.New("token not found")
 	ErrUnauthenticated           = errors.New("unauthenticated")
 	ErrEmailAlreadyExists        = errors.New("email already exists")
