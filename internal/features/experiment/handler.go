@@ -37,8 +37,7 @@ func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		experimentResp := MapExperimentsToDto(experiments)
-		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiments fetched successfully", experimentResp, length)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiments fetched successfully", experiments, length)
 	}
 }
 
@@ -68,7 +67,7 @@ func GetExperimentByIDHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment fetched successfully", MapExperimentToDto(*experiment))
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment fetched successfully", experiment)
 
 	}
 }

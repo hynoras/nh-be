@@ -12,8 +12,8 @@ import (
 )
 
 type Service interface {
-	GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]Experiment, int64, error)
-	GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experiment, error)
+	GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error)
+	GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error)
 	CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error
 	UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error
 	UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error
@@ -32,7 +32,7 @@ func NewService(experimentRepo Repository, permissionService permission.Service)
 	}
 }
 
-func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]Experiment, int64, error) {
+func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -51,10 +51,13 @@ func (s *service) GetAllExperiments(ctx context.Context, search string, page, pa
 	if err != nil {
 		return nil, 0, err
 	}
-	return experiments, length, nil
+
+	experimentResp := MapExperimentsToDto(experiments)
+
+	return experimentResp, length, nil
 }
 
-func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experiment, error) {
+func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -73,7 +76,9 @@ func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experim
 	if err != nil {
 		return nil, err
 	}
-	return experiment, nil
+
+	mappedExperiment := MapExperimentToDto(*experiment)
+	return &mappedExperiment, nil
 }
 
 func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error {

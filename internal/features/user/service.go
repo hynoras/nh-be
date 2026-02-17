@@ -17,8 +17,8 @@ import (
 type Service interface {
 	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
-	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error)
-	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error)
+	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error)
+	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error)
 	CreateUser(ctx context.Context, userInput *UserInput) error
 	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
@@ -129,7 +129,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 	})
 }
 
-func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error) {
+func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -148,41 +148,46 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 	if err != nil {
 		return nil, 0, err
 	}
-	return users, length, nil
+	mappedUser := MapUsersToDto(users)
+	return mappedUser, length, nil
 }
 
-func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error) {
+func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
-		return nil, []string{}, err
+		return nil, err
 	}
 
 	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
 	if err != nil {
-		return nil, []string{}, err
+		return nil, err
 	}
 
 	if isMe == false && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, []string{}, constant.ErrForbidViewUser
+		return nil, constant.ErrForbidViewUser
 	}
 
 	var user *User
 	var userErr error
 	var permissionCodes []string
 	var permCodeErr error
+	var mapperUser interface{}
 
 	user, userErr = s.userRepo.FindByID(ctx, id)
 	if userErr != nil {
-		return nil, []string{}, userErr
+		return nil, userErr
 	}
 
 	if isMe == true {
 		permissionCodes, permCodeErr = s.permissionService.GetUserPermissionCodeNames(ctx, id)
 		if permCodeErr != nil {
-			return nil, []string{}, permCodeErr
+			return nil, permCodeErr
 		}
+		mapperUser = MapUserToMeDto(*user, permissionCodes)
+	} else {
+		mapperUser = MapUserToDto(*user)
 	}
-	return user, permissionCodes, nil
+	return mapperUser, nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {

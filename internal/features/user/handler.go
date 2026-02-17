@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // CreateUserHandler godoc
@@ -94,8 +93,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllUsersFailed) {
 			return
 		}
-		userResp := MapUsersToDto(users)
-		httputil.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", users, length)
 	}
 }
 
@@ -119,13 +117,12 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 		if idErr != nil {
 			return
 		}
-		user, _, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
+		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
 		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetUserDetailFailed) {
 			return
 		}
 
-		httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
-
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", user)
 	}
 }
 
@@ -161,15 +158,11 @@ func GetMeHandler(s Service, sessionStore infra.SessionStore) gin.HandlerFunc {
 			return
 		}
 
-		user, perm, serviceErr := s.GetUserById(c.Request.Context(), parsedUuid, true)
-		switch serviceErr {
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToMeDto(*user, perm))
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get me", serviceErr.Error())
+		user, serviceErr := s.GetUserById(c.Request.Context(), parsedUuid, true)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetUserDetailFailed) {
+			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", user)
 	}
 }
 
