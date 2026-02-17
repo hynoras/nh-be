@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"nh-be/internal/constant"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -26,7 +28,7 @@ func (r *repository) FindVerificationTokenByUserId(userId uuid.UUID) (*Verificat
 	err := r.db.Model(&VerificationToken{}).Where("user_id = ?", userId).First(&token).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, ErrVerificationTokenNotFound
+			return nil, constant.ErrVerificationTokenNotFound
 		}
 		return nil, err
 	}
@@ -38,7 +40,7 @@ func (r *repository) FindVerificationTokenByCodeHash(codeHash string) (*Verifica
 	err := r.db.Model(&VerificationToken{}).Where("code_hash = ?", codeHash).First(&token).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, ErrVerificationTokenNotFound
+			return nil, constant.ErrVerificationTokenNotFound
 		}
 		return nil, err
 	}

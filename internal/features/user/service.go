@@ -77,7 +77,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 	}
 
 	if !slices.Contains(userPerm, constant.ManageUser) {
-		return ErrForbidCreateUser
+		return constant.ErrForbidCreateUser
 	}
 
 	// Check for duplicate username
@@ -86,7 +86,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return err
 	}
 	if existingUser != nil {
-		return ErrDuplicateUsername
+		return constant.ErrDuplicateUsername
 	}
 
 	// Check for duplicate email
@@ -95,7 +95,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return err
 	}
 	if existingUser != nil {
-		return ErrDuplicateEmail
+		return constant.ErrDuplicateEmail
 	}
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
@@ -141,7 +141,7 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 	}
 
 	if !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, 0, ErrForbidViewUsers
+		return nil, 0, constant.ErrForbidViewUsers
 	}
 
 	users, length, err := s.userRepo.FindAll(ctx, search, page, pageSize)
@@ -163,7 +163,7 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*Us
 	}
 
 	if isMe == false && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, []string{}, ErrForbidViewUser
+		return nil, []string{}, constant.ErrForbidViewUser
 	}
 
 	var user *User
@@ -197,7 +197,7 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 	}
 
 	if !slices.Contains(userPerm, constant.ManageUser) {
-		return ErrForbidUpdateUser
+		return constant.ErrForbidUpdateUser
 	}
 
 	var permissionGroups []permission.PermissionGroup
@@ -235,7 +235,7 @@ func (s *service) DeleteUsers(ctx context.Context, ids []uuid.UUID) error {
 	}
 
 	if !slices.Contains(userPerm, constant.ManageUser) {
-		return ErrForbidDeleteUser
+		return constant.ErrForbidDeleteUser
 	}
 
 	for _, id := range ids {

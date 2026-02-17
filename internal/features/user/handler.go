@@ -59,21 +59,10 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 			Permissions: parsedPermissions,
 		}
 		serviceErr := s.CreateUser(c.Request.Context(), &cleanInput)
-		switch serviceErr {
-		case ErrForbidCreateUser:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		//using the same message to avoid attacker from knowing the exact error
-		case ErrDuplicateUsername:
-		case ErrDuplicateEmail:
-			httputil.MakeErrorResponse(c, http.StatusConflict, "Username or email already exists", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create user", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateUserFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
 	}
 }
 
@@ -102,18 +91,11 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		}
 
 		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, pageInt, pageSizeInt)
-		switch serviceErr {
-		case ErrForbidViewUsers:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			userResp := MapUsersToDto(users)
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get all users", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllUsersFailed) {
 			return
 		}
+		userResp := MapUsersToDto(users)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", userResp, length)
 	}
 }
 
@@ -138,18 +120,12 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 			return
 		}
 		user, _, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
-		switch serviceErr {
-		case ErrForbidViewUser:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetUserDetailFailed) {
 			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "User not found", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get user", serviceErr.Error())
 		}
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", MapUserToDto(*user))
+
 	}
 }
 
@@ -251,16 +227,10 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdateUser(c.Request.Context(), userID, &cleanInput)
-		switch serviceErr {
-		case ErrForbidUpdateUser:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update user", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateUserFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
 	}
 }
 
@@ -294,15 +264,9 @@ func DeleteUsersHandler(s Service) gin.HandlerFunc {
 			ids[i] = parsedId
 		}
 		serviceErr := s.DeleteUsers(c.Request.Context(), ids)
-		switch serviceErr {
-		case ErrForbidDeleteUser:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete users", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeleteUserFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)
 	}
 }

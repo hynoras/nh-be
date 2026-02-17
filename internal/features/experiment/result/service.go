@@ -41,7 +41,7 @@ func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid
 	}
 
 	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return nil, ErrForbidViewExperimentResult
+		return nil, constant.ErrForbidViewExperimentResult
 	}
 
 	result, err := s.resultRepo.FindByExperimentID(ctx, experimentID)
@@ -64,7 +64,7 @@ func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto 
 	}
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return ErrForbidCreateExperimentResult
+		return constant.ErrForbidCreateExperimentResult
 	}
 
 	result := &ExperimentResult{
@@ -94,7 +94,7 @@ func (s *service) UpdateResult(ctx context.Context, resultID uuid.UUID, experime
 	}
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return ErrForbidUpdateExperimentResult
+		return constant.ErrForbidUpdateExperimentResult
 	}
 
 	// Use FindByIDAndExperimentID to validate both IDs and get current version

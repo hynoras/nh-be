@@ -2,6 +2,7 @@ package experiment
 
 import (
 	"context"
+	"nh-be/internal/constant"
 	"nh-be/internal/utils/dbutil"
 	"strings"
 
@@ -55,8 +56,11 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*Experiment, e
 		Where("id = ?", id).
 		Preload("CreatedBy").
 		First(&e)
-	if result.Error != nil {
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
 		return nil, result.Error
+	}
+	if result.Error == gorm.ErrRecordNotFound {
+		return nil, constant.ErrExperimentNotFound
 	}
 	return &e, nil
 }
@@ -92,7 +96,7 @@ func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status Expe
 	}
 
 	if result.RowsAffected == 0 {
-		return ErrOptimisticLockingConflict
+		return constant.ErrExperimentConflict
 	}
 
 	return nil

@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // Permission Handlers
@@ -27,19 +26,14 @@ import (
 func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
+
 		permissions, count, serviceErr := s.GetAllPermissions(c.Request.Context(), search)
-		switch serviceErr {
-		case ErrForbidViewPermissions:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			resp := MapPermissionsToDto(permissions)
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Permissions fetched successfully", resp, count)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permissions", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllPermissionFailed) {
 			return
 		}
+
+		resp := MapPermissionsToDto(permissions)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Permissions fetched successfully", resp, count)
 	}
 }
 
@@ -64,18 +58,13 @@ func GetPermissionHandler(s Service) gin.HandlerFunc {
 		}
 
 		permission, serviceErr := s.GetPermissionByID(c.Request.Context(), *parsedId)
-		switch serviceErr {
-		case ErrPermissionNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Permission not found", serviceErr.Error())
-			return
-		case nil:
-			resp := MapPermissionToDto(*permission)
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Permission fetched successfully", resp)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetPermissionDetailFailed) {
 			return
 		}
+
+		resp := MapPermissionToDto(*permission)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission fetched successfully", resp)
+
 	}
 }
 
@@ -118,20 +107,10 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.CreatePermissionGroup(c.Request.Context(), &cleanInput)
-		switch serviceErr {
-		case ErrForbidCreatePermissionGroup:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case ErrPermissionGroupNameAlreadyExists:
-			httputil.MakeErrorResponse(c, http.StatusConflict, "Role name already exists", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusCreated, "Permission group created successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create permission group", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreatePermissionGroupFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusCreated, "Permission group created successfully", nil)
 	}
 }
 
@@ -170,18 +149,12 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 		}
 
 		groups, count, serviceErr := s.GetAllPermissionGroups(c.Request.Context(), search, permissionIds, page, pageSize)
-		switch serviceErr {
-		case ErrForbidViewPermissionGroups:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			resp := MapPermissionGroupsToDto(groups)
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Permission groups fetched successfully", resp, count)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission groups", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllPermissionGroupFailed) {
 			return
 		}
+
+		resp := MapPermissionGroupsToDto(groups)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission groups fetched successfully", resp, count)
 	}
 }
 
@@ -207,21 +180,11 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		permissionGroup, serviceErr := s.GetPermissionGroupByID(c.Request.Context(), *parsedId)
-		switch serviceErr {
-		case ErrForbidViewPermissionGroup:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
-			return
-		case nil:
-			resp := MapPermissionGroupToDto(*permissionGroup)
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group fetched successfully", resp)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to fetch permission group", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetPermissionGroupDetailFailed) {
 			return
 		}
+		resp := MapPermissionGroupToDto(*permissionGroup)
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group fetched successfully", resp)
 	}
 }
 
@@ -270,23 +233,11 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdatePermissionGroup(c.Request.Context(), *parsedId, &cleanInput)
-		switch serviceErr {
-		case ErrForbidUpdatePermissionGroup:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
-			return
-		case ErrPermissionGroupNameAlreadyExists:
-			httputil.MakeErrorResponse(c, http.StatusConflict, "Role name already exists", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group updated successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update permission group", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdatePermissionGroupFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group updated successfully", nil)
+
 	}
 }
 
@@ -312,22 +263,10 @@ func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.DeletePermissionGroup(c.Request.Context(), *parsedId)
-		switch serviceErr {
-		case ErrForbidDeletePermissionGroup:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", nil)
-			return
-		case ErrCannotDeleteSuperAdmin:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Can not delete Super Admin. At least one must exist", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group deleted successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete permission group", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeletePermissionGroupFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group deleted successfully", nil)
+
 	}
 }

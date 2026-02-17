@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,7 @@ func VerifyTokenHandler(s Service) gin.HandlerFunc {
 			httputil.MakeErrorResponse(
 				c,
 				http.StatusUnauthorized,
-				"Failed to verify token",
+				constant.ErrVerifyTokenFailed,
 				err.Error(),
 			)
 			return
@@ -50,24 +51,12 @@ func VerifyTokenHandler(s Service) gin.HandlerFunc {
 func LoginHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginDto
-		if err := c.ShouldBindJSON(&req); err != nil {
-			httputil.MakeErrorResponse(
-				c,
-				http.StatusBadRequest,
-				"Invalid request format",
-				err.Error(),
-			)
+		if err := httputil.ValidateRequestFormat(c, &req); err != nil {
 			return
 		}
 
 		userRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
-		if err != nil {
-			httputil.MakeErrorResponse(
-				c,
-				http.StatusUnauthorized,
-				"Invalid email or password",
-				err.Error(),
-			)
+		if httputil.MakeServiceErrorResponse(c, err, constant.ErrLoginFailed) {
 			return
 		}
 
@@ -82,6 +71,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 		})
 
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", userRes)
+
 	}
 }
 
@@ -103,18 +93,13 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"Unauthorized",
-				ErrSessionNotFound.Error(),
+				err,
 			)
 			return
 		}
 
-		if err := s.Logout(c.Request.Context(), cookie.Value); err != nil {
-			httputil.MakeErrorResponse(
-				c,
-				http.StatusInternalServerError,
-				"Failed to logout",
-				err.Error(),
-			)
+		serviceErr := s.Logout(c.Request.Context(), cookie.Value)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrLogoutFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged out successfully", nil)
@@ -142,14 +127,13 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 		}
 
 		var req ChangePasswordDto
-		if err := c.ShouldBindJSON(&req); err != nil {
-			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
+		valReqErr := httputil.ValidateRequestFormat(c, &req)
+		if valReqErr != nil {
 			return
 		}
 
-		err = s.ChangePassword(c.Request.Context(), userID, req)
-		if err != nil {
-			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Failed to update user password", err.Error())
+		serviceErr := s.ChangePassword(c.Request.Context(), userID, req)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrChangePasswordFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User password changed successfully", nil)
@@ -159,14 +143,13 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 func SignUpHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req SignUpDto
-		if err := c.ShouldBindJSON(&req); err != nil {
-			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid request body", err.Error())
+		valReqErr := httputil.ValidateRequestFormat(c, &req)
+		if valReqErr != nil {
 			return
 		}
 
-		err := s.SignUp(c.Request.Context(), req)
-		if err != nil {
-			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Failed to sign up", err.Error())
+		serviceErr := s.SignUp(c.Request.Context(), req)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrSignUpFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User signed up successfully", nil)

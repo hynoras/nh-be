@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"nh-be/internal/constant"
 	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
@@ -70,7 +71,7 @@ func (s *service) CreateVerificationToken(
 	tokenType VerificationTokenType,
 ) (CreatedTokenDto, error) {
 	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(userId)
-	if findErr != nil && !errors.Is(findErr, ErrVerificationTokenNotFound) {
+	if findErr != nil && !errors.Is(findErr, constant.ErrVerificationTokenNotFound) {
 		return CreatedTokenDto{}, findErr
 	}
 
@@ -101,7 +102,7 @@ func (s *service) CreateVerificationToken(
 func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	u, err := s.userRepo.FindByEmail(ctx, req.Email)
 
-	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
 		return err
 	}
 
@@ -142,10 +143,10 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 		return "", findErr
 	}
 	if existingToken.Type != VerifyEmail {
-		return "", ErrInvalidVerificationToken
+		return "", constant.ErrInvalidVerificationToken
 	}
 	if existingToken.ExpireAt.Before(time.Now()) {
-		return "", ErrVerificationTokenExpired
+		return "", constant.ErrVerificationTokenExpired
 	}
 
 	updateErr := s.userRepo.Update(ctx, existingToken.UserID, &user.User{
@@ -178,10 +179,10 @@ func (s *service) Login(ctx context.Context, email, password string) (*UserRespo
 		return nil, "", err
 	}
 	if u == nil {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", constant.ErrInvalidCredentials
 	}
 	if !crypto.CheckPasswordHash(password, u.Password) {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", constant.ErrInvalidCredentials
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)

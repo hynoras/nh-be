@@ -44,7 +44,7 @@ func (s *service) GetAllExperiments(ctx context.Context, search string, page, pa
 	}
 
 	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return nil, 0, ErrForbidViewExperiments
+		return nil, 0, constant.ErrForbidViewExperiments
 	}
 
 	experiments, length, err := s.experimentRepo.FindAll(ctx, search, page, pageSize)
@@ -66,7 +66,7 @@ func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*Experim
 	}
 
 	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return nil, ErrForbidViewExperiment
+		return nil, constant.ErrForbidViewExperiment
 	}
 
 	experiment, err := s.experimentRepo.FindByID(ctx, id)
@@ -88,7 +88,7 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 	}
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return ErrForbidCreateExperiment
+		return constant.ErrForbidCreateExperiment
 	}
 
 	experiment := &Experiment{
@@ -117,7 +117,7 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 	}
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return ErrForbidUpdateExperiment
+		return constant.ErrForbidUpdateExperiment
 	}
 
 	// Check if experiment exists
@@ -148,7 +148,7 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 	}
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return ErrForbidUpdateExperiment
+		return constant.ErrForbidUpdateExperiment
 	}
 
 	// Check if experiment exists
@@ -159,18 +159,18 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 	}
 
 	if exp.Status == status {
-		return ErrAlreadyInTargetState
+		return constant.ErrExperimentAlreadyInTargetState
 	}
 
 	// validate status
 	if exp.Status == ExperimentDraft && status != ExperimentPlanning {
-		return ErrStatusTransitionFromDraftToPlanning
+		return constant.ErrStatusTransitionFromDraftToPlanning
 	}
 	if exp.Status == ExperimentPlanning && status != ExperimentRunning {
-		return ErrStatusTransitionFromPlanningToRunning
+		return constant.ErrStatusTransitionFromPlanningToRunning
 	}
 	if exp.Status == ExperimentRunning && (status != ExperimentCompleted && status != ExperimentAborted) {
-		return ErrStatusTransitionFromRunningToCompletedOrAborted
+		return constant.ErrStatusTransitionFromRunningToCompletedOrAborted
 	}
 
 	return s.experimentRepo.UpdateStatus(ctx, id, status, exp.Version)
@@ -188,7 +188,7 @@ func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {
 	}
 
 	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return ErrForbidDeleteExperiment
+		return constant.ErrForbidDeleteExperiment
 	}
 
 	// Check if experiment exists

@@ -3,6 +3,7 @@ package user
 import (
 	"regexp"
 
+	"nh-be/internal/constant"
 	"nh-be/internal/utils/validationutil"
 )
 
@@ -23,37 +24,37 @@ const (
 func ValidateUsername(username string) error {
 	// Check length
 	if len(username) < usernameMinLength || len(username) > usernameMaxLength {
-		return ErrInvalidUsernameLength
+		return constant.ErrInvalidUsernameLength
 	}
 
 	// Check allowed characters
 	if !regexp.MustCompile(usernameAllowedChars).MatchString(username) {
-		return ErrInvalidUsernameChars
+		return constant.ErrInvalidUsernameChars
 	}
 
 	// Must start with a letter
 	if !validationutil.ValidateStartLetter(username, []string{validationutil.IS_LETTER}) {
-		return ErrUsernameMustStartWithLetter
+		return constant.ErrUsernameMustStartWithLetter
 	}
 
 	// Must end with a letter or number
 	if !validationutil.ValidateEndChar(username, []string{validationutil.IS_LETTER, validationutil.IS_NUMBER}) {
-		return ErrUsernameMustEndWithLetterOrNumber
+		return constant.ErrUsernameMustEndWithLetterOrNumber
 	}
 
 	// No consecutive dots or underscores
 	if !validationutil.ValidateNoConsecutive(username) {
-		return ErrUsernameNoConsecutiveSpecialChars
+		return constant.ErrUsernameNoConsecutiveSpecialChars
 	}
 
 	// No adjacent dot/underscore combinations
 	if !validationutil.ValidateNoAdjacentSpecialChars(username) {
-		return ErrUsernameNoAdjacentSpecialChars
+		return constant.ErrUsernameNoAdjacentSpecialChars
 	}
 
 	// Check reserved names
 	if !validationutil.ValidateNotReservedName(username) {
-		return ErrReservedUsername
+		return constant.ErrReservedUsername
 	}
 
 	return nil
