@@ -4,7 +4,7 @@ package mocks
 
 import (
 	context "context"
-	procedure "nh-be/internal/procedure"
+	procedure "nh-be/internal/features/procedure"
 
 	mock "github.com/stretchr/testify/mock"
 

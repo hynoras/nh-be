@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"nh-be/constant"
-	"nh-be/internal/permission/mocks"
-	"nh-be/internal/procedure"
-	procmocks "nh-be/internal/procedure/mocks"
+	"nh-be/internal/constant"
+	"nh-be/internal/features/permission/mocks"
+	"nh-be/internal/features/procedure"
+	procmocks "nh-be/internal/features/procedure/mocks"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

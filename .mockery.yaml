@@ -6,15 +6,27 @@ outpkg: mocks
 mockname: "{{.InterfaceName}}"
 filename: "{{.InterfaceName | snakecase}}.go"
 packages:
-  nh-be/internal/experiment/result:
+  nh-be/internal/features/auth:
     interfaces:
       Repository:
       Service:
-  nh-be/internal/permission:
+  nh-be/internal/features/user:
     interfaces:
       Repository:
       Service:
-  nh-be/internal/procedure:
+  nh-be/internal/features/permission:
+    interfaces:
+      Repository:
+      Service:
+  nh-be/internal/features/experiment:
+    interfaces:
+      Repository:
+      Service:
+  nh-be/internal/features/experiment/result:
+    interfaces:
+      Repository:
+      Service:
+  nh-be/internal/features/procedure:
     interfaces:
       Repository:
       Service:

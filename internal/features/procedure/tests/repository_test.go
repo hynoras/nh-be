@@ -2,9 +2,10 @@ package procedure
 
 import (
 	"context"
-	"nh-be/constant"
-	"nh-be/internal/procedure"
-	"nh-be/utils"
+	"nh-be/internal/constant"
+	"nh-be/internal/features/procedure"
+	"nh-be/internal/utils/testutil"
+	"nh-be/internal/utils/timeutil"
 	"testing"
 	"time"
 
@@ -226,7 +227,7 @@ func TestRepository_FindAll(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, mock := utils.SetupMockDB(t)
+			db, mock := testutil.SetupMockDB(t)
 			tc.setupMock(mock)
 			repo := procedure.NewRepository(db)
 			ctx := tc.ctx()
@@ -557,7 +558,7 @@ func TestRepository_FindByID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, mock := utils.SetupMockDB(t)
+			db, mock := testutil.SetupMockDB(t)
 			tc.setupMock(mock, tc.id)
 			repo := procedure.NewRepository(db)
 			ctx := tc.ctx()
@@ -798,7 +799,7 @@ func TestRepository_CreateProcedure(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, mock := utils.SetupMockDB(t)
+			db, mock := testutil.SetupMockDB(t)
 			repo := procedure.NewRepository(db)
 			ctx := tc.ctx()
 
@@ -839,7 +840,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					Title:       "Updated Title",
 					Description: "Updated Description",
 					Version:     1,
-					UpdatedAt:   utils.TimePtr(time.Now()),
+					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
@@ -861,7 +862,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					Title:       "Updated Title",
 					Description: "Updated Description",
 					Version:     1,
-					UpdatedAt:   utils.TimePtr(time.Now()),
+					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
@@ -884,7 +885,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					Title:       "Updated Title",
 					Description: "Updated Description",
 					Version:     1,
-					UpdatedAt:   utils.TimePtr(time.Now()),
+					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
@@ -909,7 +910,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					Title:       "Updated Title",
 					Description: "Updated Description",
 					Version:     1, // Version mismatch
-					UpdatedAt:   utils.TimePtr(time.Now()),
+					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
@@ -934,7 +935,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					Title:       "Updated Title",
 					Description: "Updated Description",
 					Version:     1,
-					UpdatedAt:   utils.TimePtr(time.Now()),
+					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
@@ -959,7 +960,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, mock := utils.SetupMockDB(t)
+			db, mock := testutil.SetupMockDB(t)
 			repo := procedure.NewRepository(db)
 			ctx := context.Background()
 

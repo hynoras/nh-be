@@ -1,7 +1,7 @@
 package procedure
 
 import (
-	"nh-be/internal/permission"
+	"nh-be/internal/features/permission"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

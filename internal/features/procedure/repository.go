@@ -3,8 +3,8 @@ package procedure
 import (
 	"context"
 	"errors"
-	"nh-be/constant"
-	"nh-be/utils"
+	"nh-be/internal/constant"
+	"nh-be/internal/utils/dbutil"
 	"strings"
 
 	"github.com/google/uuid"
@@ -46,7 +46,7 @@ func (r *repository) FindAll(ctx context.Context, search string, offset, limit i
 		return nil, 0, err
 	}
 
-	err = query.Scopes(utils.Paginate(offset, limit)).Find(&procedures).Error
+	err = query.Scopes(dbutil.Paginate(offset, limit)).Find(&procedures).Error
 	return procedures, length, err
 }
 

@@ -15,7 +15,7 @@ import (
 	"nh-be/internal/constant"
 	resHandler "nh-be/internal/features/experiment/result"
 	resultmocks "nh-be/internal/features/experiment/result/mocks"
-	"nh-be/utils"
+	"nh-be/internal/utils/testutil"
 )
 
 func TestHandler_GetResultByExperimentID(t *testing.T) {
@@ -77,7 +77,7 @@ func TestHandler_GetResultByExperimentID(t *testing.T) {
 			mockSvc := resultmocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodGet, "/experiments/:experimentId/result",
+			router := testutil.SetupTestRouter(http.MethodGet, "/experiments/:experimentId/result",
 				resHandler.GetResultByExperimentIDHandler(mockSvc))
 
 			req := httptest.NewRequest(http.MethodGet,
@@ -177,7 +177,7 @@ func TestHandler_CreateResult(t *testing.T) {
 			mockSvc := resultmocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodPost, "/experiments/:experimentId/result",
+			router := testutil.SetupTestRouter(http.MethodPost, "/experiments/:experimentId/result",
 				resHandler.CreateResultHandler(mockSvc))
 
 			body, _ := json.Marshal(tc.requestBody)
@@ -297,7 +297,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			mockSvc := resultmocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodPut, "/experiments/:experimentId/result/:resultId",
+			router := testutil.SetupTestRouter(http.MethodPut, "/experiments/:experimentId/result/:resultId",
 				resHandler.UpdateResultHandler(mockSvc))
 
 			body, _ := json.Marshal(tc.requestBody)

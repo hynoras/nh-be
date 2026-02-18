@@ -1,7 +1,7 @@
 package procedure
 
 import (
-	"nh-be/internal/experiment/root"
+	"nh-be/internal/features/experiment"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,11 +38,11 @@ type ProcedureStep struct {
 }
 
 type ProcedureExperimentAssignment struct {
-	ID           uuid.UUID       `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ProcedureID  uuid.UUID       `gorm:"type:uuid;not null;uniqueIndex:idx_proc_exp"`
-	ExperimentID uuid.UUID       `gorm:"type:uuid;not null;uniqueIndex:idx_proc_exp"`
-	Procedure    Procedure       `gorm:"foreignKey:ProcedureID;references:ID;OnDelete:CASCADE"`
-	Experiment   root.Experiment `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE"`
+	ID           uuid.UUID             `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	ProcedureID  uuid.UUID             `gorm:"type:uuid;not null;uniqueIndex:idx_proc_exp"`
+	ExperimentID uuid.UUID             `gorm:"type:uuid;not null;uniqueIndex:idx_proc_exp"`
+	Procedure    Procedure             `gorm:"foreignKey:ProcedureID;references:ID;OnDelete:CASCADE"`
+	Experiment   experiment.Experiment `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE"`
 
 	CreatedAt time.Time  `gorm:"type:timestamp;not null;default:now()"`
 	UpdatedAt *time.Time `gorm:"type:timestamp"`

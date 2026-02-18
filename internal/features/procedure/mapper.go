@@ -1,7 +1,7 @@
 package procedure
 
 import (
-	"nh-be/utils"
+	"nh-be/internal/utils/timeutil"
 	"time"
 
 	"github.com/google/uuid"
@@ -109,7 +109,7 @@ func MapUpdateDtoToProcedure(p *UpdateProcedureDto) *Procedure {
 	return &Procedure{
 		Title:       p.Title,
 		Description: p.Description,
-		UpdatedAt:   utils.TimePtr(time.Now()),
+		UpdatedAt:   timeutil.TimePtr(time.Now()),
 		Version:     p.Version,
 	}
 }

@@ -2,10 +2,10 @@ package procedure
 
 import (
 	"context"
-	"nh-be/constant"
-	"nh-be/internal/experiment/root"
-	"nh-be/internal/procedure"
-	"nh-be/utils"
+	"nh-be/internal/constant"
+	"nh-be/internal/features/experiment"
+	"nh-be/internal/features/procedure"
+	"nh-be/internal/utils/timeutil"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,7 +34,7 @@ func TestProcedureList() []procedure.Procedure {
 			Version:     2,
 			ParentID:    nil,
 			CreatedAt:   time.Now(),
-			UpdatedAt:   utils.TimePtr(time.Now()),
+			UpdatedAt:   timeutil.TimePtr(time.Now()),
 		},
 	}
 }
@@ -47,7 +47,7 @@ func TestProcedureDetail() procedure.Procedure {
 		Version:     1,
 		ParentID:    nil,
 		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-		UpdatedAt:   utils.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+		UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 	}
 }
 
@@ -60,7 +60,7 @@ func TestStepList() []procedure.ProcedureStep {
 			Title:       "Test Step",
 			Description: "Test Step Description",
 			CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-			UpdatedAt:   utils.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+			UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 		},
 		{
 			ID:          uuid.MustParse("33333333-1234-1234-1234-555533332222"),
@@ -69,7 +69,7 @@ func TestStepList() []procedure.ProcedureStep {
 			Title:       "Test Step 2",
 			Description: "Test Step Description 2",
 			CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-			UpdatedAt:   utils.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+			UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 		},
 	}
 }
@@ -86,32 +86,32 @@ func TestProcedureDetailWithRelations() procedure.Procedure {
 		Version:     1,
 		ParentID:    nil,
 		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-		UpdatedAt:   utils.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+		UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 		Steps:       TestStepList(),
 		Experiments: []procedure.ProcedureExperimentAssignment{
 			{
 				ID:           uuid.MustParse("cccccccc-3333-3333-3333-333333333333"),
 				ProcedureID:  procID,
 				ExperimentID: exp1ID,
-				Experiment: root.Experiment{
+				Experiment: experiment.Experiment{
 					ID:        exp1ID,
 					Title:     "Test Experiment 1",
 					Objective: "Test Objective 1",
 				},
 				CreatedAt: time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-				UpdatedAt: utils.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+				UpdatedAt: timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 			},
 			{
 				ID:           uuid.MustParse("dddddddd-4444-4444-4444-444444444444"),
 				ProcedureID:  procID,
 				ExperimentID: exp2ID,
-				Experiment: root.Experiment{
+				Experiment: experiment.Experiment{
 					ID:        exp2ID,
 					Title:     "Test Experiment 2",
 					Objective: "Test Objective 2",
 				},
 				CreatedAt: time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-				UpdatedAt: utils.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+				UpdatedAt: timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 			},
 		},
 	}

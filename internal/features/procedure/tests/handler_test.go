@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"nh-be/constant"
-	"nh-be/internal/procedure"
-	proceduremocks "nh-be/internal/procedure/mocks"
-	"nh-be/utils"
+	"nh-be/internal/constant"
+	"nh-be/internal/features/procedure"
+	proceduremocks "nh-be/internal/features/procedure/mocks"
+	"nh-be/internal/utils/testutil"
 )
 
 func TestHandler_GetAllProcedures(t *testing.T) {
@@ -66,7 +66,7 @@ func TestHandler_GetAllProcedures(t *testing.T) {
 			mockSvc := proceduremocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodGet, "/procedures",
+			router := testutil.SetupTestRouter(http.MethodGet, "/procedures",
 				procedure.GetAllProceduresHandler(mockSvc))
 
 			req := httptest.NewRequest(http.MethodGet,
@@ -161,7 +161,7 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			mockSvc := proceduremocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodGet, "/procedures/:procedureId",
+			router := testutil.SetupTestRouter(http.MethodGet, "/procedures/:procedureId",
 				procedure.GetProcedureByIDHandler(mockSvc))
 
 			req := httptest.NewRequest(http.MethodGet,
@@ -235,7 +235,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 			mockSvc := proceduremocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodPost, "/procedures",
+			router := testutil.SetupTestRouter(http.MethodPost, "/procedures",
 				procedure.CreateProcedureHandler(mockSvc))
 
 			req := httptest.NewRequest(http.MethodPost,
@@ -336,7 +336,7 @@ func TestHandler_UpdateProcedure(t *testing.T) {
 			mockSvc := proceduremocks.NewService(t)
 			tc.setupMocks(mockSvc)
 
-			router := utils.SetupTestRouter(http.MethodPut, "/procedures/:procedureId",
+			router := testutil.SetupTestRouter(http.MethodPut, "/procedures/:procedureId",
 				procedure.UpdateProcedureHandler(mockSvc))
 
 			req := httptest.NewRequest(http.MethodPut,

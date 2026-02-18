@@ -46,6 +46,13 @@ const (
 	ErrCreateExperimentResultFailed    = "Failed to create experiment result"
 	ErrUpdateExperimentResultFailed    = "Failed to update experiment result"
 	ErrDeleteExperimentResultFailed    = "Failed to delete experiment result"
+
+	//procedure
+	ErrGetAllProceduresFailed   = "Failed to get procedures"
+	ErrGetProcedureDetailFailed = "Failed to get procedure detail"
+	ErrCreateProcedureFailed    = "Failed to create procedure"
+	ErrUpdateProcedureFailed    = "Failed to update procedure"
+	ErrDeleteProcedureFailed    = "Failed to delete procedure"
 )
 
 var (
@@ -112,4 +119,13 @@ var (
 	ErrInvalidOutcome                ErrorDetail = errors.New("invalid outcome value")
 	ErrInvalidConfidenceLevel        ErrorDetail = errors.New("invalid confidence level value")
 	ErrExperimentResultConflict      ErrorDetail = errors.New("the experiment result was modified by another request, please retry")
+
+	//procedure
+	ErrProcedureNotFound         ErrorDetail = errors.New("procedure not found")
+	ErrProcedureAlreadyExists    ErrorDetail = errors.New("procedure already exists")
+	ErrOptimisticLockingConflict ErrorDetail = errors.New("version conflict")
+	ErrForbidViewProcedure       ErrorDetail = errors.New("you do not have permission to view this procedure")
+	ErrForbidCreateProcedure     ErrorDetail = errors.New("you do not have permission to create this procedure")
+	ErrForbidUpdateProcedure     ErrorDetail = errors.New("you do not have permission to update this procedure")
+	ErrForbidDeleteProcedure     ErrorDetail = errors.New("you do not have permission to delete this procedure")
 )

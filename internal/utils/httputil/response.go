@@ -253,6 +253,19 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		MakeErrorResponse(c, http.StatusBadRequest, "Invalid confidence level value", err.Error())
 	case constant.ErrExperimentResultConflict:
 		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateExperimentFailed, err.Error())
+
+	//procedure
+	case constant.ErrForbidViewProcedure,
+		constant.ErrForbidCreateProcedure,
+		constant.ErrForbidUpdateProcedure,
+		constant.ErrForbidDeleteProcedure:
+		MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, err.Error())
+	case constant.ErrProcedureNotFound:
+		MakeErrorResponse(c, http.StatusNotFound, "Procedure not found", err.Error())
+	case constant.ErrProcedureAlreadyExists:
+		MakeErrorResponse(c, http.StatusConflict, "Procedure already exists", err.Error())
+	case constant.ErrOptimisticLockingConflict:
+		MakeErrorResponse(c, http.StatusConflict, "Version conflict", err.Error())
 	//add other domain error here
 
 	default:

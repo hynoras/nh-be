@@ -2,9 +2,9 @@ package procedure
 
 import (
 	"context"
-	"nh-be/constant"
-	"nh-be/internal/permission"
-	"nh-be/utils"
+	"nh-be/internal/constant"
+	"nh-be/internal/features/permission"
+	"nh-be/internal/utils/ctxutil"
 	"slices"
 
 	"github.com/google/uuid"
@@ -28,7 +28,7 @@ func NewService(repository Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) CanViewProcedure(ctx context.Context, id uuid.UUID) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (s *service) CanViewProcedure(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *service) CanManageProcedure(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
-	userId, err := utils.GetUserIdFromContext(ctx)
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return err
 	}
