@@ -3,7 +3,6 @@ package procedure
 import (
 	"context"
 	"nh-be/internal/constant"
-	"nh-be/internal/features/experiment"
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/utils/timeutil"
 	"time"
@@ -76,8 +75,6 @@ func TestStepList() []procedure.ProcedureStep {
 
 func TestProcedureDetailWithRelations() procedure.Procedure {
 	procID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
-	exp1ID := uuid.MustParse("aaaaaaaa-1111-1111-1111-111111111111")
-	exp2ID := uuid.MustParse("bbbbbbbb-2222-2222-2222-222222222222")
 
 	return procedure.Procedure{
 		ID:          procID,
@@ -88,32 +85,6 @@ func TestProcedureDetailWithRelations() procedure.Procedure {
 		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
 		UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 		Steps:       TestStepList(),
-		Experiments: []procedure.ProcedureExperimentAssignment{
-			{
-				ID:           uuid.MustParse("cccccccc-3333-3333-3333-333333333333"),
-				ProcedureID:  procID,
-				ExperimentID: exp1ID,
-				Experiment: experiment.Experiment{
-					ID:        exp1ID,
-					Title:     "Test Experiment 1",
-					Objective: "Test Objective 1",
-				},
-				CreatedAt: time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-				UpdatedAt: timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
-			},
-			{
-				ID:           uuid.MustParse("dddddddd-4444-4444-4444-444444444444"),
-				ProcedureID:  procID,
-				ExperimentID: exp2ID,
-				Experiment: experiment.Experiment{
-					ID:        exp2ID,
-					Title:     "Test Experiment 2",
-					Objective: "Test Objective 2",
-				},
-				CreatedAt: time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
-				UpdatedAt: timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
-			},
-		},
 	}
 }
 
@@ -166,8 +137,6 @@ func CreateProcedureWithSteps() *procedure.Procedure {
 
 func CreateProcedureWithExperiments() *procedure.Procedure {
 	procID := uuid.New()
-	exp1ID := uuid.New()
-	exp2ID := uuid.New()
 
 	return &procedure.Procedure{
 		ID:          procID,
@@ -175,18 +144,6 @@ func CreateProcedureWithExperiments() *procedure.Procedure {
 		Description: "Test Procedure Description",
 		Version:     1,
 		ParentID:    nil,
-		Experiments: []procedure.ProcedureExperimentAssignment{
-			{
-				ID:           uuid.New(),
-				ProcedureID:  procID,
-				ExperimentID: exp1ID,
-			},
-			{
-				ID:           uuid.New(),
-				ProcedureID:  procID,
-				ExperimentID: exp2ID,
-			},
-		},
 	}
 }
 

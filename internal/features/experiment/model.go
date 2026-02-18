@@ -3,6 +3,7 @@ package experiment
 import (
 	"time"
 
+	proc "nh-be/internal/features/procedure"
 	"nh-be/internal/features/user"
 
 	"github.com/google/uuid"
@@ -24,6 +25,9 @@ type Experiment struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	ProcedureID *uuid.UUID     `gorm:"type:uuid;index"`
+	Procedure   proc.Procedure `gorm:"foreignKey:ProcedureID"`
 
 	// Relations
 	// Steps        []ExperimentStep        `gorm:"constraint:OnDelete:CASCADE"`

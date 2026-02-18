@@ -16,7 +16,7 @@ type Repository interface {
 	FindByID(ctx context.Context, id uuid.UUID, withSteps, withExperiments bool) (*Procedure, error)
 	CreateProcedure(ctx context.Context, procedure *Procedure) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
-	// Delete(ctx context.Context, id uuid.UUID) error
+
 	WithTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
 
@@ -104,10 +104,6 @@ func (r *repository) UpdateProcedure(ctx context.Context, id uuid.UUID, procedur
 	}
 	return nil
 }
-
-// func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {
-// 	return r.db.WithContext(ctx).Delete(&Procedure{}, id).Error
-// }
 
 func (r *repository) WithTransaction(ctx context.Context, fn func(repo Repository) error) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

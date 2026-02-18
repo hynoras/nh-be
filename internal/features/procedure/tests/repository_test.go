@@ -405,7 +405,6 @@ func TestRepository_FindByID(t *testing.T) {
 			checkResult: func(t *testing.T, result *procedure.Procedure) {
 				assert.NotNil(t, result)
 				assert.Greater(t, len(result.Steps), 0)
-				assert.Equal(t, 0, len(result.Experiments))
 			},
 		},
 		{
@@ -439,7 +438,6 @@ func TestRepository_FindByID(t *testing.T) {
 			checkResult: func(t *testing.T, result *procedure.Procedure) {
 				assert.NotNil(t, result)
 				assert.Equal(t, 0, len(result.Steps))
-				assert.Greater(t, len(result.Experiments), 0)
 			},
 		},
 		{
@@ -486,7 +484,6 @@ func TestRepository_FindByID(t *testing.T) {
 			checkResult: func(t *testing.T, result *procedure.Procedure) {
 				assert.NotNil(t, result)
 				assert.Greater(t, len(result.Steps), 0)
-				assert.Greater(t, len(result.Experiments), 0)
 			},
 		},
 		{
@@ -550,8 +547,6 @@ func TestRepository_FindByID(t *testing.T) {
 			expectedError: nil,
 			checkResult: func(t *testing.T, result *procedure.Procedure) {
 				assert.NotNil(t, result)
-				assert.NotNil(t, result.Experiments)
-				assert.Equal(t, 0, len(result.Experiments))
 			},
 		},
 	}
@@ -623,18 +618,10 @@ func TestRepository_CreateProcedure(t *testing.T) {
 							AddRow(step.ID, time.Now()))
 				}
 
-				// Insert experiment assignments
-				for _, exp := range proc.Experiments {
-					mock.ExpectQuery(`INSERT INTO "procedure_experiment_assignments"`).
-						WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
-							AddRow(exp.ID, time.Now()))
-				}
-
 				mock.ExpectCommit()
 			},
 			procedureFunc: func() *procedure.Procedure {
 				procID := uuid.New()
-				exp1ID := uuid.New()
 
 				return &procedure.Procedure{
 					ID:          procID,
@@ -650,13 +637,6 @@ func TestRepository_CreateProcedure(t *testing.T) {
 							Title:       "Step 1",
 							Description: "Desc 1",
 							StepType:    "manual",
-						},
-					},
-					Experiments: []procedure.ProcedureExperimentAssignment{
-						{
-							ID:           uuid.New(),
-							ProcedureID:  procID,
-							ExperimentID: exp1ID,
 						},
 					},
 				}
