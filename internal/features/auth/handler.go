@@ -8,6 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// VerifyTokenHandler godoc
+// @Summary Verify email token
+// @Description Verify email token and activate user account
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param token path string true "Token to verify"
+// @Success 200 {object} httputil.SuccessResponse "User verified successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid token"
+// @Failure 401 {object} httputil.ErrorResponse "Unauthorized"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to verify token"
+// @Router /auth/verify/{token} [get]
 func VerifyTokenHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.Param("token")
@@ -140,6 +152,18 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// SignUpHandler godoc
+// @Summary User sign up
+// @Description Register a new user with email and password
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body SignUpDto true "User registration details"
+// @Success 201 {object} httputil.SuccessResponse "User signed up successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid request format"
+// @Failure 409 {object} httputil.ErrorResponse "User already exists"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to sign up"
+// @Router /auth/signup [post]
 func SignUpHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req SignUpDto
