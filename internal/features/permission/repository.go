@@ -2,6 +2,7 @@ package permission
 
 import (
 	"context"
+	"nh-be/internal/constant"
 	"nh-be/internal/utils/dbutil"
 	"strings"
 
@@ -54,8 +55,12 @@ func (r *repository) FindAllPermissions(ctx context.Context, search string) ([]P
 
 func (r *repository) FindIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
 	var p uuid.UUID
-	if err := r.db.WithContext(ctx).Model(&Permission{}).Select("id").Where("id = ?", id).First(&p).Error; err != nil {
+	err := r.db.WithContext(ctx).Model(&Permission{}).Select("id").Where("id = ?", id).First(&p).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return uuid.Nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return uuid.Nil, constant.ErrPermissionNotFound
 	}
 	return p, nil
 }
@@ -70,8 +75,12 @@ func (r *repository) FindIDByIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.U
 
 func (r *repository) FindPermissionByID(ctx context.Context, id uuid.UUID) (*Permission, error) {
 	var p Permission
-	if err := r.db.WithContext(ctx).First(&p, id).Error; err != nil {
+	err := r.db.WithContext(ctx).First(&p, id).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, constant.ErrPermissionNotFound
 	}
 	return &p, nil
 }

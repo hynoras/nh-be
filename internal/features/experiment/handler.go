@@ -6,7 +6,6 @@ import (
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // GetAllExperimentsHandler godoc
@@ -34,18 +33,11 @@ func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 		}
 
 		experiments, length, serviceErr := s.GetAllExperiments(c.Request.Context(), search, pageInt, pageSizeInt)
-		switch serviceErr {
-		case ErrForbidViewExperiments:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			experimentResp := MapExperimentsToDto(experiments)
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Experiments fetched successfully", experimentResp, length)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get experiments", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, "Failed to get experiments") {
 			return
 		}
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiments fetched successfully", experiments, length)
 	}
 }
 
@@ -71,20 +63,12 @@ func GetExperimentByIDHandler(s Service) gin.HandlerFunc {
 		}
 
 		experiment, serviceErr := s.GetExperimentByID(c.Request.Context(), *parsedId)
-		switch serviceErr {
-		case ErrForbidViewExperiment:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment fetched successfully", MapExperimentToDto(*experiment))
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to get experiment", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetExperimentDetailFailed) {
 			return
 		}
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment fetched successfully", experiment)
+
 	}
 }
 
@@ -110,17 +94,10 @@ func CreateExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.CreateExperiment(c.Request.Context(), &dto)
-		switch serviceErr {
-		case ErrForbidCreateExperiment:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusCreated, "Experiment created successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to create experiment", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateExperimentFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusCreated, "Experiment created successfully", nil)
 	}
 }
 
@@ -153,20 +130,12 @@ func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdateExperiment(c.Request.Context(), *parsedId, &dto)
-		switch serviceErr {
-		case ErrForbidUpdateExperiment:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment updated successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update experiment", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateExperimentFailed) {
 			return
 		}
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment updated successfully", nil)
+
 	}
 }
 
@@ -201,33 +170,11 @@ func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
 		status := ExperimentStatus(dto.Status)
 
 		serviceErr := s.UpdateExperimentStatus(c.Request.Context(), *parsedId, status)
-		switch serviceErr {
-		case ErrForbidUpdateExperiment:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", nil)
-			return
-		case ErrAlreadyInTargetState:
-			httputil.MakeErrorResponse(c, http.StatusOK, "Experiment is already in target state", nil)
-			return
-		//for some reasons, stacked case is not working here so i use multiple case
-		case ErrStatusTransitionFromDraftToPlanning:
-			httputil.MakeErrorResponse(c, http.StatusConflict, "Invalid status transition", serviceErr.Error())
-			return
-		case ErrStatusTransitionFromPlanningToRunning:
-			httputil.MakeErrorResponse(c, http.StatusConflict, "Invalid status transition", serviceErr.Error())
-			return
-		case ErrStatusTransitionFromRunningToCompletedOrAborted:
-			httputil.MakeErrorResponse(c, http.StatusConflict, "Invalid status transition", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment status updated successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to update experiment status", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateExperimentFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment status updated successfully", nil)
+
 	}
 }
 
@@ -253,19 +200,9 @@ func DeleteExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.DeleteExperiment(c.Request.Context(), *parsedId)
-		switch serviceErr {
-		case ErrForbidDeleteExperiment:
-			httputil.MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, serviceErr.Error())
-			return
-		case gorm.ErrRecordNotFound:
-			httputil.MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", serviceErr.Error())
-			return
-		case nil:
-			httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment deleted successfully", nil)
-			return
-		default:
-			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to delete experiment", serviceErr.Error())
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeleteExperimentFailed) {
 			return
 		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment deleted successfully", nil)
 	}
 }

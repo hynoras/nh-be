@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/utils/dbutil"
 	"strings"
@@ -58,11 +59,11 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&u)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, ErrUserNotFound
-	}
-	if result.Error != nil {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
+	}
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, constant.ErrUserNotFound
 	}
 	return &u, nil
 }
@@ -70,8 +71,11 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 func (r *repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("username = ?", username).First(&u)
-	if result.Error != nil {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
+	}
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, constant.ErrUserNotFound
 	}
 	return &u, nil
 }
@@ -79,8 +83,11 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 func (r *repository) FindPasswordById(ctx context.Context, id uuid.UUID) (*string, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("id = ?", id).Select("password").First(&u)
-	if result.Error != nil {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
+	}
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, constant.ErrUserNotFound
 	}
 	return &u.Password, nil
 }
@@ -91,8 +98,11 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) 
 		Preload("AssignedPermissionGroups").
 		Preload("AssignedPermissionGroups.Permissions").
 		First(&u)
-	if result.Error != nil {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
+	}
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, constant.ErrUserNotFound
 	}
 	return &u, nil
 }

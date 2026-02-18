@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"nh-be/internal/constant"
 	resHandler "nh-be/internal/features/experiment/result"
 	resultmocks "nh-be/internal/features/experiment/result/mocks"
 )
@@ -46,7 +47,7 @@ func TestHandler_GetResultByExperimentID(t *testing.T) {
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("GetResultByExperimentID", mock.Anything, mock.Anything).
-					Return(nil, resHandler.ErrExperimentNotFound)
+					Return(nil, constant.ErrExperimentNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -55,7 +56,7 @@ func TestHandler_GetResultByExperimentID(t *testing.T) {
 			experimentID: "00000000-0000-0000-0000-000000000000",
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("GetResultByExperimentID", mock.Anything, mock.Anything).
-					Return(nil, resHandler.ErrForbidViewExperimentResult)
+					Return(nil, constant.ErrForbidViewExperimentResult)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -134,7 +135,7 @@ func TestHandler_CreateResult(t *testing.T) {
 			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrExperimentNotFound)
+					Return(constant.ErrExperimentNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -144,7 +145,7 @@ func TestHandler_CreateResult(t *testing.T) {
 			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrExperimentResultAlreadyExists)
+					Return(constant.ErrExperimentResultAlreadyExists)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -154,7 +155,7 @@ func TestHandler_CreateResult(t *testing.T) {
 			requestBody:  CreateTestDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("CreateResult", mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrForbidCreateExperimentResult)
+					Return(constant.ErrForbidCreateExperimentResult)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -240,7 +241,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrExperimentNotFound)
+					Return(constant.ErrExperimentNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -251,7 +252,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrExperimentResultNotFound)
+					Return(constant.ErrExperimentResultNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -262,7 +263,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrForbidUpdateExperimentResult)
+					Return(constant.ErrForbidUpdateExperimentResult)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -273,7 +274,7 @@ func TestHandler_UpdateResult(t *testing.T) {
 			requestBody:  CreateTestUpdateDto(),
 			setupMocks: func(svc *resultmocks.Service) {
 				svc.On("UpdateResult", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(resHandler.ErrOptimisticLockingConflict)
+					Return(constant.ErrExperimentResultConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"nh-be/internal/constant"
 	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
@@ -18,7 +19,7 @@ import (
 type Service interface {
 	SignUp(ctx context.Context, req SignUpDto) error
 	VerifyEmail(ctx context.Context, token string) (string, error)
-	Login(ctx context.Context, email, password string) (*user.User, []string, string, error)
+	Login(ctx context.Context, email, password string) (*UserResponseDto, string, error)
 	Logout(ctx context.Context, sessionId string) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 	CreateVerificationToken(ctx context.Context, userId uuid.UUID, tokenType VerificationTokenType) (CreatedTokenDto, error)
@@ -70,7 +71,7 @@ func (s *service) CreateVerificationToken(
 	tokenType VerificationTokenType,
 ) (CreatedTokenDto, error) {
 	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(userId)
-	if findErr != nil && !errors.Is(findErr, ErrVerificationTokenNotFound) {
+	if findErr != nil && !errors.Is(findErr, constant.ErrVerificationTokenNotFound) {
 		return CreatedTokenDto{}, findErr
 	}
 
@@ -101,7 +102,7 @@ func (s *service) CreateVerificationToken(
 func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	u, err := s.userRepo.FindByEmail(ctx, req.Email)
 
-	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
 		return err
 	}
 
@@ -142,10 +143,10 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 		return "", findErr
 	}
 	if existingToken.Type != VerifyEmail {
-		return "", ErrInvalidVerificationToken
+		return "", constant.ErrInvalidVerificationToken
 	}
 	if existingToken.ExpireAt.Before(time.Now()) {
-		return "", ErrVerificationTokenExpired
+		return "", constant.ErrVerificationTokenExpired
 	}
 
 	updateErr := s.userRepo.Update(ctx, existingToken.UserID, &user.User{
@@ -172,34 +173,36 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 	return sessionId, nil
 }
 
-func (s *service) Login(ctx context.Context, email, password string) (*user.User, []string, string, error) {
+func (s *service) Login(ctx context.Context, email, password string) (*UserResponseDto, string, error) {
 	u, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, []string{}, "", err
+		return nil, "", err
 	}
 	if u == nil {
-		return nil, []string{}, "", errors.New("invalid credentials")
+		return nil, "", constant.ErrInvalidCredentials
 	}
 	if !crypto.CheckPasswordHash(password, u.Password) {
-		return nil, []string{}, "", errors.New("invalid credentials")
+		return nil, "", constant.ErrInvalidCredentials
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)
 	if err != nil {
-		return nil, []string{}, "", err
+		return nil, "", err
 	}
 
 	sessionId, genErr := crypto.GenerateToken()
 	if genErr != nil {
-		return nil, []string{}, "", genErr
+		return nil, "", genErr
 	}
 
 	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, u.ID.String())
 	if sessionErr != nil {
-		return nil, []string{}, "", sessionErr
+		return nil, "", sessionErr
 	}
 
-	return u, permissions, sessionId, nil
+	mappedUser := MapUserDtoToLoginResponse(*u, permissions)
+
+	return &mappedUser, sessionId, nil
 }
 
 func (s *service) Logout(ctx context.Context, sessionId string) error {

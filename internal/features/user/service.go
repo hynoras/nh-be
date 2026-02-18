@@ -17,8 +17,8 @@ import (
 type Service interface {
 	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
-	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error)
-	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error)
+	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error)
+	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error)
 	CreateUser(ctx context.Context, userInput *UserInput) error
 	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
@@ -77,7 +77,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 	}
 
 	if !slices.Contains(userPerm, constant.ManageUser) {
-		return ErrForbidCreateUser
+		return constant.ErrForbidCreateUser
 	}
 
 	// Check for duplicate username
@@ -86,7 +86,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return err
 	}
 	if existingUser != nil {
-		return ErrDuplicateUsername
+		return constant.ErrDuplicateUsername
 	}
 
 	// Check for duplicate email
@@ -95,7 +95,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return err
 	}
 	if existingUser != nil {
-		return ErrDuplicateEmail
+		return constant.ErrDuplicateEmail
 	}
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
@@ -129,7 +129,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 	})
 }
 
-func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]User, int64, error) {
+func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -141,48 +141,53 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 	}
 
 	if !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, 0, ErrForbidViewUsers
+		return nil, 0, constant.ErrForbidViewUsers
 	}
 
 	users, length, err := s.userRepo.FindAll(ctx, search, page, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
-	return users, length, nil
+	mappedUser := MapUsersToDto(users)
+	return mappedUser, length, nil
 }
 
-func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (*User, []string, error) {
+func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
-		return nil, []string{}, err
+		return nil, err
 	}
 
 	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
 	if err != nil {
-		return nil, []string{}, err
+		return nil, err
 	}
 
 	if isMe == false && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, []string{}, ErrForbidViewUser
+		return nil, constant.ErrForbidViewUser
 	}
 
 	var user *User
 	var userErr error
 	var permissionCodes []string
 	var permCodeErr error
+	var mapperUser interface{}
 
 	user, userErr = s.userRepo.FindByID(ctx, id)
 	if userErr != nil {
-		return nil, []string{}, userErr
+		return nil, userErr
 	}
 
 	if isMe == true {
 		permissionCodes, permCodeErr = s.permissionService.GetUserPermissionCodeNames(ctx, id)
 		if permCodeErr != nil {
-			return nil, []string{}, permCodeErr
+			return nil, permCodeErr
 		}
+		mapperUser = MapUserToMeDto(*user, permissionCodes)
+	} else {
+		mapperUser = MapUserToDto(*user)
 	}
-	return user, permissionCodes, nil
+	return mapperUser, nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {
@@ -197,7 +202,7 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 	}
 
 	if !slices.Contains(userPerm, constant.ManageUser) {
-		return ErrForbidUpdateUser
+		return constant.ErrForbidUpdateUser
 	}
 
 	var permissionGroups []permission.PermissionGroup
@@ -235,7 +240,7 @@ func (s *service) DeleteUsers(ctx context.Context, ids []uuid.UUID) error {
 	}
 
 	if !slices.Contains(userPerm, constant.ManageUser) {
-		return ErrForbidDeleteUser
+		return constant.ErrForbidDeleteUser
 	}
 
 	for _, id := range ids {
