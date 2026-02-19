@@ -36,6 +36,31 @@ func NewService(experimentRepo Repository, permissionService permission.Service,
 	}
 }
 
+func (s *service) CanManageExperiment(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(userPerm, constant.ManageExperiment) {
+		switch action {
+		case constant.Create:
+			return constant.ErrForbidCreateExperiment
+		case constant.Update:
+			return constant.ErrForbidUpdateExperiment
+		case constant.Delete:
+			return constant.ErrForbidDeleteExperiment
+		}
+	}
+
+	return nil
+}
+
 func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error) {
 	userId, err := ctxutil.GetUserIdFromContext(ctx)
 	if err != nil {
@@ -186,30 +211,21 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 }
 
 func (s *service) AssignProcedureToExperiment(ctx context.Context, experimentId uuid.UUID, procedureId uuid.UUID, version int) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidAssignProcedureToExperiment
+	permErr := s.CanManageExperiment(ctx, experimentId, constant.Update)
+	if permErr != nil {
+		return permErr
 	}
 
 	// Check if procedure exists
-	_, err = s.procedureService.GetProcedureByID(ctx, procedureId)
-	if err != nil {
-		return err
+	_, getProcErr := s.procedureService.GetProcedureByID(ctx, procedureId)
+	if getProcErr != nil {
+		return getProcErr
 	}
 
 	// Check if experiment exists
-	assignedProcedureId, getErr := s.experimentRepo.GetProcedureIDByID(ctx, experimentId)
-	if getErr != nil {
-		return getErr
+	assignedProcedureId, getExpErr := s.experimentRepo.GetProcedureIDByID(ctx, experimentId)
+	if getExpErr != nil {
+		return getExpErr
 	}
 
 	if assignedProcedureId == procedureId {
