@@ -105,19 +105,22 @@ func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status Expe
 }
 
 func (r *repository) GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
-	var procedureID uuid.UUID
+	var e Experiment
 	result := r.db.WithContext(ctx).
 		Model(&Experiment{}).
 		Select("procedure_id").
 		Where("id = ?", id).
-		First(&procedureID)
+		First(&e)
 	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
 		return uuid.Nil, result.Error
 	}
 	if result.Error == gorm.ErrRecordNotFound {
 		return uuid.Nil, constant.ErrExperimentNotFound
 	}
-	return procedureID, nil
+	if e.ProcedureID == nil {
+		return uuid.Nil, nil
+	}
+	return *e.ProcedureID, nil
 }
 
 func (r *repository) UpdateProcedureID(ctx context.Context, id uuid.UUID, procedureID uuid.UUID, currentVersion int) error {
