@@ -24,6 +24,55 @@ func (_m *Service) EXPECT() *Service_Expecter {
 	return &Service_Expecter{mock: &_m.Mock}
 }
 
+// AssignProcedureToExperiment provides a mock function with given fields: ctx, experimentId, procedureId, version
+func (_m *Service) AssignProcedureToExperiment(ctx context.Context, experimentId uuid.UUID, procedureId uuid.UUID, version int) error {
+	ret := _m.Called(ctx, experimentId, procedureId, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AssignProcedureToExperiment")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, int) error); ok {
+		r0 = rf(ctx, experimentId, procedureId, version)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Service_AssignProcedureToExperiment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AssignProcedureToExperiment'
+type Service_AssignProcedureToExperiment_Call struct {
+	*mock.Call
+}
+
+// AssignProcedureToExperiment is a helper method to define mock.On call
+//   - ctx context.Context
+//   - experimentId uuid.UUID
+//   - procedureId uuid.UUID
+//   - version int
+func (_e *Service_Expecter) AssignProcedureToExperiment(ctx interface{}, experimentId interface{}, procedureId interface{}, version interface{}) *Service_AssignProcedureToExperiment_Call {
+	return &Service_AssignProcedureToExperiment_Call{Call: _e.mock.On("AssignProcedureToExperiment", ctx, experimentId, procedureId, version)}
+}
+
+func (_c *Service_AssignProcedureToExperiment_Call) Run(run func(ctx context.Context, experimentId uuid.UUID, procedureId uuid.UUID, version int)) *Service_AssignProcedureToExperiment_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *Service_AssignProcedureToExperiment_Call) Return(_a0 error) *Service_AssignProcedureToExperiment_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Service_AssignProcedureToExperiment_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, int) error) *Service_AssignProcedureToExperiment_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateExperiment provides a mock function with given fields: ctx, dto
 func (_m *Service) CreateExperiment(ctx context.Context, dto *experiment.CreateExperimentDto) error {
 	ret := _m.Called(ctx, dto)

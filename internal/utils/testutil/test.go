@@ -1,13 +1,20 @@
 package testutil
 
 import (
+	"context"
+	"nh-be/internal/constant"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+func ContextWithUser(userID uuid.UUID) context.Context {
+	return context.WithValue(context.Background(), constant.CtxUserId, userID)
+}
 
 func SetupTestRouter(method, path string, handler gin.HandlerFunc) *gin.Engine {
 	gin.SetMode(gin.TestMode)

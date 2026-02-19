@@ -245,6 +245,65 @@ func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.
 	return _c
 }
 
+// GetProcedureIDByID provides a mock function with given fields: ctx, id
+func (_m *Repository) GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetProcedureIDByID")
+	}
+
+	var r0 uuid.UUID
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (uuid.UUID, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) uuid.UUID); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(uuid.UUID)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Repository_GetProcedureIDByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProcedureIDByID'
+type Repository_GetProcedureIDByID_Call struct {
+	*mock.Call
+}
+
+// GetProcedureIDByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *Repository_Expecter) GetProcedureIDByID(ctx interface{}, id interface{}) *Repository_GetProcedureIDByID_Call {
+	return &Repository_GetProcedureIDByID_Call{Call: _e.mock.On("GetProcedureIDByID", ctx, id)}
+}
+
+func (_c *Repository_GetProcedureIDByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Repository_GetProcedureIDByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *Repository_GetProcedureIDByID_Call) Return(_a0 uuid.UUID, _a1 error) *Repository_GetProcedureIDByID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *Repository_GetProcedureIDByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (uuid.UUID, error)) *Repository_GetProcedureIDByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function with given fields: ctx, id, e
 func (_m *Repository) Update(ctx context.Context, id uuid.UUID, e *experiment.Experiment) error {
 	ret := _m.Called(ctx, id, e)
@@ -289,6 +348,55 @@ func (_c *Repository_Update_Call) Return(_a0 error) *Repository_Update_Call {
 }
 
 func (_c *Repository_Update_Call) RunAndReturn(run func(context.Context, uuid.UUID, *experiment.Experiment) error) *Repository_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateProcedureID provides a mock function with given fields: ctx, id, procedureID, currentVersion
+func (_m *Repository) UpdateProcedureID(ctx context.Context, id uuid.UUID, procedureID uuid.UUID, currentVersion int) error {
+	ret := _m.Called(ctx, id, procedureID, currentVersion)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateProcedureID")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, int) error); ok {
+		r0 = rf(ctx, id, procedureID, currentVersion)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_UpdateProcedureID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProcedureID'
+type Repository_UpdateProcedureID_Call struct {
+	*mock.Call
+}
+
+// UpdateProcedureID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - procedureID uuid.UUID
+//   - currentVersion int
+func (_e *Repository_Expecter) UpdateProcedureID(ctx interface{}, id interface{}, procedureID interface{}, currentVersion interface{}) *Repository_UpdateProcedureID_Call {
+	return &Repository_UpdateProcedureID_Call{Call: _e.mock.On("UpdateProcedureID", ctx, id, procedureID, currentVersion)}
+}
+
+func (_c *Repository_UpdateProcedureID_Call) Run(run func(ctx context.Context, id uuid.UUID, procedureID uuid.UUID, currentVersion int)) *Repository_UpdateProcedureID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *Repository_UpdateProcedureID_Call) Return(_a0 error) *Repository_UpdateProcedureID_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_UpdateProcedureID_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, int) error) *Repository_UpdateProcedureID_Call {
 	_c.Call.Return(run)
 	return _c
 }
