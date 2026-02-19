@@ -4,6 +4,7 @@ import (
 	"context"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
+	"nh-be/internal/features/procedure"
 	"nh-be/internal/utils/ctxutil"
 	"slices"
 	"time"
@@ -17,18 +18,21 @@ type Service interface {
 	CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error
 	UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error
 	UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error
+	AssignProcedureToExperiment(ctx context.Context, experimentId uuid.UUID, procedureId uuid.UUID, version int) error
 	DeleteExperiment(ctx context.Context, id uuid.UUID) error
 }
 
 type service struct {
 	experimentRepo    Repository
 	permissionService permission.Service
+	procedureService  procedure.Service
 }
 
-func NewService(experimentRepo Repository, permissionService permission.Service) Service {
+func NewService(experimentRepo Repository, permissionService permission.Service, procedureService procedure.Service) Service {
 	return &service{
 		experimentRepo:    experimentRepo,
 		permissionService: permissionService,
+		procedureService:  procedureService,
 	}
 }
 
@@ -179,6 +183,40 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 	}
 
 	return s.experimentRepo.UpdateStatus(ctx, id, status, exp.Version)
+}
+
+func (s *service) AssignProcedureToExperiment(ctx context.Context, experimentId uuid.UUID, procedureId uuid.UUID, version int) error {
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(userPerm, constant.ManageExperiment) {
+		return constant.ErrForbidAssignProcedureToExperiment
+	}
+
+	// Check if procedure exists
+	_, err = s.procedureService.GetProcedureByID(ctx, procedureId)
+	if err != nil {
+		return err
+	}
+
+	// Check if experiment exists
+	assignedProcedureId, getErr := s.experimentRepo.GetProcedureIDByID(ctx, experimentId)
+	if getErr != nil {
+		return getErr
+	}
+
+	if assignedProcedureId == procedureId {
+		return constant.ErrDuplicateProcedureAssignment
+	}
+
+	return s.experimentRepo.UpdateProcedureID(ctx, experimentId, procedureId, version)
 }
 
 func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {

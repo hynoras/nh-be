@@ -235,6 +235,8 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		MakeErrorResponse(c, http.StatusBadRequest, constant.ErrUpdateExperimentFailed, err.Error())
 	case constant.ErrExperimentNotFound:
 		MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", err.Error())
+	case constant.ErrDuplicateProcedureAssignment:
+		MakeErrorResponse(c, http.StatusConflict, constant.ErrAssignProcedureToExperimentFailed, err.Error())
 
 	//experiment result
 	case constant.ErrExperimentResultNotFound:

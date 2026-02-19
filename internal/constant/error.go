@@ -34,12 +34,13 @@ const (
 	ErrDeleteUserFailed    = "Failed to delete user"
 
 	//experiment
-	ErrGetAllExperimentFailed    = "Failed to get experiments"
-	ErrGetExperimentDetailFailed = "Failed to get experiment detail"
-	ErrCreateExperimentFailed    = "Failed to create experiment"
-	ErrUpdateExperimentFailed    = "Failed to update experiment"
-	ErrDeleteExperimentFailed    = "Failed to delete experiment"
-	ErrInvalidStatusTransition   = "Invalid status transition"
+	ErrGetAllExperimentFailed            = "Failed to get experiments"
+	ErrGetExperimentDetailFailed         = "Failed to get experiment detail"
+	ErrCreateExperimentFailed            = "Failed to create experiment"
+	ErrUpdateExperimentFailed            = "Failed to update experiment"
+	ErrDeleteExperimentFailed            = "Failed to delete experiment"
+	ErrInvalidStatusTransition           = "Invalid status transition"
+	ErrAssignProcedureToExperimentFailed = "Failed to assign procedure to experiment"
 
 	//experiment result
 	ErrGetExperimentResultDetailFailed = "Failed to get experiment result detail"
@@ -104,11 +105,13 @@ var (
 	ErrForbidViewExperiment                            ErrorDetail = errors.New("you do not have permission to view this experiment")
 	ErrForbidUpdateExperiment                          ErrorDetail = errors.New("you do not have permission to update this experiment")
 	ErrForbidDeleteExperiment                          ErrorDetail = errors.New("you do not have permission to delete this experiment")
+	ErrForbidAssignProcedureToExperiment               ErrorDetail = errors.New("you do not have permission to assign procedure to experiment")
 	ErrStatusTransitionFromDraftToPlanning             ErrorDetail = errors.New("Invalid status transition, only draft can be transition to planning")
 	ErrStatusTransitionFromPlanningToRunning           ErrorDetail = errors.New("Invalid status transition, only planning can be transition to running")
 	ErrStatusTransitionFromRunningToCompletedOrAborted ErrorDetail = errors.New("Invalid status transition, only running can be transition to completed or aborted")
 	ErrExperimentConflict                              ErrorDetail = errors.New("the experiment was modified by another request, please retry")
 	ErrExperimentAlreadyInTargetState                  ErrorDetail = errors.New("experiment is already in target state")
+	ErrDuplicateProcedureAssignment                    ErrorDetail = errors.New("This procedure is already assigned to the experiment")
 
 	//experiment result
 	ErrExperimentResultNotFound      ErrorDetail = errors.New("experiment result not found")

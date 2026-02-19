@@ -42,3 +42,7 @@ type UpdateExperimentStatusDto struct {
 	Status  string `json:"status" binding:"required"`
 	Version int    `json:"version" binding:"required"`
 }
+
+type AssignProcedureToExperimentDto struct {
+	Version int `json:"version" binding:"required"`
+}
