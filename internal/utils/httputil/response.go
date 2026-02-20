@@ -120,7 +120,7 @@ func ValidateUUIDs(c *gin.Context, uuids []string) ([]uuid.UUID, error) {
 }
 
 func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
-	if err := c.ShouldBindJSON(&dto); err != nil {
+	if err := c.ShouldBindJSON(dto); err != nil {
 		var verr validator.ValidationErrors
 		if errors.As(err, &verr) {
 			MakeErrorResponse(
@@ -266,8 +266,13 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		MakeErrorResponse(c, http.StatusNotFound, "Procedure not found", err.Error())
 	case constant.ErrProcedureAlreadyExists:
 		MakeErrorResponse(c, http.StatusConflict, "Procedure already exists", err.Error())
-	case constant.ErrOptimisticLockingConflict:
-		MakeErrorResponse(c, http.StatusConflict, "Version conflict", err.Error())
+	case constant.ErrProcedureConflict:
+		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureFailed, err.Error())
+	case constant.ErrProcedureStepNotFound:
+		MakeErrorResponse(c, http.StatusNotFound, "Procedure step not found", err.Error())
+	case constant.ErrProcedureStepConflict:
+		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureStepFailed, err.Error())
+
 	//add other domain error here
 
 	default:
