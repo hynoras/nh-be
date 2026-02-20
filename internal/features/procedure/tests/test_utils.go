@@ -22,7 +22,7 @@ func TestProcedureList() []procedure.Procedure {
 		{
 			ID:          uuid.New(),
 			Title:       "Test Procedure",
-			Description: "Test Procedure Description",
+			Description: stringutil.StringPtr("Test Procedure Description"),
 			Version:     1,
 			ParentID:    nil,
 			CreatedAt:   time.Now(),
@@ -31,7 +31,7 @@ func TestProcedureList() []procedure.Procedure {
 		{
 			ID:          uuid.New(),
 			Title:       "Test Procedure 2",
-			Description: "Test Procedure Description 2",
+			Description: stringutil.StringPtr("Test Procedure Description 2"),
 			Version:     2,
 			ParentID:    nil,
 			CreatedAt:   time.Now(),
@@ -44,7 +44,7 @@ func TestProcedureDetail() procedure.Procedure {
 	return procedure.Procedure{
 		ID:          uuid.MustParse("12345678-1234-1234-1234-123456789012"),
 		Title:       "Test Procedure",
-		Description: "Test Procedure Description",
+		Description: stringutil.StringPtr("Test Procedure Description"),
 		Version:     1,
 		ParentID:    nil,
 		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
@@ -56,19 +56,21 @@ func TestStepList() []procedure.ProcedureStep {
 	return []procedure.ProcedureStep{
 		{
 			ID:          uuid.MustParse("33333333-1234-1234-1234-444433332222"),
-			ProcedureID: uuid.MustParse("12345678-1234-1234-1234-123456789012"),
 			Index:       1,
 			Title:       "Test Step",
-			Description: "Test Step Description",
+			Description: stringutil.StringPtr("Test Step Description"),
+			IsOptional:  false,
+			StepType:    procedure.StepTypeWait,
 			CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
 			UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 		},
 		{
 			ID:          uuid.MustParse("33333333-1234-1234-1234-555533332222"),
-			ProcedureID: uuid.MustParse("12345678-1234-1234-1234-123456789012"),
 			Index:       2,
 			Title:       "Test Step 2",
-			Description: "Test Step Description 2",
+			Description: stringutil.StringPtr("Test Step Description 2"),
+			IsOptional:  true,
+			StepType:    procedure.StepTypeDecision,
 			CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
 			UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
 		},
@@ -81,7 +83,7 @@ func TestProcedureDetailWithRelations() procedure.Procedure {
 	return procedure.Procedure{
 		ID:          procID,
 		Title:       "Test Procedure",
-		Description: "Test Procedure Description",
+		Description: stringutil.StringPtr("Test Procedure Description"),
 		Version:     1,
 		ParentID:    nil,
 		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
@@ -94,7 +96,7 @@ func CreateValidProcedure() *procedure.Procedure {
 	return &procedure.Procedure{
 		ID:          uuid.New(),
 		Title:       "Test Procedure",
-		Description: "Test Procedure Description",
+		Description: stringutil.StringPtr("Test Procedure Description"),
 		Version:     1,
 		ParentID:    nil,
 	}
@@ -105,7 +107,7 @@ func CreateProcedureWithSteps() *procedure.Procedure {
 	return &procedure.Procedure{
 		ID:          procID,
 		Title:       "Test Procedure with Steps",
-		Description: "Test Procedure Description",
+		Description: stringutil.StringPtr("Test Procedure Description"),
 		Version:     1,
 		ParentID:    nil,
 		Steps: []procedure.ProcedureStep{
@@ -114,7 +116,7 @@ func CreateProcedureWithSteps() *procedure.Procedure {
 				ProcedureID: procID,
 				Index:       1,
 				Title:       "Step 1",
-				Description: "Description 1",
+				Description: stringutil.StringPtr("Description 1"),
 				StepType:    "manual",
 			},
 			{
@@ -122,7 +124,7 @@ func CreateProcedureWithSteps() *procedure.Procedure {
 				ProcedureID: procID,
 				Index:       2,
 				Title:       "Step 2",
-				Description: "Description 2",
+				Description: stringutil.StringPtr("Description 2"),
 				StepType:    "manual",
 			},
 			{
@@ -130,7 +132,7 @@ func CreateProcedureWithSteps() *procedure.Procedure {
 				ProcedureID: procID,
 				Index:       3,
 				Title:       "Step 3",
-				Description: "Description 3",
+				Description: stringutil.StringPtr("Description 3"),
 				StepType:    "manual",
 			},
 		},
@@ -143,7 +145,7 @@ func CreateProcedureWithExperiments() *procedure.Procedure {
 	return &procedure.Procedure{
 		ID:          procID,
 		Title:       "Test Procedure with Experiments",
-		Description: "Test Procedure Description",
+		Description: stringutil.StringPtr("Test Procedure Description"),
 		Version:     1,
 		ParentID:    nil,
 	}
@@ -153,7 +155,7 @@ func CreateProcedureWithParent(parentID uuid.UUID) *procedure.Procedure {
 	return &procedure.Procedure{
 		ID:          uuid.New(),
 		Title:       "Child Procedure",
-		Description: "Child Procedure Description",
+		Description: stringutil.StringPtr("Child Procedure Description"),
 		Version:     2,
 		ParentID:    &parentID,
 	}
@@ -165,7 +167,7 @@ func TestProcedureStep() *procedure.ProcedureStep {
 		ProcedureID: uuid.MustParse("12345678-1234-1234-1234-123456789012"),
 		Index:       1,
 		Title:       "Test Step",
-		Description: "Test Step Description",
+		Description: stringutil.StringPtr("Test Step Description"),
 		StepType:    "manual",
 		Version:     1,
 		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
@@ -176,24 +178,23 @@ func TestProcedureStep() *procedure.ProcedureStep {
 func TestCreateProcedureDto() *procedure.CreateProcedureDto {
 	return &procedure.CreateProcedureDto{
 		Title:       "Test Procedure",
-		Description: "Test Procedure Description",
+		Description: stringutil.StringPtr("Test Procedure Description"),
 		Steps: []procedure.CreateStepDto{
 			{
 				Index:       1,
 				Title:       "Step 1",
-				Description: "Step 1 Description",
+				Description: stringutil.StringPtr("Step 1 Description"),
 				StepType:    "action",
+				IsOptional:  false,
+				WaitTime:    nil,
 			},
 			{
 				Index:       2,
 				Title:       "Step 2",
-				Description: "Step 2 Description",
+				Description: nil,
 				StepType:    "wait",
-			},
-		},
-		ExperimentAssignments: []procedure.CreateExperimentAssignmentDto{
-			{
-				ID: uuid.New().String(),
+				IsOptional:  true,
+				WaitTime:    intutil.IntPtr(3600),
 			},
 		},
 	}

@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission/mocks"
 	"nh-be/internal/features/procedure"
 	procmocks "nh-be/internal/features/procedure/mocks"
+	"nh-be/internal/utils/stringutil"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -217,7 +219,7 @@ func TestService_GetProcedureByID(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
 				testProc := TestProcedureDetailWithRelations()
-				repo.On("FindByID", mock.Anything, procedureID, true, true).
+				repo.On("FindByID", mock.Anything, procedureID, true).
 					Return(&testProc, nil)
 			},
 			checkError: func(t *testing.T, err error) {
@@ -228,10 +230,29 @@ func TestService_GetProcedureByID(t *testing.T) {
 				assert.Equal(t, "12345678-1234-1234-1234-123456789012", result.ID)
 				assert.Equal(t, "Test Procedure", result.Title)
 				assert.Equal(t, "Test Procedure Description", result.Description)
-				assert.Len(t, result.UsedByExperiments, 2)
-				// Verify experiment mapping
-				assert.Equal(t, "aaaaaaaa-1111-1111-1111-111111111111", result.UsedByExperiments[0].ID)
-				assert.Equal(t, "Test Experiment 1", result.UsedByExperiments[0].Title)
+
+				assert.Equal(t, []procedure.StepsResponseDto{
+					{
+						ID:          "33333333-1234-1234-1234-444433332222",
+						Index:       1,
+						Title:       "Test Step",
+						Description: stringutil.StringPtr("Test Step Description"),
+						IsOptional:  false,
+						StepType:    "wait",
+						CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+						UpdatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+					},
+					{
+						ID:          "33333333-1234-1234-1234-555533332222",
+						Index:       2,
+						Title:       "Test Step 2",
+						Description: stringutil.StringPtr("Test Step Description 2"),
+						IsOptional:  true,
+						StepType:    "decision",
+						CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+						UpdatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+					},
+				}, result.Steps)
 			},
 		},
 		{
@@ -242,8 +263,7 @@ func TestService_GetProcedureByID(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
 				testProc := TestProcedureDetailWithRelations()
-				// Assert that both withSteps and withExperiments are true
-				repo.On("FindByID", mock.Anything, procedureID, true, true).
+				repo.On("FindByID", mock.Anything, procedureID, true).
 					Return(&testProc, nil)
 			},
 			checkError: func(t *testing.T, err error) {
@@ -276,7 +296,7 @@ func TestService_GetProcedureByID(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
 				testProc := TestProcedureDetailWithRelations()
-				repo.On("FindByID", mock.Anything, procedureID, true, true).
+				repo.On("FindByID", mock.Anything, procedureID, true).
 					Return(&testProc, nil)
 			},
 			checkError: func(t *testing.T, err error) {
@@ -294,7 +314,7 @@ func TestService_GetProcedureByID(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
-				repo.On("FindByID", mock.Anything, procedureID, true, true).
+				repo.On("FindByID", mock.Anything, procedureID, true).
 					Return(nil, constant.ErrProcedureNotFound)
 			},
 			checkError: func(t *testing.T, err error) {
@@ -311,7 +331,7 @@ func TestService_GetProcedureByID(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
-				repo.On("FindByID", mock.Anything, procedureID, true, true).
+				repo.On("FindByID", mock.Anything, procedureID, true).
 					Return(nil, genericRepoError)
 			},
 			checkError: func(t *testing.T, err error) {

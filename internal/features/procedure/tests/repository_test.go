@@ -4,6 +4,7 @@ import (
 	"context"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/procedure"
+	"nh-be/internal/utils/stringutil"
 	"nh-be/internal/utils/testutil"
 	"nh-be/internal/utils/timeutil"
 	"testing"
@@ -232,7 +233,7 @@ func TestRepository_FindAll(t *testing.T) {
 			repo := procedure.NewRepository(db)
 			ctx := tc.ctx()
 
-			procedures, total, err := repo.FindAll(ctx, tc.queryParams.Search, tc.queryParams.Offset, tc.queryParams.Limit, false)
+			procedures, total, err := repo.FindAll(ctx, tc.queryParams.Search, tc.queryParams.Offset, tc.queryParams.Limit)
 
 			if tc.expectedError != nil {
 				assert.ErrorIs(t, err, tc.expectedError)
@@ -445,19 +446,9 @@ func TestRepository_CreateProcedure(t *testing.T) {
 				return &procedure.Procedure{
 					ID:          procID,
 					Title:       "Full Test Procedure",
-					Description: "Full Test Description",
+					Description: stringutil.StringPtr("Full Test Description"),
 					Version:     1,
 					ParentID:    nil,
-					Steps: []procedure.ProcedureStep{
-						{
-							ID:          uuid.New(),
-							ProcedureID: procID,
-							Index:       1,
-							Title:       "Step 1",
-							Description: "Desc 1",
-							StepType:    "manual",
-						},
-					},
 				}
 			},
 			ctx:           func() context.Context { return context.Background() },
@@ -505,28 +496,6 @@ func TestRepository_CreateProcedure(t *testing.T) {
 			},
 			ctx:           func() context.Context { return context.Background() },
 			expectedError: nil,
-		},
-		{
-			name: "duplicate_proc_exp_assignment",
-			setupMock: func(mock sqlmock.Sqlmock, proc *procedure.Procedure) {
-				mock.ExpectBegin()
-
-				mock.ExpectQuery(`INSERT INTO "procedures"`).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
-						AddRow(proc.ID, time.Now()))
-
-				mock.ExpectQuery(`INSERT INTO "procedure_experiment_assignments"`).
-					WillReturnError(assert.AnError)
-
-				mock.ExpectRollback()
-			},
-			procedureFunc: func() *procedure.Procedure {
-				return CreateProcedureWithExperiments()
-			},
-			ctx: func() context.Context { return context.Background() },
-			checkError: func(t *testing.T, err error) {
-				assert.Error(t, err)
-			},
 		},
 		{
 			name: "success_with_parent",
@@ -637,7 +606,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
 					Title:       "Updated Title",
-					Description: "Updated Description",
+					Description: stringutil.StringPtr("Updated Description"),
 					Version:     1,
 					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
@@ -656,7 +625,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
 					Title:       "Updated Title",
-					Description: "Updated Description",
+					Description: stringutil.StringPtr("Updated Description"),
 					Version:     1,
 					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
@@ -678,7 +647,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
 					Title:       "Updated Title",
-					Description: "Updated Description",
+					Description: stringutil.StringPtr("Updated Description"),
 					Version:     1,
 					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
@@ -700,7 +669,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
 					Title:       "Updated Title",
-					Description: "Updated Description",
+					Description: stringutil.StringPtr("Updated Description"),
 					Version:     1, // Version mismatch
 					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
@@ -723,7 +692,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
 					Title:       "Updated Title",
-					Description: "Updated Description",
+					Description: stringutil.StringPtr("Updated Description"),
 					Version:     1,
 					UpdatedAt:   timeutil.TimePtr(time.Now()),
 				}
@@ -975,7 +944,7 @@ func TestRepository_UpdateProcedureStep(t *testing.T) {
 			stepFunc: func() *procedure.ProcedureStep {
 				s := TestProcedureStep()
 				s.Title = "Updated Step Title"
-				s.Description = "Updated Step Description"
+				s.Description = stringutil.StringPtr("Updated Step Description")
 				s.UpdatedAt = timeutil.TimePtr(time.Now())
 				return s
 			},

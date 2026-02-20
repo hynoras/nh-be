@@ -12,8 +12,8 @@ import (
 )
 
 type Repository interface {
-	FindAll(ctx context.Context, search string, offset, limit int, withExperiments bool) ([]Procedure, int64, error)
-	FindByID(ctx context.Context, id uuid.UUID, withExperiments bool) (*Procedure, error)
+	FindAll(ctx context.Context, search string, offset, limit int) ([]Procedure, int64, error)
+	FindByID(ctx context.Context, id uuid.UUID, withSteps bool) (*Procedure, error)
 	CreateProcedure(ctx context.Context, procedure *Procedure) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
 
@@ -32,14 +32,10 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) FindAll(ctx context.Context, search string, offset, limit int, withExperiments bool) ([]Procedure, int64, error) {
+func (r *repository) FindAll(ctx context.Context, search string, offset, limit int) ([]Procedure, int64, error) {
 	var procedures []Procedure
 	var length int64
 	query := r.db.WithContext(ctx).Model(&Procedure{})
-
-	if withExperiments {
-		query = query.Preload("Experiments")
-	}
 
 	if search != "" {
 		query = query.Where("LOWER(procedures.title) LIKE ?", "%"+strings.ToLower(search)+"%")
@@ -54,12 +50,12 @@ func (r *repository) FindAll(ctx context.Context, search string, offset, limit i
 	return procedures, length, err
 }
 
-func (r *repository) FindByID(ctx context.Context, id uuid.UUID, withExperiments bool) (*Procedure, error) {
+func (r *repository) FindByID(ctx context.Context, id uuid.UUID, withSteps bool) (*Procedure, error) {
 	var procedure Procedure
 	query := r.db.WithContext(ctx).Model(&Procedure{})
 
-	if withExperiments {
-		query = query.Preload("Experiments")
+	if withSteps {
+		query = query.Preload("Steps")
 	}
 
 	err := query.First(&procedure, id).Error

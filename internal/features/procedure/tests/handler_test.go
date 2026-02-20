@@ -142,12 +142,11 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				testResponseDto := &procedure.ProcedureResponseDto{
-					ID:                validID.String(),
-					Title:             "Test Procedure",
-					Description:       "Test Procedure Description",
-					UsedByExperiments: []procedure.UsedByExperiment{},
-					CreatedAt:         testProcedure.CreatedAt,
-					UpdatedAt:         *testProcedure.UpdatedAt,
+					ID:          validID.String(),
+					Title:       "Test Procedure",
+					Description: "Test Procedure Description",
+					CreatedAt:   testProcedure.CreatedAt,
+					UpdatedAt:   *testProcedure.UpdatedAt,
 				}
 				svc.On("GetProcedureByID", mock.Anything, validID).
 					Return(testResponseDto, nil)
@@ -186,7 +185,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 	}{
 		{
 			name:        "success_created",
-			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Description Step 1","is_optional":false,"type":"action"}]}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
 					Return(nil)
@@ -203,7 +202,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 		},
 		{
 			name:        "forbidden_create",
-			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":null,"is_optional":false,"wait_time":null,"type":"action"}]}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
 					Return(constant.ErrForbidCreateProcedure)
@@ -212,7 +211,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 		},
 		{
 			name:        "procedure_already_exists",
-			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":null,"is_optional":false,"wait_time":null,"type":"action"}]}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
 					Return(constant.ErrProcedureAlreadyExists)
@@ -221,7 +220,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 		},
 		{
 			name:        "internal_server_error",
-			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":"Desc 1","type":"action"}],"assigned_experiments":[]}`,
+			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":null,"is_optional":false,"wait_time":null,"type":"action"}]}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
 					Return(errors.New("internal server error"))

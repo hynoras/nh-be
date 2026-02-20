@@ -78,7 +78,7 @@ func (s *service) GetAllProcedures(ctx context.Context, search string, offset, l
 	if permErr != nil {
 		return nil, 0, permErr
 	}
-	procedures, length, repoErr := s.repository.FindAll(ctx, search, offset, limit, true)
+	procedures, length, repoErr := s.repository.FindAll(ctx, search, offset, limit)
 	if repoErr != nil {
 		return nil, 0, repoErr
 	}

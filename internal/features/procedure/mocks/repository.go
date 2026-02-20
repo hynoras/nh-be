@@ -166,9 +166,9 @@ func (_c *Repository_DeleteProcedureStep_Call) RunAndReturn(run func(context.Con
 	return _c
 }
 
-// FindAll provides a mock function with given fields: ctx, search, offset, limit, withExperiments
-func (_m *Repository) FindAll(ctx context.Context, search string, offset int, limit int, withExperiments bool) ([]procedure.Procedure, int64, error) {
-	ret := _m.Called(ctx, search, offset, limit, withExperiments)
+// FindAll provides a mock function with given fields: ctx, search, offset, limit
+func (_m *Repository) FindAll(ctx context.Context, search string, offset int, limit int) ([]procedure.Procedure, int64, error) {
+	ret := _m.Called(ctx, search, offset, limit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindAll")
@@ -177,25 +177,25 @@ func (_m *Repository) FindAll(ctx context.Context, search string, offset int, li
 	var r0 []procedure.Procedure
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, int, int, bool) ([]procedure.Procedure, int64, error)); ok {
-		return rf(ctx, search, offset, limit, withExperiments)
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) ([]procedure.Procedure, int64, error)); ok {
+		return rf(ctx, search, offset, limit)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, int, int, bool) []procedure.Procedure); ok {
-		r0 = rf(ctx, search, offset, limit, withExperiments)
+	if rf, ok := ret.Get(0).(func(context.Context, string, int, int) []procedure.Procedure); ok {
+		r0 = rf(ctx, search, offset, limit)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]procedure.Procedure)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, int, int, bool) int64); ok {
-		r1 = rf(ctx, search, offset, limit, withExperiments)
+	if rf, ok := ret.Get(1).(func(context.Context, string, int, int) int64); ok {
+		r1 = rf(ctx, search, offset, limit)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(context.Context, string, int, int, bool) error); ok {
-		r2 = rf(ctx, search, offset, limit, withExperiments)
+	if rf, ok := ret.Get(2).(func(context.Context, string, int, int) error); ok {
+		r2 = rf(ctx, search, offset, limit)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -213,14 +213,13 @@ type Repository_FindAll_Call struct {
 //   - search string
 //   - offset int
 //   - limit int
-//   - withExperiments bool
-func (_e *Repository_Expecter) FindAll(ctx interface{}, search interface{}, offset interface{}, limit interface{}, withExperiments interface{}) *Repository_FindAll_Call {
-	return &Repository_FindAll_Call{Call: _e.mock.On("FindAll", ctx, search, offset, limit, withExperiments)}
+func (_e *Repository_Expecter) FindAll(ctx interface{}, search interface{}, offset interface{}, limit interface{}) *Repository_FindAll_Call {
+	return &Repository_FindAll_Call{Call: _e.mock.On("FindAll", ctx, search, offset, limit)}
 }
 
-func (_c *Repository_FindAll_Call) Run(run func(ctx context.Context, search string, offset int, limit int, withExperiments bool)) *Repository_FindAll_Call {
+func (_c *Repository_FindAll_Call) Run(run func(ctx context.Context, search string, offset int, limit int)) *Repository_FindAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(int), args[3].(int), args[4].(bool))
+		run(args[0].(context.Context), args[1].(string), args[2].(int), args[3].(int))
 	})
 	return _c
 }
@@ -230,14 +229,14 @@ func (_c *Repository_FindAll_Call) Return(_a0 []procedure.Procedure, _a1 int64, 
 	return _c
 }
 
-func (_c *Repository_FindAll_Call) RunAndReturn(run func(context.Context, string, int, int, bool) ([]procedure.Procedure, int64, error)) *Repository_FindAll_Call {
+func (_c *Repository_FindAll_Call) RunAndReturn(run func(context.Context, string, int, int) ([]procedure.Procedure, int64, error)) *Repository_FindAll_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// FindByID provides a mock function with given fields: ctx, id, withExperiments
-func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID, withExperiments bool) (*procedure.Procedure, error) {
-	ret := _m.Called(ctx, id, withExperiments)
+// FindByID provides a mock function with given fields: ctx, id, withSteps
+func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID, withSteps bool) (*procedure.Procedure, error) {
+	ret := _m.Called(ctx, id, withSteps)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
@@ -246,10 +245,10 @@ func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID, withExperiment
 	var r0 *procedure.Procedure
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) (*procedure.Procedure, error)); ok {
-		return rf(ctx, id, withExperiments)
+		return rf(ctx, id, withSteps)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) *procedure.Procedure); ok {
-		r0 = rf(ctx, id, withExperiments)
+		r0 = rf(ctx, id, withSteps)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*procedure.Procedure)
@@ -257,7 +256,7 @@ func (_m *Repository) FindByID(ctx context.Context, id uuid.UUID, withExperiment
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, bool) error); ok {
-		r1 = rf(ctx, id, withExperiments)
+		r1 = rf(ctx, id, withSteps)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -273,12 +272,12 @@ type Repository_FindByID_Call struct {
 // FindByID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-//   - withExperiments bool
-func (_e *Repository_Expecter) FindByID(ctx interface{}, id interface{}, withExperiments interface{}) *Repository_FindByID_Call {
-	return &Repository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id, withExperiments)}
+//   - withSteps bool
+func (_e *Repository_Expecter) FindByID(ctx interface{}, id interface{}, withSteps interface{}) *Repository_FindByID_Call {
+	return &Repository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id, withSteps)}
 }
 
-func (_c *Repository_FindByID_Call) Run(run func(ctx context.Context, id uuid.UUID, withExperiments bool)) *Repository_FindByID_Call {
+func (_c *Repository_FindByID_Call) Run(run func(ctx context.Context, id uuid.UUID, withSteps bool)) *Repository_FindByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(bool))
 	})

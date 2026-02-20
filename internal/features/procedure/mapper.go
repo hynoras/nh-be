@@ -17,14 +17,15 @@ func MapProcedureListToDto(p Procedure) ProcedureListResponseDto {
 	}
 }
 
-func MapStepsToDto(step []ProcedureStep) []Steps {
-	result := []Steps{}
+func MapStepsToDto(step []ProcedureStep) []StepsResponseDto {
+	result := []StepsResponseDto{}
 	for _, s := range step {
-		result = append(result, Steps{
+		result = append(result, StepsResponseDto{
 			ID:          s.ID.String(),
 			Title:       s.Title,
 			Description: s.Description,
 			Index:       s.Index,
+			IsOptional:  s.IsOptional,
 			StepType:    string(s.StepType),
 			CreatedAt:   s.CreatedAt,
 			UpdatedAt:   *s.UpdatedAt,
@@ -37,7 +38,8 @@ func MapProcedureToDto(p *Procedure) ProcedureResponseDto {
 	return ProcedureResponseDto{
 		ID:          p.ID.String(),
 		Title:       p.Title,
-		Description: p.Description,
+		Description: *p.Description,
+		Steps:       MapStepsToDto(p.Steps),
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   *p.UpdatedAt,
 	}
@@ -73,6 +75,8 @@ func MapCreateDtoToProcedureStep(s []CreateStepDto) []ProcedureStep {
 			Description: step.Description,
 			Index:       step.Index,
 			StepType:    StepType(step.StepType),
+			IsOptional:  step.IsOptional,
+			WaitTime:    step.WaitTime,
 		})
 	}
 	return result
@@ -81,7 +85,7 @@ func MapCreateDtoToProcedureStep(s []CreateStepDto) []ProcedureStep {
 func MapUpdateDtoToProcedure(p *UpdateProcedureDto) *Procedure {
 	return &Procedure{
 		Title:       p.Title,
-		Description: p.Description,
+		Description: &p.Description,
 		UpdatedAt:   timeutil.TimePtr(time.Now()),
 		Version:     p.Version,
 	}
@@ -106,6 +110,12 @@ func MapUpdateProcStepDtoToProcStepInput(step *UpdateProcedureStepDto) *UpdatePr
 	if step.StepType != nil {
 		input.StepType = StepType(*step.StepType)
 	}
+	if step.WaitTime != nil {
+		input.WaitTime = *step.WaitTime
+	}
+	if step.IsOptional != nil {
+		input.IsOptional = *step.IsOptional
+	}
 	return input
 }
 
@@ -120,7 +130,7 @@ func MapUpdateProcStepDtoToProcStepInputs(step []UpdateProcedureStepDto) []Updat
 func MapCreateProcStepInputToProcStep(step *UpdateProcedureStepInput) *ProcedureStep {
 	return &ProcedureStep{
 		Title:       step.Title,
-		Description: step.Description,
+		Description: &step.Description,
 		Index:       step.Index,
 		StepType:    StepType(step.StepType),
 	}
@@ -129,7 +139,7 @@ func MapCreateProcStepInputToProcStep(step *UpdateProcedureStepInput) *Procedure
 func MapUpdateProcStepInputToProcStep(step *UpdateProcedureStepInput, updatedAt *time.Time) *ProcedureStep {
 	return &ProcedureStep{
 		Title:       step.Title,
-		Description: step.Description,
+		Description: &step.Description,
 		Index:       step.Index,
 		StepType:    step.StepType,
 		UpdatedAt:   updatedAt,

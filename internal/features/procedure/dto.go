@@ -6,60 +6,47 @@ import (
 	"github.com/google/uuid"
 )
 
-type UsedByExperiment struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Objective string `json:"objective"`
-}
-
-type Steps struct {
-	ID          string `json:"step_id"`
-	ProcedureID string `json:"procedure_id"`
-
-	Index       int    `json:"step_order"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-
-	StepType string `json:"type"`
-
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+type StepsResponseDto struct {
+	ID          string    `json:"step_id"`
+	Index       int       `json:"step_order"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description"`
+	IsOptional  bool      `json:"is_optional"`
+	StepType    string    `json:"type"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type ProcedureListResponseDto struct {
-	ID                string             `json:"id"`
-	Title             string             `json:"title"`
-	Description       string             `json:"description"`
-	UsedByExperiments []UsedByExperiment `json:"used_by_experiments"`
-	CreatedAt         time.Time          `json:"created_at"`
-	UpdatedAt         time.Time          `json:"updated_at"`
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type ProcedureResponseDto struct {
-	ID                string             `json:"id"`
-	Title             string             `json:"title"`
-	Description       string             `json:"description"`
-	UsedByExperiments []UsedByExperiment `json:"used_by_experiments"`
-	CreatedAt         time.Time          `json:"created_at"`
-	UpdatedAt         time.Time          `json:"updated_at"`
+	ID          string             `json:"id"`
+	Title       string             `json:"title"`
+	Description string             `json:"description"`
+	Steps       []StepsResponseDto `json:"steps"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
 type CreateStepDto struct {
-	Index       int    `json:"step_order" binding:"required"`
-	Title       string `json:"title" binding:"required,min=3,max=200"`
-	Description string `json:"description" binding:"omitempty,min=5,max=255"`
-	StepType    string `json:"type" binding:"required,oneof=action wait decision observe cleanup"`
-}
-
-type CreateExperimentAssignmentDto struct {
-	ID string `json:"id" binding:"required,uuid4"`
+	Index       int     `json:"step_order" binding:"required"`
+	Title       string  `json:"title" binding:"required,min=3,max=200"`
+	Description *string `json:"description" binding:"omitempty,min=5,max=255"`
+	IsOptional  bool    `json:"is_optional"`
+	StepType    string  `json:"type" binding:"required,oneof=action wait decision observe cleanup"`
+	WaitTime    *int    `json:"wait_time" binding:"omitempty,gt=0"`
 }
 
 type CreateProcedureDto struct {
-	Title                 string                          `json:"title" binding:"required,min=3,max=200"`
-	Description           string                          `json:"description" binding:"omitempty,min=5,max=255"`
-	Steps                 []CreateStepDto                 `json:"steps" binding:"omitempty,dive"`
-	ExperimentAssignments []CreateExperimentAssignmentDto `json:"assigned_experiments" binding:"omitempty,dive"`
+	Title       string          `json:"title" binding:"required,min=3,max=200"`
+	Description *string         `json:"description" binding:"omitempty,min=5,max=255"`
+	Steps       []CreateStepDto `json:"steps" binding:"omitempty,dive"`
 }
 
 type UpdateProcedureDto struct {
@@ -74,6 +61,8 @@ type UpdateProcedureStepDto struct {
 	Title       *string `json:"title" binding:"omitempty,min=3,max=200"`
 	Description *string `json:"description" binding:"omitempty,min=5,max=255"`
 	StepType    *string `json:"type" binding:"omitempty,oneof=action wait decision observe cleanup"`
+	IsOptional  *bool   `json:"is_optional" binding:"omitempty"`
+	WaitTime    *int    `json:"wait_time" binding:"omitempty,gt=0"`
 	Version     int     `json:"version" binding:"required"`
 }
 
@@ -83,5 +72,7 @@ type UpdateProcedureStepInput struct {
 	Title       string
 	Description string
 	StepType    StepType
+	IsOptional  bool
+	WaitTime    int
 	Version     int
 }
