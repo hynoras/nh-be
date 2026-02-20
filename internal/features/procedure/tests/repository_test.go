@@ -256,7 +256,6 @@ func TestRepository_FindByID(t *testing.T) {
 	tests := []struct {
 		name            string
 		id              uuid.UUID
-		withSteps       bool
 		withExperiments bool
 		ctx             func() context.Context
 		setupMock       func(mock sqlmock.Sqlmock, id uuid.UUID)
@@ -265,9 +264,8 @@ func TestRepository_FindByID(t *testing.T) {
 		checkResult     func(t *testing.T, result *procedure.Procedure)
 	}{
 		{
-			name:            "happy_path_no_preloads",
+			name:            "success_no_preloads",
 			id:              testID,
-			withSteps:       false,
 			withExperiments: false,
 			ctx:             func() context.Context { return context.Background() },
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
@@ -297,7 +295,6 @@ func TestRepository_FindByID(t *testing.T) {
 		{
 			name:            "procedure_not_found",
 			id:              uuid.New(),
-			withSteps:       false,
 			withExperiments: false,
 			ctx:             func() context.Context { return context.Background() },
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
@@ -315,7 +312,6 @@ func TestRepository_FindByID(t *testing.T) {
 		{
 			name:            "db_error_unexpected",
 			id:              testID,
-			withSteps:       false,
 			withExperiments: false,
 			ctx:             func() context.Context { return context.Background() },
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
@@ -334,7 +330,6 @@ func TestRepository_FindByID(t *testing.T) {
 		{
 			name:            "context_canceled",
 			id:              testID,
-			withSteps:       false,
 			withExperiments: false,
 			ctx: func() context.Context {
 				ctx, cancel := context.WithCancel(context.Background())
@@ -354,7 +349,6 @@ func TestRepository_FindByID(t *testing.T) {
 		{
 			name:            "correct_table_queried",
 			id:              testID,
-			withSteps:       false,
 			withExperiments: false,
 			ctx:             func() context.Context { return context.Background() },
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
@@ -374,181 +368,6 @@ func TestRepository_FindByID(t *testing.T) {
 				assert.Equal(t, "Expected Title", result.Title)
 			},
 		},
-		{
-			name:            "load_steps_only",
-			id:              testID,
-			withSteps:       true,
-			withExperiments: false,
-			ctx:             func() context.Context { return context.Background() },
-			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
-				procedureRows := sqlmock.NewRows([]string{
-					"id", "title", "description", "version", "parent_id", "created_at", "updated_at",
-				}).AddRow(
-					proc.ID, proc.Title, proc.Description, proc.Version, proc.ParentID, proc.CreatedAt, proc.UpdatedAt,
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedures" WHERE "procedures"\."id" = \$1 ORDER BY "procedures"\."id" LIMIT \$2`).
-					WithArgs(id, 1).
-					WillReturnRows(procedureRows)
-
-				stepRows := sqlmock.NewRows([]string{
-					"id", "procedure_id", "index", "title", "description", "step_type", "created_at", "updated_at",
-				}).AddRow(
-					uuid.New(), id, 1, "Step 1", "Description 1", "manual", time.Now(), time.Now(),
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedure_steps" WHERE "procedure_steps"\."procedure_id" = \$1`).
-					WithArgs(id).
-					WillReturnRows(stepRows)
-			},
-			expectedError: nil,
-			checkResult: func(t *testing.T, result *procedure.Procedure) {
-				assert.NotNil(t, result)
-				assert.Greater(t, len(result.Steps), 0)
-			},
-		},
-		{
-			name:            "load_experiments_only",
-			id:              testID,
-			withSteps:       false,
-			withExperiments: true,
-			ctx:             func() context.Context { return context.Background() },
-			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
-				procedureRows := sqlmock.NewRows([]string{
-					"id", "title", "description", "version", "parent_id", "created_at", "updated_at",
-				}).AddRow(
-					proc.ID, proc.Title, proc.Description, proc.Version, proc.ParentID, proc.CreatedAt, proc.UpdatedAt,
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedures" WHERE "procedures"\."id" = \$1 ORDER BY "procedures"\."id" LIMIT \$2`).
-					WithArgs(id, 1).
-					WillReturnRows(procedureRows)
-
-				experimentRows := sqlmock.NewRows([]string{
-					"id", "procedure_id", "experiment_id", "created_at", "updated_at",
-				}).AddRow(
-					uuid.New(), id, uuid.New(), time.Now(), time.Now(),
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedure_experiment_assignments" WHERE "procedure_experiment_assignments"\."procedure_id" = \$1`).
-					WithArgs(id).
-					WillReturnRows(experimentRows)
-			},
-			expectedError: nil,
-			checkResult: func(t *testing.T, result *procedure.Procedure) {
-				assert.NotNil(t, result)
-				assert.Equal(t, 0, len(result.Steps))
-			},
-		},
-		{
-			name:            "load_both_relations",
-			id:              testID,
-			withSteps:       true,
-			withExperiments: true,
-			ctx:             func() context.Context { return context.Background() },
-			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
-				// Main procedure query
-				procedureRows := sqlmock.NewRows([]string{
-					"id", "title", "description", "version", "parent_id", "created_at", "updated_at",
-				}).AddRow(
-					proc.ID, proc.Title, proc.Description, proc.Version, proc.ParentID, proc.CreatedAt, proc.UpdatedAt,
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedures" WHERE "procedures"\."id" = \$1 ORDER BY "procedures"\."id" LIMIT \$2`).
-					WithArgs(id, 1).
-					WillReturnRows(procedureRows)
-
-				// Experiments preload query
-				experimentRows := sqlmock.NewRows([]string{
-					"id", "procedure_id", "experiment_id", "created_at", "updated_at",
-				}).AddRow(
-					uuid.New(), id, uuid.New(), time.Now(), time.Now(),
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedure_experiment_assignments" WHERE "procedure_experiment_assignments"\."procedure_id" = \$1`).
-					WithArgs(id).
-					WillReturnRows(experimentRows)
-
-				// Steps preload query
-				stepRows := sqlmock.NewRows([]string{
-					"id", "procedure_id", "index", "title", "description", "step_type", "created_at", "updated_at",
-				}).AddRow(
-					uuid.New(), id, 1, "Step 1", "Description 1", "manual", time.Now(), time.Now(),
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedure_steps" WHERE "procedure_steps"\."procedure_id" = \$1`).
-					WithArgs(id).
-					WillReturnRows(stepRows)
-			},
-			expectedError: nil,
-			checkResult: func(t *testing.T, result *procedure.Procedure) {
-				assert.NotNil(t, result)
-				assert.Greater(t, len(result.Steps), 0)
-			},
-		},
-		{
-			name:            "procedure_has_no_steps",
-			id:              testID,
-			withSteps:       true,
-			withExperiments: false,
-			ctx:             func() context.Context { return context.Background() },
-			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
-				procedureRows := sqlmock.NewRows([]string{
-					"id", "title", "description", "version", "parent_id", "created_at", "updated_at",
-				}).AddRow(
-					proc.ID, proc.Title, proc.Description, proc.Version, proc.ParentID, proc.CreatedAt, proc.UpdatedAt,
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedures" WHERE "procedures"\."id" = \$1 ORDER BY "procedures"\."id" LIMIT \$2`).
-					WithArgs(id, 1).
-					WillReturnRows(procedureRows)
-
-				stepRows := sqlmock.NewRows([]string{
-					"id", "procedure_id", "index", "title", "description", "step_type", "created_at", "updated_at",
-				})
-
-				mock.ExpectQuery(`SELECT \* FROM "procedure_steps" WHERE "procedure_steps"\."procedure_id" = \$1`).
-					WithArgs(id).
-					WillReturnRows(stepRows)
-			},
-			expectedError: nil,
-			checkResult: func(t *testing.T, result *procedure.Procedure) {
-				assert.NotNil(t, result)
-				assert.NotNil(t, result.Steps)
-				assert.Equal(t, 0, len(result.Steps))
-			},
-		},
-		{
-			name:            "procedure_has_no_experiments",
-			id:              testID,
-			withSteps:       false,
-			withExperiments: true,
-			ctx:             func() context.Context { return context.Background() },
-			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
-				procedureRows := sqlmock.NewRows([]string{
-					"id", "title", "description", "version", "parent_id", "created_at", "updated_at",
-				}).AddRow(
-					proc.ID, proc.Title, proc.Description, proc.Version, proc.ParentID, proc.CreatedAt, proc.UpdatedAt,
-				)
-
-				mock.ExpectQuery(`SELECT \* FROM "procedures" WHERE "procedures"\."id" = \$1 ORDER BY "procedures"\."id" LIMIT \$2`).
-					WithArgs(id, 1).
-					WillReturnRows(procedureRows)
-
-				// Empty experiments preload query
-				experimentRows := sqlmock.NewRows([]string{
-					"id", "procedure_id", "experiment_id", "created_at", "updated_at",
-				})
-
-				mock.ExpectQuery(`SELECT \* FROM "procedure_experiment_assignments" WHERE "procedure_experiment_assignments"\."procedure_id" = \$1`).
-					WithArgs(id).
-					WillReturnRows(experimentRows)
-			},
-			expectedError: nil,
-			checkResult: func(t *testing.T, result *procedure.Procedure) {
-				assert.NotNil(t, result)
-			},
-		},
 	}
 
 	for _, tc := range tests {
@@ -558,7 +377,7 @@ func TestRepository_FindByID(t *testing.T) {
 			repo := procedure.NewRepository(db)
 			ctx := tc.ctx()
 
-			result, err := repo.FindByID(ctx, tc.id, tc.withSteps, tc.withExperiments)
+			result, err := repo.FindByID(ctx, tc.id, tc.withExperiments)
 
 			if tc.expectedError != nil {
 				assert.ErrorIs(t, err, tc.expectedError)

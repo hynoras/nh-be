@@ -228,11 +228,7 @@ func TestService_GetProcedureByID(t *testing.T) {
 				assert.Equal(t, "12345678-1234-1234-1234-123456789012", result.ID)
 				assert.Equal(t, "Test Procedure", result.Title)
 				assert.Equal(t, "Test Procedure Description", result.Description)
-				assert.Len(t, result.Steps, 2)
 				assert.Len(t, result.UsedByExperiments, 2)
-				// Verify step mapping
-				assert.Equal(t, "33333333-1234-1234-1234-444433332222", result.Steps[0].ID)
-				assert.Equal(t, "Test Step", result.Steps[0].Title)
 				// Verify experiment mapping
 				assert.Equal(t, "aaaaaaaa-1111-1111-1111-111111111111", result.UsedByExperiments[0].ID)
 				assert.Equal(t, "Test Experiment 1", result.UsedByExperiments[0].Title)

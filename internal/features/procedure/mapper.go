@@ -38,7 +38,6 @@ func MapProcedureToDto(p *Procedure) ProcedureResponseDto {
 		ID:          p.ID.String(),
 		Title:       p.Title,
 		Description: p.Description,
-		Steps:       MapStepsToDto(p.Steps),
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   *p.UpdatedAt,
 	}

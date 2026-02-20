@@ -146,7 +146,6 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 					Title:             "Test Procedure",
 					Description:       "Test Procedure Description",
 					UsedByExperiments: []procedure.UsedByExperiment{},
-					Steps:             []procedure.Steps{},
 					CreatedAt:         testProcedure.CreatedAt,
 					UpdatedAt:         *testProcedure.UpdatedAt,
 				}

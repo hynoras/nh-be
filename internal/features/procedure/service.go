@@ -91,7 +91,7 @@ func (s *service) GetProcedureByID(ctx context.Context, id uuid.UUID) (*Procedur
 	if permErr != nil {
 		return nil, permErr
 	}
-	procedure, repoErr := s.repository.FindByID(ctx, id, true, true)
+	procedure, repoErr := s.repository.FindByID(ctx, id, true)
 	if repoErr != nil {
 		return nil, repoErr
 	}
