@@ -246,6 +246,54 @@ func (_c *Service_UpdateProcedure_Call) RunAndReturn(run func(context.Context, u
 	return _c
 }
 
+// UpdateProcedureStep provides a mock function with given fields: ctx, procedureId, steps
+func (_m *Service) UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []procedure.UpdateProcedureStepInput) error {
+	ret := _m.Called(ctx, procedureId, steps)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateProcedureStep")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []procedure.UpdateProcedureStepInput) error); ok {
+		r0 = rf(ctx, procedureId, steps)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Service_UpdateProcedureStep_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProcedureStep'
+type Service_UpdateProcedureStep_Call struct {
+	*mock.Call
+}
+
+// UpdateProcedureStep is a helper method to define mock.On call
+//   - ctx context.Context
+//   - procedureId uuid.UUID
+//   - steps []procedure.UpdateProcedureStepInput
+func (_e *Service_Expecter) UpdateProcedureStep(ctx interface{}, procedureId interface{}, steps interface{}) *Service_UpdateProcedureStep_Call {
+	return &Service_UpdateProcedureStep_Call{Call: _e.mock.On("UpdateProcedureStep", ctx, procedureId, steps)}
+}
+
+func (_c *Service_UpdateProcedureStep_Call) Run(run func(ctx context.Context, procedureId uuid.UUID, steps []procedure.UpdateProcedureStepInput)) *Service_UpdateProcedureStep_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].([]procedure.UpdateProcedureStepInput))
+	})
+	return _c
+}
+
+func (_c *Service_UpdateProcedureStep_Call) Return(_a0 error) *Service_UpdateProcedureStep_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Service_UpdateProcedureStep_Call) RunAndReturn(run func(context.Context, uuid.UUID, []procedure.UpdateProcedureStepInput) error) *Service_UpdateProcedureStep_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewService creates a new instance of Service. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewService(t interface {

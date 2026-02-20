@@ -89,27 +89,31 @@ func MapUpdateDtoToProcedure(p *UpdateProcedureDto) *Procedure {
 }
 
 func MapUpdateProcStepDtoToProcStepInput(step *UpdateProcedureStepDto) *UpdateProcedureStepInput {
-	return &UpdateProcedureStepInput{
-		ID:          uuid.MustParse(step.ID),
-		Title:       step.Title,
-		Description: step.Description,
-		Index:       step.Index,
-		StepType:    StepType(step.StepType),
-		Version:     step.Version,
+	input := &UpdateProcedureStepInput{
+		Version: step.Version,
 	}
+	if step.ID != nil {
+		input.ID = uuid.MustParse(*step.ID)
+	}
+	if step.Title != nil {
+		input.Title = *step.Title
+	}
+	if step.Description != nil {
+		input.Description = *step.Description
+	}
+	if step.Index != nil {
+		input.Index = *step.Index
+	}
+	if step.StepType != nil {
+		input.StepType = StepType(*step.StepType)
+	}
+	return input
 }
 
 func MapUpdateProcStepDtoToProcStepInputs(step []UpdateProcedureStepDto) []UpdateProcedureStepInput {
 	result := make([]UpdateProcedureStepInput, 0, len(step))
 	for _, s := range step {
-		result = append(result, UpdateProcedureStepInput{
-			ID:          uuid.MustParse(s.ID),
-			Title:       s.Title,
-			Description: s.Description,
-			Index:       s.Index,
-			StepType:    StepType(s.StepType),
-			Version:     s.Version,
-		})
+		result = append(result, *MapUpdateProcStepDtoToProcStepInput(&s))
 	}
 	return result
 }

@@ -2,6 +2,7 @@ package procedure
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -123,7 +124,7 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetProcedureByID", mock.Anything, validID).
-					Return(nil, constant.ErrOptimisticLockingConflict)
+					Return(nil, constant.ErrProcedureConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -315,7 +316,7 @@ func TestHandler_UpdateProcedure(t *testing.T) {
 			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
-					Return(constant.ErrOptimisticLockingConflict)
+					Return(constant.ErrProcedureConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -341,6 +342,129 @@ func TestHandler_UpdateProcedure(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPut,
 				"/procedures/"+tc.procedureID,
+				strings.NewReader(tc.requestBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestHandler_UpdateProcedureStep(t *testing.T) {
+	validID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+	// Valid UUID v4 for use in step bodies
+	validStepID := "550e8400-e29b-41d4-a716-446655440000"
+	validStepBody := fmt.Sprintf(`[{"id":"%s","title":"Step 1","type":"action","version":1}]`, validStepID)
+
+	tests := []struct {
+		name           string
+		procedureID    string
+		requestBody    string
+		setupMocks     func(svc *proceduremocks.Service)
+		expectedStatus int
+	}{
+		{
+			name:        "invalid_procedure_id",
+			procedureID: "invalid",
+			requestBody: `[]`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "UpdateProcedureStep")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_json_body",
+			procedureID: validID.String(),
+			requestBody: `invalid-json`,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "UpdateProcedureStep")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "validation_error",
+			procedureID: validID.String(),
+			requestBody: fmt.Sprintf(`[{"id":"%s","title":"Valid Title","type":"not_valid_type"}]`, validStepID),
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "UpdateProcedureStep")
+			},
+			expectedStatus: http.StatusBadRequest, // gin returns 400 for slice binding validation
+		},
+		{
+			name:        "permission_denied",
+			procedureID: validID.String(),
+			requestBody: validStepBody,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
+					Return(constant.ErrForbidUpdateProcedure)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:        "procedure_not_found",
+			procedureID: validID.String(),
+			requestBody: validStepBody,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
+					Return(constant.ErrProcedureNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:        "procedure_step_conflict",
+			procedureID: validID.String(),
+			requestBody: validStepBody,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
+					Return(constant.ErrProcedureConflict)
+			},
+			expectedStatus: http.StatusConflict,
+		},
+		{
+			name:        "procedure_step_not_found",
+			procedureID: validID.String(),
+			requestBody: validStepBody,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
+					Return(constant.ErrProcedureStepNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:        "unexpected_error",
+			procedureID: validID.String(),
+			requestBody: validStepBody,
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
+					Return(errors.New("unexpected error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:        "successful_update",
+			procedureID: validID.String(),
+			requestBody: fmt.Sprintf(`[{"id":"%s","title":"Updated Step 1","type":"action","version":1}]`, validStepID),
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := proceduremocks.NewService(t)
+			tc.setupMocks(mockSvc)
+
+			router := testutil.SetupTestRouter(http.MethodPut, "/procedures/:procedureId/procedure-steps",
+				procedure.UpdateProcedureStepHandler(mockSvc))
+
+			req := httptest.NewRequest(http.MethodPut,
+				"/procedures/"+tc.procedureID+"/procedure-steps",
 				strings.NewReader(tc.requestBody))
 			req.Header.Set("Content-Type", "application/json")
 

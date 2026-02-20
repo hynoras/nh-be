@@ -4,6 +4,8 @@ import (
 	"context"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/procedure"
+	"nh-be/internal/utils/intutil"
+	"nh-be/internal/utils/stringutil"
 	"nh-be/internal/utils/timeutil"
 	"time"
 
@@ -157,6 +159,20 @@ func CreateProcedureWithParent(parentID uuid.UUID) *procedure.Procedure {
 	}
 }
 
+func TestProcedureStep() *procedure.ProcedureStep {
+	return &procedure.ProcedureStep{
+		ID:          uuid.MustParse("33333333-1234-1234-1234-444433332222"),
+		ProcedureID: uuid.MustParse("12345678-1234-1234-1234-123456789012"),
+		Index:       1,
+		Title:       "Test Step",
+		Description: "Test Step Description",
+		StepType:    "manual",
+		Version:     1,
+		CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+		UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+	}
+}
+
 func TestCreateProcedureDto() *procedure.CreateProcedureDto {
 	return &procedure.CreateProcedureDto{
 		Title:       "Test Procedure",
@@ -188,5 +204,60 @@ func TestUpdateProcedureDto() *procedure.UpdateProcedureDto {
 		Title:       "Updated Procedure Title",
 		Description: "Updated Procedure Description",
 		Version:     1,
+	}
+}
+
+// Fixed UUIDs for UpdateProcedureStep tests
+var (
+	ExistingStepID1 = uuid.MustParse("aaaaaaaa-1111-1111-1111-111111111111")
+	ExistingStepID2 = uuid.MustParse("bbbbbbbb-2222-2222-2222-222222222222")
+	ExistingStepID3 = uuid.MustParse("cccccccc-3333-3333-3333-333333333333")
+)
+
+func TestExistingStepMetadata() []procedure.StepMetadata {
+	return []procedure.StepMetadata{
+		{ID: ExistingStepID1, Version: 1},
+		{ID: ExistingStepID2, Version: 2},
+	}
+}
+
+func TestNewStepInput() procedure.UpdateProcedureStepInput {
+	return procedure.UpdateProcedureStepInput{
+		ID:          uuid.Nil,
+		Index:       3,
+		Title:       "New Step",
+		Description: "New Step Description",
+		StepType:    "action",
+	}
+}
+
+func TestUpdateStepInput(id uuid.UUID) procedure.UpdateProcedureStepInput {
+	return procedure.UpdateProcedureStepInput{
+		ID:          id,
+		Index:       1,
+		Title:       "Updated Step",
+		Description: "Updated Step Description",
+		StepType:    "action",
+		Version:     1,
+	}
+}
+
+func TestUpdateProcedureStepDto() []procedure.UpdateProcedureStepDto {
+	stepID := uuid.New().String()
+	return []procedure.UpdateProcedureStepDto{
+		{
+			ID:          &stepID,
+			Index:       intutil.IntPtr(1),
+			Title:       stringutil.StringPtr("Updated Step 1"),
+			Description: stringutil.StringPtr("Updated Step 1 Description"),
+			StepType:    stringutil.StringPtr("action"),
+			Version:     1,
+		},
+		{
+			Index:    intutil.IntPtr(2),
+			Title:    stringutil.StringPtr("New Step 2"),
+			StepType: stringutil.StringPtr("wait"),
+			Version:  1,
+		},
 	}
 }

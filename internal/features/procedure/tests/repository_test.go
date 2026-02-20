@@ -813,7 +813,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 		checkError    func(t *testing.T, err error)
 	}{
 		{
-			name: "update_success",
+			name: "success",
 			id:   testID,
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
@@ -824,10 +824,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 				}
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
-				// GORM wraps Updates in a transaction
 				mock.ExpectBegin()
-				// Expect UPDATE query to succeed with 1 row affected
-				// Don't use WithArgs for Updates() with map - GORM handles it internally
 				mock.ExpectExec(`UPDATE "procedures" SET`).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectCommit()
@@ -835,7 +832,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "update_db_error",
+			name: "db_error",
 			id:   testID,
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
@@ -847,7 +844,6 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
 				mock.ExpectBegin()
-				// Expect UPDATE query to return error
 				mock.ExpectExec(`UPDATE "procedures" SET`).
 					WillReturnError(assert.AnError)
 				mock.ExpectRollback()
@@ -858,7 +854,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			},
 		},
 		{
-			name: "update_not_found",
+			name: "not_found",
 			id:   testID,
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
@@ -870,12 +866,9 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
 				mock.ExpectBegin()
-				// UPDATE succeeds but affects 0 rows
 				mock.ExpectExec(`UPDATE "procedures" SET`).
 					WillReturnResult(sqlmock.NewResult(0, 0))
 				mock.ExpectCommit()
-
-				// COUNT query returns 0 (procedure not found)
 				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedures" WHERE id = \$1`).
 					WithArgs(id).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
@@ -883,7 +876,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			expectedError: constant.ErrProcedureNotFound,
 		},
 		{
-			name: "update_version_conflict",
+			name: "version_conflict",
 			id:   testID,
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
@@ -895,20 +888,18 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			},
 			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID, proc *procedure.Procedure) {
 				mock.ExpectBegin()
-				// UPDATE succeeds but affects 0 rows (version mismatch)
 				mock.ExpectExec(`UPDATE "procedures" SET`).
 					WillReturnResult(sqlmock.NewResult(0, 0))
 				mock.ExpectCommit()
 
-				// COUNT query returns 1 (procedure exists but version mismatch)
 				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedures" WHERE id = \$1`).
 					WithArgs(id).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 			},
-			expectedError: constant.ErrOptimisticLockingConflict,
+			expectedError: constant.ErrProcedureConflict,
 		},
 		{
-			name: "update_count_error",
+			name: "count_error",
 			id:   testID,
 			procedureFunc: func() *procedure.Procedure {
 				return &procedure.Procedure{
@@ -948,6 +939,461 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 			tc.setupMock(mock, tc.id, proc)
 
 			err := repo.UpdateProcedure(ctx, tc.id, proc)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepository_CreateProcedureStep(t *testing.T) {
+	tests := []struct {
+		name          string
+		stepFunc      func() *procedure.ProcedureStep
+		ctx           func() context.Context
+		setupMock     func(mock sqlmock.Sqlmock, step *procedure.ProcedureStep)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name:     "success",
+			stepFunc: TestProcedureStep,
+			ctx:      func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedure_steps"`).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(step.ID, time.Now()))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name:     "db_error",
+			stepFunc: TestProcedureStep,
+			ctx:      func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "procedure_steps"`).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:     "context_cancelled",
+			stepFunc: TestProcedureStep,
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+			setupMock: func(mock sqlmock.Sqlmock, step *procedure.ProcedureStep) {
+				// No DB expectations since context is cancelled
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, context.Canceled)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			step := tc.stepFunc()
+			tc.setupMock(mock, step)
+
+			err := repo.CreateProcedureStep(ctx, step)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepository_GetStepIDsByProcID(t *testing.T) {
+	testProcID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name          string
+		procedureID   uuid.UUID
+		ctx           func() context.Context
+		setupMock     func(mock sqlmock.Sqlmock, procedureID uuid.UUID)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+		checkResult   func(t *testing.T, result []procedure.StepMetadata)
+	}{
+		{
+			name:        "success_multiple",
+			procedureID: testProcID,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				rows := sqlmock.NewRows([]string{"id", "version"}).
+					AddRow(uuid.MustParse("33333333-1234-1234-1234-444433332222"), 1).
+					AddRow(uuid.MustParse("33333333-1234-1234-1234-555533332222"), 2)
+				mock.ExpectQuery(`SELECT "id","version" FROM "procedure_steps" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(rows)
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, result []procedure.StepMetadata) {
+				assert.Len(t, result, 2)
+			},
+		},
+		{
+			name:        "success_empty",
+			procedureID: testProcID,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				rows := sqlmock.NewRows([]string{"id", "version"})
+				mock.ExpectQuery(`SELECT "id","version" FROM "procedure_steps" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(rows)
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, result []procedure.StepMetadata) {
+				assert.Len(t, result, 0)
+			},
+		},
+		{
+			name:        "db_error",
+			procedureID: testProcID,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				mock.ExpectQuery(`SELECT "id","version" FROM "procedure_steps" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:        "context_cancelled",
+			procedureID: testProcID,
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				// No DB expectations since context is cancelled
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, context.Canceled)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			tc.setupMock(mock, tc.procedureID)
+
+			result, err := repo.GetStepIDsByProcID(ctx, tc.procedureID)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if tc.checkResult != nil {
+				tc.checkResult(t, result)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepository_UpdateProcedureStep(t *testing.T) {
+	testStepID := uuid.MustParse("33333333-1234-1234-1234-444433332222")
+	testProcID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name          string
+		stepID        uuid.UUID
+		procedureID   uuid.UUID
+		stepFunc      func() *procedure.ProcedureStep
+		ctx           func() context.Context
+		setupMock     func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name:        "success",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			stepFunc: func() *procedure.ProcedureStep {
+				s := TestProcedureStep()
+				s.Title = "Updated Step Title"
+				s.Description = "Updated Step Description"
+				s.UpdatedAt = timeutil.TimePtr(time.Now())
+				return s
+			},
+			ctx: func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "procedure_steps" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "not_found",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			stepFunc: func() *procedure.ProcedureStep {
+				s := TestProcedureStep()
+				s.UpdatedAt = timeutil.TimePtr(time.Now())
+				return s
+			},
+			ctx: func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				// UPDATE affects 0 rows
+				mock.ExpectExec(`UPDATE "procedure_steps" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+				// COUNT returns 0 — step not found
+				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedure_steps" WHERE id = \$1 AND procedure_id = \$2`).
+					WithArgs(stepID, procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+			},
+			expectedError: constant.ErrProcedureStepNotFound,
+		},
+		{
+			name:        "optimistic_lock_conflict",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			stepFunc: func() *procedure.ProcedureStep {
+				s := TestProcedureStep()
+				s.UpdatedAt = timeutil.TimePtr(time.Now())
+				return s
+			},
+			ctx: func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				// UPDATE affects 0 rows (version mismatch)
+				mock.ExpectExec(`UPDATE "procedure_steps" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+				// COUNT returns 1 — step exists but version mismatch
+				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedure_steps" WHERE id = \$1 AND procedure_id = \$2`).
+					WithArgs(stepID, procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+			},
+			expectedError: constant.ErrProcedureStepConflict,
+		},
+		{
+			name:        "db_error_on_update",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			stepFunc: func() *procedure.ProcedureStep {
+				s := TestProcedureStep()
+				s.UpdatedAt = timeutil.TimePtr(time.Now())
+				return s
+			},
+			ctx: func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "procedure_steps" SET`).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:        "db_error_on_count",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			stepFunc: func() *procedure.ProcedureStep {
+				s := TestProcedureStep()
+				s.UpdatedAt = timeutil.TimePtr(time.Now())
+				return s
+			},
+			ctx: func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`UPDATE "procedure_steps" SET`).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+				// COUNT query returns error
+				mock.ExpectQuery(`SELECT count\(\*\) FROM "procedure_steps" WHERE id = \$1 AND procedure_id = \$2`).
+					WithArgs(stepID, procedureID).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:        "context_cancelled",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			stepFunc: func() *procedure.ProcedureStep {
+				s := TestProcedureStep()
+				s.UpdatedAt = timeutil.TimePtr(time.Now())
+				return s
+			},
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID, step *procedure.ProcedureStep) {
+				// No DB expectations since context is cancelled
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			step := tc.stepFunc()
+			tc.setupMock(mock, tc.stepID, tc.procedureID, step)
+
+			err := repo.UpdateProcedureStep(ctx, tc.stepID, tc.procedureID, step)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepository_DeleteProcedureStep(t *testing.T) {
+	testStepID := uuid.MustParse("33333333-1234-1234-1234-444433332222")
+	testProcID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name          string
+		stepID        uuid.UUID
+		procedureID   uuid.UUID
+		ctx           func() context.Context
+		setupMock     func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name:        "success",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`DELETE FROM "procedure_steps" WHERE id = \$1 AND procedure_id = \$2`).
+					WithArgs(stepID, procedureID).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "not_found",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID) {
+				mock.ExpectBegin()
+				// Hard delete affects 0 rows
+				mock.ExpectExec(`DELETE FROM "procedure_steps" WHERE id = \$1 AND procedure_id = \$2`).
+					WithArgs(stepID, procedureID).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+			},
+			expectedError: constant.ErrProcedureStepNotFound,
+		},
+		{
+			name:        "db_error",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`DELETE FROM "procedure_steps" WHERE id = \$1 AND procedure_id = \$2`).
+					WithArgs(stepID, procedureID).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:        "context_cancelled",
+			stepID:      testStepID,
+			procedureID: testProcID,
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+			setupMock: func(mock sqlmock.Sqlmock, stepID uuid.UUID, procedureID uuid.UUID) {
+				// No DB expectations since context is cancelled
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			tc.setupMock(mock, tc.stepID, tc.procedureID)
+
+			err := repo.DeleteProcedureStep(ctx, tc.stepID, tc.procedureID)
 
 			if tc.expectedError != nil {
 				assert.ErrorIs(t, err, tc.expectedError)

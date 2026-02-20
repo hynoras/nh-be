@@ -517,9 +517,9 @@ func TestService_UpdateProcedure(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
-					Return(constant.ErrOptimisticLockingConflict)
+					Return(constant.ErrProcedureConflict)
 			},
-			expectedError: constant.ErrOptimisticLockingConflict,
+			expectedError: constant.ErrProcedureConflict,
 		},
 		{
 			name:        "repo_returns_db_error",
@@ -546,6 +546,228 @@ func TestService_UpdateProcedure(t *testing.T) {
 			svc := procedure.NewService(mockRepo, mockPermSvc)
 
 			err := svc.UpdateProcedure(tc.ctx, tc.procedureID, tc.dto)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestService_UpdateProcedureStep(t *testing.T) {
+	userID := uuid.New()
+	procedureID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		procedureID   uuid.UUID
+		stepInput     []procedure.UpdateProcedureStepInput
+		setupMocks    func(repo *procmocks.Repository, permSvc *mocks.Service)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name:        "permission_denied_returns_error",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{TestUpdateStepInput(ExistingStepID1)},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				// Repo should NOT be called
+			},
+			expectedError: constant.ErrForbidUpdateProcedure,
+		},
+		{
+			name:        "transaction_error_is_propagated",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{TestUpdateStepInput(ExistingStepID1)},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Return(errors.New("transaction failed"))
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "transaction failed")
+			},
+		},
+		{
+			name:        "create_new_step_when_id_is_nil",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{TestNewStepInput()},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return([]procedure.StepMetadata{}, nil)
+				repo.On("CreateProcedureStep", mock.Anything, mock.AnythingOfType("*procedure.ProcedureStep")).
+					Return(nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "update_existing_step_success",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{TestUpdateStepInput(ExistingStepID1)},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return(TestExistingStepMetadata(), nil)
+				repo.On("UpdateProcedureStep", mock.Anything, ExistingStepID1, procedureID, mock.AnythingOfType("*procedure.ProcedureStep")).
+					Return(nil)
+				repo.On("DeleteProcedureStep", mock.Anything, ExistingStepID2, procedureID).
+					Return(nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "update_non_existing_step_returns_not_found",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{TestUpdateStepInput(ExistingStepID3)}, // ID not in existing
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return(TestExistingStepMetadata(), nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(constant.ErrProcedureStepNotFound)
+			},
+			expectedError: constant.ErrProcedureStepNotFound,
+		},
+		{
+			name:        "delete_missing_step_when_not_in_input",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{}, // empty input, all existing should be deleted
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return([]procedure.StepMetadata{{ID: ExistingStepID1, Version: 1}}, nil)
+				repo.On("DeleteProcedureStep", mock.Anything, ExistingStepID1, procedureID).
+					Return(nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "version_conflict_is_propagated",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{TestUpdateStepInput(ExistingStepID1)},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return(TestExistingStepMetadata(), nil)
+				repo.On("UpdateProcedureStep", mock.Anything, ExistingStepID1, procedureID, mock.AnythingOfType("*procedure.ProcedureStep")).
+					Return(constant.ErrProcedureConflict)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(constant.ErrProcedureConflict)
+			},
+			expectedError: constant.ErrProcedureConflict,
+		},
+		{
+			name:        "mixed_create_update_delete_in_single_request",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput: []procedure.UpdateProcedureStepInput{
+				TestNewStepInput(),                   // create (uuid.Nil)
+				TestUpdateStepInput(ExistingStepID1), // update (existing)
+				// ExistingStepID2 not in input → delete
+			},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return(TestExistingStepMetadata(), nil)
+				repo.On("CreateProcedureStep", mock.Anything, mock.AnythingOfType("*procedure.ProcedureStep")).
+					Return(nil)
+				repo.On("UpdateProcedureStep", mock.Anything, ExistingStepID1, procedureID, mock.AnythingOfType("*procedure.ProcedureStep")).
+					Return(nil)
+				repo.On("DeleteProcedureStep", mock.Anything, ExistingStepID2, procedureID).
+					Return(nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "empty_input_deletes_all_existing_steps",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			stepInput:   []procedure.UpdateProcedureStepInput{},
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
+					Return(TestExistingStepMetadata(), nil)
+				repo.On("DeleteProcedureStep", mock.Anything, ExistingStepID1, procedureID).
+					Return(nil)
+				repo.On("DeleteProcedureStep", mock.Anything, ExistingStepID2, procedureID).
+					Return(nil)
+				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
+					Run(func(args mock.Arguments) {
+						fn := args.Get(1).(func(procedure.Repository) error)
+						fn(repo)
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := procmocks.NewRepository(t)
+			mockPermSvc := mocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := procedure.NewService(mockRepo, mockPermSvc)
+
+			err := svc.UpdateProcedureStep(tc.ctx, tc.procedureID, tc.stepInput)
 
 			if tc.expectedError != nil {
 				assert.ErrorIs(t, err, tc.expectedError)

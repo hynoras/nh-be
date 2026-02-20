@@ -71,6 +71,101 @@ func (_c *Repository_CreateProcedure_Call) RunAndReturn(run func(context.Context
 	return _c
 }
 
+// CreateProcedureStep provides a mock function with given fields: ctx, step
+func (_m *Repository) CreateProcedureStep(ctx context.Context, step *procedure.ProcedureStep) error {
+	ret := _m.Called(ctx, step)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateProcedureStep")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *procedure.ProcedureStep) error); ok {
+		r0 = rf(ctx, step)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_CreateProcedureStep_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateProcedureStep'
+type Repository_CreateProcedureStep_Call struct {
+	*mock.Call
+}
+
+// CreateProcedureStep is a helper method to define mock.On call
+//   - ctx context.Context
+//   - step *procedure.ProcedureStep
+func (_e *Repository_Expecter) CreateProcedureStep(ctx interface{}, step interface{}) *Repository_CreateProcedureStep_Call {
+	return &Repository_CreateProcedureStep_Call{Call: _e.mock.On("CreateProcedureStep", ctx, step)}
+}
+
+func (_c *Repository_CreateProcedureStep_Call) Run(run func(ctx context.Context, step *procedure.ProcedureStep)) *Repository_CreateProcedureStep_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*procedure.ProcedureStep))
+	})
+	return _c
+}
+
+func (_c *Repository_CreateProcedureStep_Call) Return(_a0 error) *Repository_CreateProcedureStep_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_CreateProcedureStep_Call) RunAndReturn(run func(context.Context, *procedure.ProcedureStep) error) *Repository_CreateProcedureStep_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteProcedureStep provides a mock function with given fields: ctx, stepId, procedureId
+func (_m *Repository) DeleteProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID) error {
+	ret := _m.Called(ctx, stepId, procedureId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteProcedureStep")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = rf(ctx, stepId, procedureId)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_DeleteProcedureStep_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteProcedureStep'
+type Repository_DeleteProcedureStep_Call struct {
+	*mock.Call
+}
+
+// DeleteProcedureStep is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stepId uuid.UUID
+//   - procedureId uuid.UUID
+func (_e *Repository_Expecter) DeleteProcedureStep(ctx interface{}, stepId interface{}, procedureId interface{}) *Repository_DeleteProcedureStep_Call {
+	return &Repository_DeleteProcedureStep_Call{Call: _e.mock.On("DeleteProcedureStep", ctx, stepId, procedureId)}
+}
+
+func (_c *Repository_DeleteProcedureStep_Call) Run(run func(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID)) *Repository_DeleteProcedureStep_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *Repository_DeleteProcedureStep_Call) Return(_a0 error) *Repository_DeleteProcedureStep_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_DeleteProcedureStep_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID) error) *Repository_DeleteProcedureStep_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindAll provides a mock function with given fields: ctx, search, offset, limit, withExperiments
 func (_m *Repository) FindAll(ctx context.Context, search string, offset int, limit int, withExperiments bool) ([]procedure.Procedure, int64, error) {
 	ret := _m.Called(ctx, search, offset, limit, withExperiments)
@@ -201,6 +296,65 @@ func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.
 	return _c
 }
 
+// GetStepIDsByProcID provides a mock function with given fields: ctx, procedureId
+func (_m *Repository) GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]procedure.StepMetadata, error) {
+	ret := _m.Called(ctx, procedureId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetStepIDsByProcID")
+	}
+
+	var r0 []procedure.StepMetadata
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]procedure.StepMetadata, error)); ok {
+		return rf(ctx, procedureId)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) []procedure.StepMetadata); ok {
+		r0 = rf(ctx, procedureId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]procedure.StepMetadata)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, procedureId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Repository_GetStepIDsByProcID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStepIDsByProcID'
+type Repository_GetStepIDsByProcID_Call struct {
+	*mock.Call
+}
+
+// GetStepIDsByProcID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - procedureId uuid.UUID
+func (_e *Repository_Expecter) GetStepIDsByProcID(ctx interface{}, procedureId interface{}) *Repository_GetStepIDsByProcID_Call {
+	return &Repository_GetStepIDsByProcID_Call{Call: _e.mock.On("GetStepIDsByProcID", ctx, procedureId)}
+}
+
+func (_c *Repository_GetStepIDsByProcID_Call) Run(run func(ctx context.Context, procedureId uuid.UUID)) *Repository_GetStepIDsByProcID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *Repository_GetStepIDsByProcID_Call) Return(_a0 []procedure.StepMetadata, _a1 error) *Repository_GetStepIDsByProcID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *Repository_GetStepIDsByProcID_Call) RunAndReturn(run func(context.Context, uuid.UUID) ([]procedure.StepMetadata, error)) *Repository_GetStepIDsByProcID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateProcedure provides a mock function with given fields: ctx, id, _a2
 func (_m *Repository) UpdateProcedure(ctx context.Context, id uuid.UUID, _a2 *procedure.Procedure) error {
 	ret := _m.Called(ctx, id, _a2)
@@ -245,6 +399,55 @@ func (_c *Repository_UpdateProcedure_Call) Return(_a0 error) *Repository_UpdateP
 }
 
 func (_c *Repository_UpdateProcedure_Call) RunAndReturn(run func(context.Context, uuid.UUID, *procedure.Procedure) error) *Repository_UpdateProcedure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateProcedureStep provides a mock function with given fields: ctx, stepId, procedureId, step
+func (_m *Repository) UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID, step *procedure.ProcedureStep) error {
+	ret := _m.Called(ctx, stepId, procedureId, step)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateProcedureStep")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *procedure.ProcedureStep) error); ok {
+		r0 = rf(ctx, stepId, procedureId, step)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Repository_UpdateProcedureStep_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProcedureStep'
+type Repository_UpdateProcedureStep_Call struct {
+	*mock.Call
+}
+
+// UpdateProcedureStep is a helper method to define mock.On call
+//   - ctx context.Context
+//   - stepId uuid.UUID
+//   - procedureId uuid.UUID
+//   - step *procedure.ProcedureStep
+func (_e *Repository_Expecter) UpdateProcedureStep(ctx interface{}, stepId interface{}, procedureId interface{}, step interface{}) *Repository_UpdateProcedureStep_Call {
+	return &Repository_UpdateProcedureStep_Call{Call: _e.mock.On("UpdateProcedureStep", ctx, stepId, procedureId, step)}
+}
+
+func (_c *Repository_UpdateProcedureStep_Call) Run(run func(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID, step *procedure.ProcedureStep)) *Repository_UpdateProcedureStep_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(*procedure.ProcedureStep))
+	})
+	return _c
+}
+
+func (_c *Repository_UpdateProcedureStep_Call) Return(_a0 error) *Repository_UpdateProcedureStep_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Repository_UpdateProcedureStep_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, *procedure.ProcedureStep) error) *Repository_UpdateProcedureStep_Call {
 	_c.Call.Return(run)
 	return _c
 }
