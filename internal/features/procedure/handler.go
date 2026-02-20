@@ -133,6 +133,21 @@ func UpdateProcedureHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// UpdateProcedureStepHandler godoc
+// @Summary Update procedure steps
+// @Description Update procedure steps (create, update, delete)
+// @Tags Procedures
+// @Accept json
+// @Produce json
+// @Param procedureId path string true "Procedure ID"
+// @Param request body []UpdateProcedureStepDto true "Procedure steps update details"
+// @Success 200 {object} httputil.SuccessResponse "Procedure steps updated successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid request"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 422 {object} httputil.ErrorResponse "Validation failed"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to update procedure steps"
+// @Security SessionAuth
+// @Router /procedures/:procedureId/procedure-steps [put]
 func UpdateProcedureStepHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		procedureId, idErr := httputil.ValidateUUID(c, c.Param("procedureId"))

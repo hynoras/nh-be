@@ -104,7 +104,7 @@ func (r *repository) UpdateProcedure(ctx context.Context, id uuid.UUID, procedur
 		if count == 0 {
 			return constant.ErrProcedureNotFound
 		}
-		return constant.ErrOptimisticLockingConflict
+		return constant.ErrProcedureConflict
 	}
 	return nil
 }
@@ -164,7 +164,7 @@ func (r *repository) UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, 
 		if count == 0 {
 			return constant.ErrProcedureStepNotFound
 		}
-		return constant.ErrOptimisticLockingConflict
+		return constant.ErrProcedureStepConflict
 	}
 
 	return nil
