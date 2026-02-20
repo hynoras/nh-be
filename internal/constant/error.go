@@ -49,11 +49,12 @@ const (
 	ErrDeleteExperimentResultFailed    = "Failed to delete experiment result"
 
 	//procedure
-	ErrGetAllProceduresFailed   = "Failed to get procedures"
-	ErrGetProcedureDetailFailed = "Failed to get procedure detail"
-	ErrCreateProcedureFailed    = "Failed to create procedure"
-	ErrUpdateProcedureFailed    = "Failed to update procedure"
-	ErrDeleteProcedureFailed    = "Failed to delete procedure"
+	ErrGetAllProceduresFailed    = "Failed to get procedures"
+	ErrGetProcedureDetailFailed  = "Failed to get procedure detail"
+	ErrCreateProcedureFailed     = "Failed to create procedure"
+	ErrUpdateProcedureFailed     = "Failed to update procedure"
+	ErrUpdateProcedureStepFailed = "Failed to update procedure step"
+	ErrDeleteProcedureFailed     = "Failed to delete procedure"
 )
 
 var (
@@ -124,12 +125,13 @@ var (
 	ErrExperimentResultConflict      ErrorDetail = errors.New("the experiment result was modified by another request, please retry")
 
 	//procedure
-	ErrProcedureNotFound         ErrorDetail = errors.New("procedure not found")
-	ErrProcedureAlreadyExists    ErrorDetail = errors.New("procedure already exists")
-	ErrOptimisticLockingConflict ErrorDetail = errors.New("version conflict")
-	ErrForbidViewProcedure       ErrorDetail = errors.New("you do not have permission to view this procedure")
-	ErrForbidCreateProcedure     ErrorDetail = errors.New("you do not have permission to create this procedure")
-	ErrForbidUpdateProcedure     ErrorDetail = errors.New("you do not have permission to update this procedure")
-	ErrForbidDeleteProcedure     ErrorDetail = errors.New("you do not have permission to delete this procedure")
-	ErrProcedureStepNotFound     ErrorDetail = errors.New("procedure step not found")
+	ErrProcedureNotFound      ErrorDetail = errors.New("procedure not found")
+	ErrProcedureAlreadyExists ErrorDetail = errors.New("procedure already exists")
+	ErrProcedureConflict      ErrorDetail = errors.New("This procedure is modified by another request, please retry")
+	ErrForbidViewProcedure    ErrorDetail = errors.New("you do not have permission to view this procedure")
+	ErrForbidCreateProcedure  ErrorDetail = errors.New("you do not have permission to create this procedure")
+	ErrForbidUpdateProcedure  ErrorDetail = errors.New("you do not have permission to update this procedure")
+	ErrForbidDeleteProcedure  ErrorDetail = errors.New("you do not have permission to delete this procedure")
+	ErrProcedureStepNotFound  ErrorDetail = errors.New("procedure step not found")
+	ErrProcedureStepConflict  ErrorDetail = errors.New("This procedure step is modified by another request, please retry")
 )
