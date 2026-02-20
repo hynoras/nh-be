@@ -132,3 +132,25 @@ func UpdateProcedureHandler(s Service) gin.HandlerFunc {
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure updated successfully", nil)
 	}
 }
+
+func UpdateProcedureStepHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		procedureId, idErr := httputil.ValidateUUID(c, c.Param("procedureId"))
+		if idErr != nil {
+			return
+		}
+
+		var dto []UpdateProcedureStepDto
+		if err := httputil.ValidateRequestFormat(c, &dto); err != nil {
+			return
+		}
+
+		cleanInput := MapUpdateProcStepDtoToProcStepInputs(dto)
+
+		serviceErr := s.UpdateProcedureStep(c.Request.Context(), *procedureId, cleanInput)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateProcedureFailed) {
+			return
+		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure updated successfully", nil)
+	}
+}

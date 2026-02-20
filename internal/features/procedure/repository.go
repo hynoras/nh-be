@@ -17,6 +17,10 @@ type Repository interface {
 	CreateProcedure(ctx context.Context, procedure *Procedure) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
 
+	GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]StepMetadata, error)
+	CreateProcedureStep(ctx context.Context, step *ProcedureStep) error
+	UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID, step *ProcedureStep) error
+	DeleteProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID) error
 	WithTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
 
@@ -102,6 +106,84 @@ func (r *repository) UpdateProcedure(ctx context.Context, id uuid.UUID, procedur
 		}
 		return constant.ErrOptimisticLockingConflict
 	}
+	return nil
+}
+
+func (r *repository) CreateProcedureStep(ctx context.Context, step *ProcedureStep) error {
+	err := r.db.WithContext(ctx).Create(step).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]StepMetadata, error) {
+	var steps []StepMetadata
+	err := r.db.WithContext(ctx).
+		Model(&ProcedureStep{}).
+		Where("procedure_id = ?", procedureId).
+		Select("id", "version").
+		Scan(&steps).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return steps, nil
+}
+
+func (r *repository) UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID, step *ProcedureStep) error {
+	fields := map[string]interface{}{
+		"title":       step.Title,
+		"index":       step.Index,
+		"description": step.Description,
+		"updated_at":  step.UpdatedAt,
+		"step_type":   step.StepType,
+		"version":     gorm.Expr("version + 1"),
+	}
+
+	dbResult :=
+		r.db.WithContext(ctx).
+			Model(&ProcedureStep{}).
+			Where("id = ? AND procedure_id = ? AND version = ?", stepId, procedureId, step.Version).
+			Updates(fields)
+	if dbResult.Error != nil {
+		return dbResult.Error
+	}
+
+	if dbResult.RowsAffected == 0 {
+		var count int64
+		err := r.db.WithContext(ctx).
+			Model(&ProcedureStep{}).
+			Where("id = ? AND procedure_id = ?", stepId, procedureId).
+			Count(&count).Error
+		if err != nil {
+			return err
+		}
+
+		if count == 0 {
+			return constant.ErrProcedureStepNotFound
+		}
+		return constant.ErrOptimisticLockingConflict
+	}
+
+	return nil
+}
+
+func (r *repository) DeleteProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID) error {
+	dbResult := r.db.WithContext(ctx).
+		Model(&ProcedureStep{}).
+		Where("id = ? AND procedure_id = ?", stepId, procedureId).
+		Delete(&ProcedureStep{})
+
+	if dbResult.Error != nil {
+		return dbResult.Error
+	}
+
+	if dbResult.RowsAffected == 0 {
+		return constant.ErrProcedureStepNotFound
+	}
+
 	return nil
 }
 

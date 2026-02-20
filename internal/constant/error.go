@@ -131,4 +131,5 @@ var (
 	ErrForbidCreateProcedure     ErrorDetail = errors.New("you do not have permission to create this procedure")
 	ErrForbidUpdateProcedure     ErrorDetail = errors.New("you do not have permission to update this procedure")
 	ErrForbidDeleteProcedure     ErrorDetail = errors.New("you do not have permission to delete this procedure")
+	ErrProcedureStepNotFound     ErrorDetail = errors.New("procedure step not found")
 )

@@ -5,7 +5,9 @@ import (
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/utils/ctxutil"
+	"nh-be/internal/utils/timeutil"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,6 +17,7 @@ type Service interface {
 	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
 	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error
+	UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []UpdateProcedureStepInput) error
 	// Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -113,6 +116,76 @@ func (s *service) UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *
 	}
 	repoErr := s.repository.UpdateProcedure(ctx, id, MapUpdateDtoToProcedure(procedure))
 	return repoErr
+}
+
+func (s *service) UpdateProcedureStep(
+	ctx context.Context,
+	procedureId uuid.UUID,
+	stepInput []UpdateProcedureStepInput,
+) error {
+	permErr := s.CanManageProcedure(ctx, procedureId, constant.Update)
+	if permErr != nil {
+		return permErr
+	}
+
+	transactionErr := s.repository.WithTransaction(ctx, func(repository Repository) error {
+		existingSteps, getErr := repository.GetStepIDsByProcID(ctx, procedureId)
+		if getErr != nil {
+			return getErr
+		}
+
+		existingStepIds := make(map[uuid.UUID]int)
+
+		for _, step := range existingSteps {
+			existingStepIds[step.ID] = step.Version
+		}
+
+		incomingIDs := make(map[uuid.UUID]bool)
+		now := timeutil.TimePtr(time.Now())
+
+		for _, input := range stepInput {
+			if input.ID == uuid.Nil {
+				step := MapCreateProcStepInputToProcStep(&input)
+				step.ProcedureID = procedureId
+
+				if err := repository.CreateProcedureStep(ctx, step); err != nil {
+					return err
+				}
+				continue
+			}
+
+			incomingIDs[input.ID] = true
+
+			version, exists := existingStepIds[input.ID]
+			if !exists {
+				return constant.ErrProcedureStepNotFound
+			}
+
+			step := MapUpdateProcStepInputToProcStep(&input, now)
+			step.Version = version
+
+			if err := repository.UpdateProcedureStep(ctx, input.ID, procedureId, step); err != nil {
+				return err
+			}
+
+		}
+
+		for id := range existingStepIds {
+			if !incomingIDs[id] {
+				if err := repository.DeleteProcedureStep(ctx, id, procedureId); err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if transactionErr != nil {
+		return transactionErr
+	}
+
+	return nil
 }
 
 // func (s *service) Delete(ctx context.Context, id uuid.UUID) error {

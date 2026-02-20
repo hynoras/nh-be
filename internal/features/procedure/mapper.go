@@ -3,6 +3,8 @@ package procedure
 import (
 	"nh-be/internal/utils/timeutil"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func MapProcedureListToDto(p Procedure) ProcedureListResponseDto {
@@ -23,7 +25,7 @@ func MapStepsToDto(step []ProcedureStep) []Steps {
 			Title:       s.Title,
 			Description: s.Description,
 			Index:       s.Index,
-			StepType:    s.StepType,
+			StepType:    string(s.StepType),
 			CreatedAt:   s.CreatedAt,
 			UpdatedAt:   *s.UpdatedAt,
 		})
@@ -71,7 +73,7 @@ func MapCreateDtoToProcedureStep(s []CreateStepDto) []ProcedureStep {
 			Title:       step.Title,
 			Description: step.Description,
 			Index:       step.Index,
-			StepType:    step.StepType,
+			StepType:    StepType(step.StepType),
 		})
 	}
 	return result
@@ -84,4 +86,58 @@ func MapUpdateDtoToProcedure(p *UpdateProcedureDto) *Procedure {
 		UpdatedAt:   timeutil.TimePtr(time.Now()),
 		Version:     p.Version,
 	}
+}
+
+func MapUpdateProcStepDtoToProcStepInput(step *UpdateProcedureStepDto) *UpdateProcedureStepInput {
+	return &UpdateProcedureStepInput{
+		ID:          uuid.MustParse(step.ID),
+		Title:       step.Title,
+		Description: step.Description,
+		Index:       step.Index,
+		StepType:    StepType(step.StepType),
+		Version:     step.Version,
+	}
+}
+
+func MapUpdateProcStepDtoToProcStepInputs(step []UpdateProcedureStepDto) []UpdateProcedureStepInput {
+	result := make([]UpdateProcedureStepInput, 0, len(step))
+	for _, s := range step {
+		result = append(result, UpdateProcedureStepInput{
+			ID:          uuid.MustParse(s.ID),
+			Title:       s.Title,
+			Description: s.Description,
+			Index:       s.Index,
+			StepType:    StepType(s.StepType),
+			Version:     s.Version,
+		})
+	}
+	return result
+}
+
+func MapCreateProcStepInputToProcStep(step *UpdateProcedureStepInput) *ProcedureStep {
+	return &ProcedureStep{
+		Title:       step.Title,
+		Description: step.Description,
+		Index:       step.Index,
+		StepType:    StepType(step.StepType),
+	}
+}
+
+func MapUpdateProcStepInputToProcStep(step *UpdateProcedureStepInput, updatedAt *time.Time) *ProcedureStep {
+	return &ProcedureStep{
+		Title:       step.Title,
+		Description: step.Description,
+		Index:       step.Index,
+		StepType:    step.StepType,
+		UpdatedAt:   updatedAt,
+		Version:     step.Version,
+	}
+}
+
+func MapUpdateProcStepInputsToProcSteps(steps []UpdateProcedureStepInput, updatedAt *time.Time) []ProcedureStep {
+	result := make([]ProcedureStep, 0, len(steps))
+	for _, s := range steps {
+		result = append(result, *MapUpdateProcStepInputToProcStep(&s, updatedAt))
+	}
+	return result
 }

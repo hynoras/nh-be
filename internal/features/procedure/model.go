@@ -29,7 +29,8 @@ type ProcedureStep struct {
 	Title       string `gorm:"type:text;not null"`
 	Description string `gorm:"type:text"`
 
-	StepType string `gorm:"type:varchar(20);not null;index"`
+	StepType StepType `gorm:"type:varchar(20);not null;index"`
+	Version  int      `gorm:"type:int;not null;default:1"`
 
 	CreatedAt time.Time  `gorm:"type:timestamp;not null;default:now()"`
 	UpdatedAt *time.Time `gorm:"type:timestamp"`
