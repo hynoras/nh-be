@@ -16,6 +16,7 @@ type Repository interface {
 	FindByID(ctx context.Context, id uuid.UUID, withSteps bool) (*Procedure, error)
 	CreateProcedure(ctx context.Context, procedure *Procedure) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
+	DeleteProcedure(ctx context.Context, id uuid.UUID) error
 
 	GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]StepMetadata, error)
 	CreateProcedureStep(ctx context.Context, step *ProcedureStep) error
@@ -97,6 +98,17 @@ func (r *repository) UpdateProcedure(ctx context.Context, id uuid.UUID, procedur
 			return constant.ErrProcedureNotFound
 		}
 		return constant.ErrProcedureConflict
+	}
+	return nil
+}
+
+func (r *repository) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
+	dbResult := r.db.WithContext(ctx).Model(&Procedure{}).Where("id = ?", id).Delete(&Procedure{})
+	if dbResult.Error != nil {
+		return dbResult.Error
+	}
+	if dbResult.RowsAffected == 0 {
+		return constant.ErrProcedureNotFound
 	}
 	return nil
 }

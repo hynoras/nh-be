@@ -133,6 +133,35 @@ func UpdateProcedureHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// DeleteProcedureHandler godoc
+// @Summary Delete a procedure
+// @Description Delete a procedure
+// @Tags Procedures
+// @Accept json
+// @Produce json
+// @Param procedureId path string true "Procedure ID"
+// @Success 200 {object} httputil.SuccessResponse "Procedure deleted successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid request"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 422 {object} httputil.ErrorResponse "Validation failed"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to delete procedure"
+// @Security SessionAuth
+// @Router /procedures/:procedureId [delete]
+func DeleteProcedureHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		procedureId, idErr := httputil.ValidateUUID(c, c.Param("procedureId"))
+		if idErr != nil {
+			return
+		}
+
+		serviceErr := s.DeleteProcedure(c.Request.Context(), *procedureId)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeleteProcedureFailed) {
+			return
+		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure deleted successfully", nil)
+	}
+}
+
 // UpdateProcedureStepHandler godoc
 // @Summary Update procedure steps
 // @Description Update procedure steps (create, update, delete)

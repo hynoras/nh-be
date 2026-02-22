@@ -22,6 +22,6 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	proceduresGroup.PUT("/:procedureId", UpdateProcedureHandler(procedureService))
 	proceduresGroup.PUT("/:procedureId/procedure-steps", UpdateProcedureStepHandler(procedureService))
 	// proceduresGroup.PUT("/:procedureId/status", UpdateProcedureStatusHandler(experimentService))
-	// proceduresGroup.DELETE("/:procedureId", DeleteProcedureHandler(experimentService))
+	proceduresGroup.DELETE("/:procedureId", DeleteProcedureHandler(procedureService))
 
 }

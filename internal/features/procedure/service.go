@@ -18,7 +18,7 @@ type Service interface {
 	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error
 	UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []UpdateProcedureStepInput) error
-	// Delete(ctx context.Context, id uuid.UUID) error
+	DeleteProcedure(ctx context.Context, id uuid.UUID) error
 }
 
 type service struct {
@@ -188,6 +188,14 @@ func (s *service) UpdateProcedureStep(
 	return nil
 }
 
-// func (s *service) Delete(ctx context.Context, id uuid.UUID) error {
-// 	return s.repository.Delete(ctx, id)
-// }
+func (s *service) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
+	permErr := s.CanManageProcedure(ctx, id, constant.Delete)
+	if permErr != nil {
+		return permErr
+	}
+	delErr := s.repository.DeleteProcedure(ctx, id)
+	if delErr != nil {
+		return delErr
+	}
+	return nil
+}
