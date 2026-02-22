@@ -120,7 +120,7 @@ func ValidateUUIDs(c *gin.Context, uuids []string) ([]uuid.UUID, error) {
 }
 
 func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
-	if err := c.ShouldBindJSON(&dto); err != nil {
+	if err := c.ShouldBindJSON(dto); err != nil {
 		var verr validator.ValidationErrors
 		if errors.As(err, &verr) {
 			MakeErrorResponse(
@@ -235,6 +235,8 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		MakeErrorResponse(c, http.StatusBadRequest, constant.ErrUpdateExperimentFailed, err.Error())
 	case constant.ErrExperimentNotFound:
 		MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", err.Error())
+	case constant.ErrDuplicateProcedureAssignment:
+		MakeErrorResponse(c, http.StatusConflict, constant.ErrAssignProcedureToExperimentFailed, err.Error())
 
 	//experiment result
 	case constant.ErrExperimentResultNotFound:
@@ -253,6 +255,24 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		MakeErrorResponse(c, http.StatusBadRequest, "Invalid confidence level value", err.Error())
 	case constant.ErrExperimentResultConflict:
 		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateExperimentFailed, err.Error())
+
+	//procedure
+	case constant.ErrForbidViewProcedure,
+		constant.ErrForbidCreateProcedure,
+		constant.ErrForbidUpdateProcedure,
+		constant.ErrForbidDeleteProcedure:
+		MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, err.Error())
+	case constant.ErrProcedureNotFound:
+		MakeErrorResponse(c, http.StatusNotFound, "Procedure not found", err.Error())
+	case constant.ErrProcedureAlreadyExists:
+		MakeErrorResponse(c, http.StatusConflict, "Procedure already exists", err.Error())
+	case constant.ErrProcedureConflict:
+		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureFailed, err.Error())
+	case constant.ErrProcedureStepNotFound:
+		MakeErrorResponse(c, http.StatusNotFound, "Procedure step not found", err.Error())
+	case constant.ErrProcedureStepConflict:
+		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureStepFailed, err.Error())
+
 	//add other domain error here
 
 	default:

@@ -16,6 +16,8 @@ type Repository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*Experiment, error)
 	Update(ctx context.Context, id uuid.UUID, e *Experiment) error
 	UpdateStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus, currentVersion int) error
+	GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	UpdateProcedureID(ctx context.Context, id uuid.UUID, procedureID uuid.UUID, currentVersion int) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -89,6 +91,45 @@ func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status Expe
 		Updates(map[string]interface{}{
 			"status":  status,
 			"version": currentVersion + 1,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return constant.ErrExperimentConflict
+	}
+
+	return nil
+}
+
+func (r *repository) GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	var e Experiment
+	result := r.db.WithContext(ctx).
+		Model(&Experiment{}).
+		Select("procedure_id").
+		Where("id = ?", id).
+		First(&e)
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		return uuid.Nil, result.Error
+	}
+	if result.Error == gorm.ErrRecordNotFound {
+		return uuid.Nil, constant.ErrExperimentNotFound
+	}
+	if e.ProcedureID == nil {
+		return uuid.Nil, nil
+	}
+	return *e.ProcedureID, nil
+}
+
+func (r *repository) UpdateProcedureID(ctx context.Context, id uuid.UUID, procedureID uuid.UUID, currentVersion int) error {
+	result := r.db.WithContext(ctx).
+		Model(&Experiment{}).
+		Where("id = ? AND version = ?", id, currentVersion).
+		Updates(map[string]interface{}{
+			"procedure_id": procedureID,
+			"version":      currentVersion + 1,
 		})
 
 	if result.Error != nil {

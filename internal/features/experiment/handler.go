@@ -178,6 +178,32 @@ func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+func AssignProcedureToExperimentHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		parsedExpId, expIdErr := httputil.ValidateUUID(c, c.Param("experimentId"))
+		if expIdErr != nil {
+			return
+		}
+
+		parsedProcId, procIdErr := httputil.ValidateUUID(c, c.Param("procedureId"))
+		if procIdErr != nil {
+			return
+		}
+
+		var dto AssignProcedureToExperimentDto
+		if err := httputil.ValidateRequestFormat(c, &dto); err != nil {
+			return
+		}
+
+		serviceErr := s.AssignProcedureToExperiment(c.Request.Context(), *parsedExpId, *parsedProcId, dto.Version)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrAssignProcedureToExperimentFailed) {
+			return
+		}
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure assigned to experiment successfully", nil)
+	}
+}
+
 // DeleteExperimentHandler godoc
 // @Summary Delete an experiment
 // @Description Delete a single experiment by its UUID

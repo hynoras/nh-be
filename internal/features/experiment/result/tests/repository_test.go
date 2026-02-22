@@ -7,6 +7,7 @@ import (
 
 	"nh-be/internal/constant"
 	"nh-be/internal/features/experiment/result"
+	"nh-be/internal/utils/testutil"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
@@ -87,7 +88,7 @@ func TestRepository_Create(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, mock := SetupMockDB(t)
+			db, mock := testutil.SetupMockDB(t)
 			repo := result.NewRepository(db)
 			ctx := context.Background()
 
@@ -160,7 +161,7 @@ func TestRepository_Update(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, mock := SetupMockDB(t)
+			db, mock := testutil.SetupMockDB(t)
 			repo := result.NewRepository(db)
 			ctx := context.Background()
 
