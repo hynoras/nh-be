@@ -473,3 +473,79 @@ func TestHandler_UpdateProcedureStep(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_DeleteProcedure(t *testing.T) {
+	validID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name           string
+		procedureID    string
+		setupMocks     func(svc *proceduremocks.Service)
+		expectedStatus int
+	}{
+		{
+			name:        "success",
+			procedureID: validID.String(),
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("DeleteProcedure", mock.Anything, validID).
+					Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "invalid_uuid",
+			procedureID: "invalid-uuid",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "DeleteProcedure", mock.Anything, mock.Anything)
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "service_forbidden",
+			procedureID: validID.String(),
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("DeleteProcedure", mock.Anything, validID).
+					Return(constant.ErrForbidDeleteProcedure)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:        "service_not_found",
+			procedureID: validID.String(),
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("DeleteProcedure", mock.Anything, validID).
+					Return(constant.ErrProcedureNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:        "service_internal_error",
+			procedureID: validID.String(),
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("DeleteProcedure", mock.Anything, validID).
+					Return(errors.New("generic error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := proceduremocks.NewService(t)
+			tc.setupMocks(mockSvc)
+
+			router := testutil.SetupTestRouter(http.MethodDelete, "/procedures/:procedureId",
+				procedure.DeleteProcedureHandler(mockSvc))
+
+			req := httptest.NewRequest(http.MethodDelete,
+				"/procedures/"+tc.procedureID,
+				nil)
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}

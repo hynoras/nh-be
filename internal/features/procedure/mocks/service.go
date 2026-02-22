@@ -71,6 +71,53 @@ func (_c *Service_CreateProcedure_Call) RunAndReturn(run func(context.Context, *
 	return _c
 }
 
+// DeleteProcedure provides a mock function with given fields: ctx, id
+func (_m *Service) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteProcedure")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Service_DeleteProcedure_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteProcedure'
+type Service_DeleteProcedure_Call struct {
+	*mock.Call
+}
+
+// DeleteProcedure is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *Service_Expecter) DeleteProcedure(ctx interface{}, id interface{}) *Service_DeleteProcedure_Call {
+	return &Service_DeleteProcedure_Call{Call: _e.mock.On("DeleteProcedure", ctx, id)}
+}
+
+func (_c *Service_DeleteProcedure_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Service_DeleteProcedure_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *Service_DeleteProcedure_Call) Return(_a0 error) *Service_DeleteProcedure_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Service_DeleteProcedure_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *Service_DeleteProcedure_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAllProcedures provides a mock function with given fields: ctx, search, offset, limit
 func (_m *Service) GetAllProcedures(ctx context.Context, search string, offset int, limit int) ([]procedure.ProcedureListResponseDto, int64, error) {
 	ret := _m.Called(ctx, search, offset, limit)

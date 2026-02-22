@@ -795,3 +795,99 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 		})
 	}
 }
+
+func TestService_DeleteProcedure(t *testing.T) {
+	userID := uuid.New()
+	procedureID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+	dbError := errors.New("database error")
+	permissionError := errors.New("permission service unavailable")
+
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		procedureID   uuid.UUID
+		setupMocks    func(repo *procmocks.Repository, permSvc *mocks.Service)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name:        "success",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("DeleteProcedure", mock.Anything, procedureID).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "permission_denied",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.AssertNotCalled(t, "DeleteProcedure", mock.Anything, procedureID)
+			},
+			expectedError: constant.ErrForbidDeleteProcedure,
+		},
+		{
+			name:        "permission_service_error",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return(nil, permissionError)
+				repo.AssertNotCalled(t, "DeleteProcedure", mock.Anything, procedureID)
+			},
+			expectedError: permissionError,
+		},
+		{
+			name:        "repository_not_found",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("DeleteProcedure", mock.Anything, procedureID).
+					Return(constant.ErrProcedureNotFound)
+			},
+			expectedError: constant.ErrProcedureNotFound,
+		},
+		{
+			name:        "repository_db_error",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ManageExperiment}, nil)
+				repo.On("DeleteProcedure", mock.Anything, procedureID).
+					Return(dbError)
+			},
+			expectedError: dbError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := procmocks.NewRepository(t)
+			mockPermSvc := mocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := procedure.NewService(mockRepo, mockPermSvc)
+
+			err := svc.DeleteProcedure(tc.ctx, tc.procedureID)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

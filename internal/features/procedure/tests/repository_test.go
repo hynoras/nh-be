@@ -1195,3 +1195,97 @@ func TestRepository_DeleteProcedureStep(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_DeleteProcedure(t *testing.T) {
+	testID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	tests := []struct {
+		name          string
+		id            uuid.UUID
+		ctx           func() context.Context
+		setupMock     func(mock sqlmock.Sqlmock, id uuid.UUID)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+	}{
+		{
+			name: "success",
+			id:   testID,
+			ctx:  func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`DELETE FROM "procedures" WHERE id = \$1`).
+					WithArgs(id).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name: "not_found",
+			id:   testID,
+			ctx:  func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`DELETE FROM "procedures" WHERE id = \$1`).
+					WithArgs(id).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectCommit()
+			},
+			expectedError: constant.ErrProcedureNotFound,
+		},
+		{
+			name: "db_error",
+			id:   testID,
+			ctx:  func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`DELETE FROM "procedures" WHERE id = \$1`).
+					WithArgs(id).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name: "context_cancelled",
+			id:   testID,
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			},
+			setupMock: func(mock sqlmock.Sqlmock, id uuid.UUID) {
+
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, context.Canceled)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			tc.setupMock(mock, tc.id)
+
+			err := repo.DeleteProcedure(ctx, tc.id)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
