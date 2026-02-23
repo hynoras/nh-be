@@ -245,6 +245,74 @@ func (_c *Service_GetProcedureByID_Call) RunAndReturn(run func(context.Context, 
 	return _c
 }
 
+// GetProcedureSteps provides a mock function with given fields: ctx, procedureId, offset, limit
+func (_m *Service) GetProcedureSteps(ctx context.Context, procedureId uuid.UUID, offset int, limit int) ([]procedure.StepsResponseDto, int64, error) {
+	ret := _m.Called(ctx, procedureId, offset, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetProcedureSteps")
+	}
+
+	var r0 []procedure.StepsResponseDto
+	var r1 int64
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, int) ([]procedure.StepsResponseDto, int64, error)); ok {
+		return rf(ctx, procedureId, offset, limit)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, int) []procedure.StepsResponseDto); ok {
+		r0 = rf(ctx, procedureId, offset, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]procedure.StepsResponseDto)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, int, int) int64); ok {
+		r1 = rf(ctx, procedureId, offset, limit)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, int, int) error); ok {
+		r2 = rf(ctx, procedureId, offset, limit)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// Service_GetProcedureSteps_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProcedureSteps'
+type Service_GetProcedureSteps_Call struct {
+	*mock.Call
+}
+
+// GetProcedureSteps is a helper method to define mock.On call
+//   - ctx context.Context
+//   - procedureId uuid.UUID
+//   - offset int
+//   - limit int
+func (_e *Service_Expecter) GetProcedureSteps(ctx interface{}, procedureId interface{}, offset interface{}, limit interface{}) *Service_GetProcedureSteps_Call {
+	return &Service_GetProcedureSteps_Call{Call: _e.mock.On("GetProcedureSteps", ctx, procedureId, offset, limit)}
+}
+
+func (_c *Service_GetProcedureSteps_Call) Run(run func(ctx context.Context, procedureId uuid.UUID, offset int, limit int)) *Service_GetProcedureSteps_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(int), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *Service_GetProcedureSteps_Call) Return(_a0 []procedure.StepsResponseDto, _a1 int64, _a2 error) *Service_GetProcedureSteps_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *Service_GetProcedureSteps_Call) RunAndReturn(run func(context.Context, uuid.UUID, int, int) ([]procedure.StepsResponseDto, int64, error)) *Service_GetProcedureSteps_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateProcedure provides a mock function with given fields: ctx, id, _a2
 func (_m *Service) UpdateProcedure(ctx context.Context, id uuid.UUID, _a2 *procedure.UpdateProcedureDto) error {
 	ret := _m.Called(ctx, id, _a2)

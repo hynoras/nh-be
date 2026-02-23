@@ -341,6 +341,74 @@ func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.
 	return _c
 }
 
+// GetProcStepsByProcID provides a mock function with given fields: ctx, procedureId, offset, limit
+func (_m *Repository) GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, offset int, limit int) ([]procedure.ProcedureStep, int64, error) {
+	ret := _m.Called(ctx, procedureId, offset, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetProcStepsByProcID")
+	}
+
+	var r0 []procedure.ProcedureStep
+	var r1 int64
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, int) ([]procedure.ProcedureStep, int64, error)); ok {
+		return rf(ctx, procedureId, offset, limit)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, int) []procedure.ProcedureStep); ok {
+		r0 = rf(ctx, procedureId, offset, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]procedure.ProcedureStep)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, int, int) int64); ok {
+		r1 = rf(ctx, procedureId, offset, limit)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, uuid.UUID, int, int) error); ok {
+		r2 = rf(ctx, procedureId, offset, limit)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// Repository_GetProcStepsByProcID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProcStepsByProcID'
+type Repository_GetProcStepsByProcID_Call struct {
+	*mock.Call
+}
+
+// GetProcStepsByProcID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - procedureId uuid.UUID
+//   - offset int
+//   - limit int
+func (_e *Repository_Expecter) GetProcStepsByProcID(ctx interface{}, procedureId interface{}, offset interface{}, limit interface{}) *Repository_GetProcStepsByProcID_Call {
+	return &Repository_GetProcStepsByProcID_Call{Call: _e.mock.On("GetProcStepsByProcID", ctx, procedureId, offset, limit)}
+}
+
+func (_c *Repository_GetProcStepsByProcID_Call) Run(run func(ctx context.Context, procedureId uuid.UUID, offset int, limit int)) *Repository_GetProcStepsByProcID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(int), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *Repository_GetProcStepsByProcID_Call) Return(_a0 []procedure.ProcedureStep, _a1 int64, _a2 error) *Repository_GetProcStepsByProcID_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *Repository_GetProcStepsByProcID_Call) RunAndReturn(run func(context.Context, uuid.UUID, int, int) ([]procedure.ProcedureStep, int64, error)) *Repository_GetProcStepsByProcID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetStepIDsByProcID provides a mock function with given fields: ctx, procedureId
 func (_m *Repository) GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]procedure.StepMetadata, error) {
 	ret := _m.Called(ctx, procedureId)

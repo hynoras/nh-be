@@ -1289,3 +1289,286 @@ func TestRepository_DeleteProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_GetProcStepsByProcID(t *testing.T) {
+	testProcID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+
+	stepColumns := []string{
+		"id", "procedure_id", "index", "title", "description",
+		"is_optional", "step_type", "wait_time", "created_at", "updated_at", "version",
+	}
+
+	tests := []struct {
+		name          string
+		procedureID   uuid.UUID
+		offset        int
+		limit         int
+		ctx           func() context.Context
+		setupMock     func(mock sqlmock.Sqlmock, procedureID uuid.UUID)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+		checkResult   func(t *testing.T, steps []procedure.ProcedureStep, total int64)
+	}{
+		{
+			name:        "procedure_not_found",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}))
+			},
+			expectedError: constant.ErrProcedureNotFound,
+		},
+		{
+			name:        "db_error_while_checking_procedure",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+				assert.NotErrorIs(t, err, constant.ErrProcedureNotFound)
+			},
+		},
+		{
+			name:        "procedure_exists_but_has_no_steps",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				// Procedure existence check
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(procedureID))
+
+				// Count returns 0
+				mock.ExpectQuery(`SELECT count\(\*\) FROM \"procedure_steps\" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+
+				// Find returns empty
+				mock.ExpectQuery(`SELECT \* FROM \"procedure_steps\" WHERE procedure_id = \$1 ORDER BY index ASC LIMIT \$2`).
+					WithArgs(procedureID, 10).
+					WillReturnRows(sqlmock.NewRows(stepColumns))
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, steps []procedure.ProcedureStep, total int64) {
+				assert.Empty(t, steps)
+				assert.Equal(t, int64(0), total)
+			},
+		},
+		{
+			name:        "procedure_exists_with_steps_no_pagination",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				steps := TestStepsForProcedure(procedureID, 3)
+
+				// Procedure existence check
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(procedureID))
+
+				// Count
+				mock.ExpectQuery(`SELECT count\(\*\) FROM \"procedure_steps\" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(3))
+
+				// Find all steps
+				rows := sqlmock.NewRows(stepColumns)
+				for _, s := range steps {
+					rows.AddRow(
+						s.ID, s.ProcedureID, s.Index, s.Title, s.Description,
+						s.IsOptional, s.StepType, s.WaitTime, s.CreatedAt, s.UpdatedAt, s.Version,
+					)
+				}
+				mock.ExpectQuery(`SELECT \* FROM \"procedure_steps\" WHERE procedure_id = \$1 ORDER BY index ASC LIMIT \$2`).
+					WithArgs(procedureID, 10).
+					WillReturnRows(rows)
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, steps []procedure.ProcedureStep, total int64) {
+				assert.Len(t, steps, 3)
+				assert.Equal(t, int64(3), total)
+				// Verify ordering
+				for i := 1; i < len(steps); i++ {
+					assert.LessOrEqual(t, steps[i-1].Index, steps[i].Index)
+				}
+			},
+		},
+		{
+			name:        "procedure_exists_with_steps_pagination",
+			procedureID: testProcID,
+			offset:      2,
+			limit:       2,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				// Only return the paginated subset (step 3)
+				steps := TestStepsForProcedure(procedureID, 1)
+				steps[0].Index = 3
+
+				// Procedure existence check
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(procedureID))
+
+				// Count — total is 3
+				mock.ExpectQuery(`SELECT count\(\*\) FROM \"procedure_steps\" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(3))
+
+				// Find with pagination: offset=2, limit=2 → Paginate(2,2) → offset=(2-1)*2=2, limit=2
+				rows := sqlmock.NewRows(stepColumns)
+				for _, s := range steps {
+					rows.AddRow(
+						s.ID, s.ProcedureID, s.Index, s.Title, s.Description,
+						s.IsOptional, s.StepType, s.WaitTime, s.CreatedAt, s.UpdatedAt, s.Version,
+					)
+				}
+				mock.ExpectQuery(`SELECT \* FROM \"procedure_steps\" WHERE procedure_id = \$1 ORDER BY index ASC LIMIT \$2 OFFSET \$3`).
+					WithArgs(procedureID, 2, 2).
+					WillReturnRows(rows)
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, steps []procedure.ProcedureStep, total int64) {
+				assert.Len(t, steps, 1)
+				assert.Equal(t, int64(3), total)
+			},
+		},
+		{
+			name:        "db_error_during_count",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				// Procedure existence check passes
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(procedureID))
+
+				// Count fails
+				mock.ExpectQuery(`SELECT count\(\*\) FROM \"procedure_steps\" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:        "db_error_during_find",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				// Procedure existence check passes
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(procedureID))
+
+				// Count passes
+				mock.ExpectQuery(`SELECT count\(\*\) FROM \"procedure_steps\" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
+
+				// Find fails
+				mock.ExpectQuery(`SELECT \* FROM \"procedure_steps\" WHERE procedure_id = \$1 ORDER BY index ASC LIMIT \$2`).
+					WithArgs(procedureID, 10).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+		},
+		{
+			name:        "ordering_check",
+			procedureID: testProcID,
+			offset:      0,
+			limit:       10,
+			ctx:         func() context.Context { return context.Background() },
+			setupMock: func(mock sqlmock.Sqlmock, procedureID uuid.UUID) {
+				// Create steps with shuffled indexes
+				steps := TestStepsForProcedure(procedureID, 3)
+				// Shuffle: 3, 1, 2
+				steps[0].Index = 3
+				steps[1].Index = 1
+				steps[2].Index = 2
+
+				// Procedure existence check
+				mock.ExpectQuery(`SELECT \"id\" FROM \"procedures\" WHERE id = \$1 LIMIT \$2`).
+					WithArgs(procedureID, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(procedureID))
+
+				// Count
+				mock.ExpectQuery(`SELECT count\(\*\) FROM \"procedure_steps\" WHERE procedure_id = \$1`).
+					WithArgs(procedureID).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(3))
+
+				// DB returns rows already sorted by index ASC (as the ORDER BY clause dictates)
+				rows := sqlmock.NewRows(stepColumns)
+				// Return in sorted order: index 1, 2, 3
+				sorted := []procedure.ProcedureStep{steps[1], steps[2], steps[0]}
+				for _, s := range sorted {
+					rows.AddRow(
+						s.ID, s.ProcedureID, s.Index, s.Title, s.Description,
+						s.IsOptional, s.StepType, s.WaitTime, s.CreatedAt, s.UpdatedAt, s.Version,
+					)
+				}
+				mock.ExpectQuery(`SELECT \* FROM \"procedure_steps\" WHERE procedure_id = \$1 ORDER BY index ASC LIMIT \$2`).
+					WithArgs(procedureID, 10).
+					WillReturnRows(rows)
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, steps []procedure.ProcedureStep, total int64) {
+				assert.Len(t, steps, 3)
+				assert.Equal(t, int64(3), total)
+				// Verify sorted by index ASC
+				assert.Equal(t, 1, steps[0].Index)
+				assert.Equal(t, 2, steps[1].Index)
+				assert.Equal(t, 3, steps[2].Index)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := procedure.NewRepository(db)
+			ctx := tc.ctx()
+
+			tc.setupMock(mock, tc.procedureID)
+
+			steps, total, err := repo.GetProcStepsByProcID(ctx, tc.procedureID, tc.offset, tc.limit)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if tc.checkResult != nil {
+				tc.checkResult(t, steps, total)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

@@ -107,8 +107,9 @@ func CreateProcedureHandler(s Service) gin.HandlerFunc {
 // @Produce json
 // @Param request body UpdateProcedureDto true "Procedure update details"
 // @Success 200 {object} httputil.SuccessResponse "Procedure updated successfully"
-// @Failure 400 {object} httputil.ErrorResponse "Invalid request"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid ID format"
 // @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 404 {object} httputil.ErrorResponse "Procedure not found"
 // @Failure 422 {object} httputil.ErrorResponse "Validation failed"
 // @Failure 500 {object} httputil.ErrorResponse "Failed to update procedure"
 // @Security SessionAuth
@@ -141,9 +142,9 @@ func UpdateProcedureHandler(s Service) gin.HandlerFunc {
 // @Produce json
 // @Param procedureId path string true "Procedure ID"
 // @Success 200 {object} httputil.SuccessResponse "Procedure deleted successfully"
-// @Failure 400 {object} httputil.ErrorResponse "Invalid request"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid ID format"
 // @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
-// @Failure 422 {object} httputil.ErrorResponse "Validation failed"
+// @Failure 404 {object} httputil.ErrorResponse "Procedure not found"
 // @Failure 500 {object} httputil.ErrorResponse "Failed to delete procedure"
 // @Security SessionAuth
 // @Router /procedures/:procedureId [delete]
@@ -162,6 +163,42 @@ func DeleteProcedureHandler(s Service) gin.HandlerFunc {
 	}
 }
 
+// GetProcedureStepsHandler godoc
+// @Summary Get procedure steps
+// @Description Get procedure steps
+// @Tags Procedures
+// @Accept json
+// @Produce json
+// @Param procedureId path string true "Procedure ID"
+// @Param page query int false "Page number"
+// @Param pageSize query int false "Page size"
+// @Success 200 {object} httputil.SuccessResponse "Procedure steps fetched successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid ID format"
+// @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 404 {object} httputil.ErrorResponse "Procedure not found"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to get procedure steps"
+// @Security SessionAuth
+// @Router /procedures/:procedureId/procedure-steps [get]
+func GetProcedureStepsHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		procedureId, idErr := httputil.ValidateUUID(c, c.Param("procedureId"))
+		if idErr != nil {
+			return
+		}
+
+		pageInt, pageSizeInt, err := httputil.ParsePaginationParams(c)
+		if err != nil {
+			return
+		}
+
+		steps, length, serviceErr := s.GetProcedureSteps(c.Request.Context(), *procedureId, pageInt, pageSizeInt)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetProcedureStepsFailed) {
+			return
+		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure steps fetched successfully", steps, length)
+	}
+}
+
 // UpdateProcedureStepHandler godoc
 // @Summary Update procedure steps
 // @Description Update procedure steps (create, update, delete)
@@ -171,8 +208,9 @@ func DeleteProcedureHandler(s Service) gin.HandlerFunc {
 // @Param procedureId path string true "Procedure ID"
 // @Param request body []UpdateProcedureStepDto true "Procedure steps update details"
 // @Success 200 {object} httputil.SuccessResponse "Procedure steps updated successfully"
-// @Failure 400 {object} httputil.ErrorResponse "Invalid request"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid ID format"
 // @Failure 403 {object} httputil.ErrorResponse "Authorization failed"
+// @Failure 404 {object} httputil.ErrorResponse "Procedure not found"
 // @Failure 422 {object} httputil.ErrorResponse "Validation failed"
 // @Failure 500 {object} httputil.ErrorResponse "Failed to update procedure steps"
 // @Security SessionAuth

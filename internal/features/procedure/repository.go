@@ -18,6 +18,7 @@ type Repository interface {
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
 	DeleteProcedure(ctx context.Context, id uuid.UUID) error
 
+	GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]ProcedureStep, int64, error)
 	GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]StepMetadata, error)
 	CreateProcedureStep(ctx context.Context, step *ProcedureStep) error
 	UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID, step *ProcedureStep) error
@@ -111,6 +112,39 @@ func (r *repository) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
 		return constant.ErrProcedureNotFound
 	}
 	return nil
+}
+
+func (r *repository) GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]ProcedureStep, int64, error) {
+	var procedure Procedure
+	err := r.db.WithContext(ctx).
+		Select("id").
+		Where("id = ?", procedureId).
+		Take(&procedure).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, constant.ErrProcedureNotFound
+		}
+		return nil, 0, err
+	}
+
+	baseQuery := r.db.WithContext(ctx).
+		Model(&ProcedureStep{}).
+		Where("procedure_id = ?", procedureId)
+
+	var length int64
+	err = baseQuery.Count(&length).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var procedureSteps []ProcedureStep
+	err = baseQuery.Order("index ASC").Scopes(dbutil.Paginate(offset, limit)).Find(&procedureSteps).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return procedureSteps, length, nil
 }
 
 func (r *repository) CreateProcedureStep(ctx context.Context, step *ProcedureStep) error {

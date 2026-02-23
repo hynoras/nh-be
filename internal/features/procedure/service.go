@@ -17,8 +17,10 @@ type Service interface {
 	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
 	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error
-	UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []UpdateProcedureStepInput) error
 	DeleteProcedure(ctx context.Context, id uuid.UUID) error
+
+	GetProcedureSteps(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]StepsResponseDto, int64, error)
+	UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []UpdateProcedureStepInput) error
 }
 
 type service struct {
@@ -118,6 +120,35 @@ func (s *service) UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *
 	return repoErr
 }
 
+func (s *service) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
+	permErr := s.CanManageProcedure(ctx, id, constant.Delete)
+	if permErr != nil {
+		return permErr
+	}
+	delErr := s.repository.DeleteProcedure(ctx, id)
+	if delErr != nil {
+		return delErr
+	}
+	return nil
+}
+
+func (s *service) GetProcedureSteps(
+	ctx context.Context,
+	procedureId uuid.UUID,
+	offset, limit int,
+) ([]StepsResponseDto, int64, error) {
+	permErr := s.CanViewProcedure(ctx, procedureId)
+	if permErr != nil {
+		return nil, 0, permErr
+	}
+	procedureSteps, length, repoErr := s.repository.GetProcStepsByProcID(ctx, procedureId, offset, limit)
+	if repoErr != nil {
+		return nil, 0, repoErr
+	}
+	mappedSteps := MapStepsToDto(procedureSteps)
+	return mappedSteps, length, nil
+}
+
 func (s *service) UpdateProcedureStep(
 	ctx context.Context,
 	procedureId uuid.UUID,
@@ -185,17 +216,5 @@ func (s *service) UpdateProcedureStep(
 		return transactionErr
 	}
 
-	return nil
-}
-
-func (s *service) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
-	permErr := s.CanManageProcedure(ctx, id, constant.Delete)
-	if permErr != nil {
-		return permErr
-	}
-	delErr := s.repository.DeleteProcedure(ctx, id)
-	if delErr != nil {
-		return delErr
-	}
 	return nil
 }
