@@ -2,6 +2,7 @@ package procedure
 
 import (
 	"context"
+	"fmt"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/utils/intutil"
@@ -243,6 +244,25 @@ func TestUpdateStepInput(id uuid.UUID) procedure.UpdateProcedureStepInput {
 	}
 }
 
+func TestStepsForProcedure(procedureID uuid.UUID, count int) []procedure.ProcedureStep {
+	steps := make([]procedure.ProcedureStep, count)
+	for i := 0; i < count; i++ {
+		steps[i] = procedure.ProcedureStep{
+			ID:          uuid.New(),
+			ProcedureID: procedureID,
+			Index:       i + 1,
+			Title:       fmt.Sprintf("Step %d", i+1),
+			Description: stringutil.StringPtr(fmt.Sprintf("Step Description %d", i+1)),
+			IsOptional:  false,
+			StepType:    procedure.StepTypeAction,
+			CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+			UpdatedAt:   timeutil.TimePtr(time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC)),
+			Version:     1,
+		}
+	}
+	return steps
+}
+
 func TestUpdateProcedureStepDto() []procedure.UpdateProcedureStepDto {
 	stepID := uuid.New().String()
 	return []procedure.UpdateProcedureStepDto{
@@ -261,4 +281,20 @@ func TestUpdateProcedureStepDto() []procedure.UpdateProcedureStepDto {
 			Version:  1,
 		},
 	}
+}
+func TestStepsResponseDto(procedureID uuid.UUID, count int) []procedure.StepsResponseDto {
+	steps := make([]procedure.StepsResponseDto, count)
+	for i := 0; i < count; i++ {
+		steps[i] = procedure.StepsResponseDto{
+			ID:          uuid.New().String(),
+			Index:       i + 1,
+			Title:       fmt.Sprintf("Step %d", i+1),
+			Description: stringutil.StringPtr(fmt.Sprintf("Step Description %d", i+1)),
+			IsOptional:  false,
+			StepType:    string(procedure.StepTypeAction),
+			CreatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+			UpdatedAt:   time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+		}
+	}
+	return steps
 }

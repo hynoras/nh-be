@@ -891,3 +891,108 @@ func TestService_DeleteProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestService_GetProcedureSteps(t *testing.T) {
+	userID := uuid.New()
+	procedureID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+	repoError := errors.New("repository error")
+
+	tests := []struct {
+		name           string
+		ctx            context.Context
+		procedureID    uuid.UUID
+		offset         int
+		limit          int
+		setupMocks     func(repo *procmocks.Repository, permSvc *mocks.Service)
+		expectedResult []procedure.StepsResponseDto
+		expectedLength int64
+		expectedError  error
+		checkError     func(t *testing.T, err error)
+	}{
+		{
+			name:        "permission_denied",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			offset:      0,
+			limit:       10,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{}, nil)
+			},
+			expectedError: constant.ErrForbidViewProcedure,
+		},
+		{
+			name:        "repo_returns_error",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			offset:      0,
+			limit:       10,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("GetProcStepsByProcID", mock.Anything, procedureID, 0, 10).
+					Return(nil, int64(0), repoError)
+			},
+			expectedError: repoError,
+		},
+		{
+			name:        "success_no_steps",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			offset:      0,
+			limit:       10,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("GetProcStepsByProcID", mock.Anything, procedureID, 0, 10).
+					Return([]procedure.ProcedureStep{}, int64(0), nil)
+			},
+			expectedResult: []procedure.StepsResponseDto{},
+			expectedLength: 0,
+			expectedError:  nil,
+		},
+		{
+			name:        "success_with_steps",
+			ctx:         ContextWithUser(userID),
+			procedureID: procedureID,
+			offset:      0,
+			limit:       10,
+			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				steps := TestStepsForProcedure(procedureID, 2)
+				repo.On("GetProcStepsByProcID", mock.Anything, procedureID, 0, 10).
+					Return(steps, int64(2), nil)
+			},
+			expectedResult: procedure.MapStepsToDto(TestStepsForProcedure(procedureID, 2)),
+			expectedLength: 2,
+			expectedError:  nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := procmocks.NewRepository(t)
+			mockPermSvc := mocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := procedure.NewService(mockRepo, mockPermSvc)
+
+			res, length, err := svc.GetProcedureSteps(tc.ctx, tc.procedureID, tc.offset, tc.limit)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+				assert.Nil(t, res)
+				assert.Equal(t, tc.expectedLength, length)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, res)
+				assert.Equal(t, len(tc.expectedResult), len(res))
+				assert.Equal(t, tc.expectedLength, length)
+			}
+		})
+	}
+}

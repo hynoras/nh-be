@@ -549,3 +549,115 @@ func TestHandler_DeleteProcedure(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_GetProcedureSteps(t *testing.T) {
+	validID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
+	mockSteps := TestStepsResponseDto(validID, 2)
+
+	tests := []struct {
+		name           string
+		procedureID    string
+		queryParams    string
+		setupMocks     func(svc *proceduremocks.Service)
+		expectedStatus int
+	}{
+		{
+			name:        "invalid_uuid",
+			procedureID: "invalid-uuid",
+			queryParams: "",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "GetProcedureSteps")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_pagination",
+			procedureID: validID.String(),
+			queryParams: "?page=abc",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.AssertNotCalled(t, "GetProcedureSteps")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "permission_denied",
+			procedureID: validID.String(),
+			queryParams: "",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
+					Return(nil, int64(0), constant.ErrForbidViewProcedure)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:        "procedure_not_found",
+			procedureID: validID.String(),
+			queryParams: "",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
+					Return(nil, int64(0), constant.ErrProcedureNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:        "unexpected_service_error",
+			procedureID: validID.String(),
+			queryParams: "",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
+					Return(nil, int64(0), errors.New("unexpected error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:        "success_empty_result",
+			procedureID: validID.String(),
+			queryParams: "",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
+					Return([]procedure.StepsResponseDto{}, int64(0), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "success_with_data",
+			procedureID: validID.String(),
+			queryParams: "",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
+					Return(mockSteps, int64(len(mockSteps)), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "pagination_values_passed_correctly",
+			procedureID: validID.String(),
+			queryParams: "?page=2&pageSize=5",
+			setupMocks: func(svc *proceduremocks.Service) {
+				svc.On("GetProcedureSteps", mock.Anything, validID, 2, 5).
+					Return(mockSteps, int64(len(mockSteps)), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := proceduremocks.NewService(t)
+			tc.setupMocks(mockSvc)
+
+			router := testutil.SetupTestRouter(http.MethodGet, "/procedures/:procedureId/procedure-steps",
+				procedure.GetProcedureStepsHandler(mockSvc))
+
+			req := httptest.NewRequest(http.MethodGet,
+				"/procedures/"+tc.procedureID+"/procedure-steps"+tc.queryParams,
+				nil)
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
