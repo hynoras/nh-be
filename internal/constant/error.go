@@ -55,6 +55,7 @@ const (
 	ErrUpdateProcedureFailed     = "Failed to update procedure"
 	ErrUpdateProcedureStepFailed = "Failed to update procedure step"
 	ErrDeleteProcedureFailed     = "Failed to delete procedure"
+	ErrGetProcedureStepsFailed   = "Failed to get procedure steps"
 )
 
 var (
