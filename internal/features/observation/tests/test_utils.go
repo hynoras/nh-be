@@ -1,0 +1,32 @@
+package observation
+
+import (
+	"fmt"
+	"nh-be/internal/features/observation"
+	"nh-be/internal/utils/stringutil"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+func TestObservationMetadata() observation.ObservationMetadata {
+	return observation.ObservationMetadata{
+		ID:                    uuid.MustParse("aaaa1111-1111-1111-1111-111111111111"),
+		ObservedAt:            time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+		Title:                 "Test Observation",
+		Notes:                 stringutil.StringPtr("Test Notes"),
+		PreviousObservationID: nil,
+		CreatedBy:             uuid.MustParse("bbbb2222-2222-2222-2222-222222222222"),
+		CreatedAt:             time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+	}
+}
+
+func TestObservationMetadataList(count int) []observation.ObservationMetadata {
+	list := make([]observation.ObservationMetadata, count)
+	for i := 0; i < count; i++ {
+		metadata := TestObservationMetadata()
+		metadata.ID = uuid.MustParse(fmt.Sprintf("aaaa1111-1111-1111-1111-%012d", i+1))
+		list[i] = metadata
+	}
+	return list
+}
