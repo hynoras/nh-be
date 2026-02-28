@@ -30,3 +30,19 @@ func TestObservationMetadataList(count int) []observation.ObservationMetadata {
 	}
 	return list
 }
+
+func TestObservationsResponseDtoList(count int) []observation.ObservationsResponseDto {
+	list := make([]observation.ObservationsResponseDto, count)
+	for i := 0; i < count; i++ {
+		list[i] = observation.ObservationsResponseDto{
+			ID:                    fmt.Sprintf("aaaa1111-1111-1111-1111-%012d", i+1),
+			ObservedAt:            "2026-02-03T19:15:10Z",
+			Title:                 "Test Observation",
+			Notes:                 stringutil.StringPtr("Test Notes"),
+			PreviousObservationID: nil,
+			CreatedBy:             "bbbb2222-2222-2222-2222-222222222222",
+			CreatedAt:             "2026-02-03T19:15:10Z",
+		}
+	}
+	return list
+}
