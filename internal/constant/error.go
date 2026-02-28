@@ -6,6 +6,8 @@ type ErrorDetail error
 type ErrorMessage string
 
 const (
+	ErrInvalidSortOrder = "Invalid sort order"
+
 	//auth
 	ErrAuthorizationFailed  = "Authorization failed"
 	ErrVerifyTokenFailed    = "Failed to verify token"
@@ -62,7 +64,8 @@ const (
 )
 
 var (
-	ErrInvalidIDFormat ErrorDetail = errors.New("invalid id format")
+	ErrSortOrderShouldBeASCOrDESC ErrorDetail = errors.New("sort order should be ASC or DESC")
+	ErrInvalidIDFormat            ErrorDetail = errors.New("invalid id format")
 
 	// auth
 	ErrInvalidCredentials        ErrorDetail = errors.New("invalid credentials")
