@@ -397,9 +397,6 @@ func TestRepository_GetAllObsByExpIDAndProcID(t *testing.T) {
 }
 
 func TestRepository_CreateObservation(t *testing.T) {
-	expId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
-	procId := uuid.MustParse("22222222-2222-2222-2222-222222222222")
-
 	tests := []struct {
 		name          string
 		setupMock     func(mock sqlmock.Sqlmock, obs *observation.Observation)
@@ -415,6 +412,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 						obs.Title,
 						obs.Notes,
 						obs.CreatedBy,
+						obs.PreviousObservationID,
 						obs.ExperimentID,
 						obs.ProcedureStepID,
 						obs.ID,
@@ -436,6 +434,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 						obs.Title,
 						obs.Notes,
 						obs.CreatedBy,
+						obs.PreviousObservationID,
 						obs.ExperimentID,
 						obs.ProcedureStepID,
 						obs.ID,
@@ -459,6 +458,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 						obs.Title,
 						obs.Notes,
 						obs.CreatedBy,
+						obs.PreviousObservationID,
 						obs.ExperimentID,
 						obs.ProcedureStepID,
 						obs.ID,
@@ -482,6 +482,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 						obs.Title,
 						obs.Notes,
 						obs.CreatedBy,
+						obs.PreviousObservationID,
 						obs.ExperimentID,
 						obs.ProcedureStepID,
 						obs.ID,
@@ -504,7 +505,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 
 			tc.setupMock(mock, &obs)
 
-			result, err := repo.CreateObservation(ctx, expId, procId, obs)
+			result, err := repo.CreateObservation(ctx, obs)
 
 			if tc.expectedError != nil {
 				assert.ErrorIs(t, err, tc.expectedError)

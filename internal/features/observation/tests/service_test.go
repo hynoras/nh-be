@@ -306,7 +306,7 @@ func TestService_CreateObservation(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				createdObs := TestObservation()
-				repo.On("CreateObservation", mock.Anything, expID, procStepID, mock.AnythingOfType("observation.Observation")).
+				repo.On("CreateObservation", mock.Anything, mock.AnythingOfType("observation.Observation")).
 					Return(createdObs, nil)
 			},
 			expectedResult: observation.MapObsToCreatedObsResponseDto(TestObservation()),
@@ -322,7 +322,7 @@ func TestService_CreateObservation(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{}, nil)
 				repo.AssertNotCalled(t, "CreateObservation",
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+					mock.Anything, mock.Anything)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
 			expectedError:  constant.ErrForbidCreateObservation,
@@ -336,7 +336,7 @@ func TestService_CreateObservation(t *testing.T) {
 			setupMocks: func(repo *obsmocks.Repository, permSvc *mocks.Service) {
 				permSvc.AssertNotCalled(t, "GetUserPermissionCodeNames", mock.Anything, mock.Anything)
 				repo.AssertNotCalled(t, "CreateObservation",
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+					mock.Anything, mock.Anything)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
 			checkError: func(t *testing.T, err error) {
@@ -353,7 +353,7 @@ func TestService_CreateObservation(t *testing.T) {
 			setupMocks: func(repo *obsmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
-				repo.On("CreateObservation", mock.Anything, expID, procStepID, mock.AnythingOfType("observation.Observation")).
+				repo.On("CreateObservation", mock.Anything, mock.AnythingOfType("observation.Observation")).
 					Return(observation.Observation{}, constant.ErrExperimentNotFound)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
@@ -368,7 +368,7 @@ func TestService_CreateObservation(t *testing.T) {
 			setupMocks: func(repo *obsmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
-				repo.On("CreateObservation", mock.Anything, expID, procStepID, mock.AnythingOfType("observation.Observation")).
+				repo.On("CreateObservation", mock.Anything, mock.AnythingOfType("observation.Observation")).
 					Return(observation.Observation{}, constant.ErrProcedureNotFound)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
@@ -383,7 +383,7 @@ func TestService_CreateObservation(t *testing.T) {
 			setupMocks: func(repo *obsmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
-				repo.On("CreateObservation", mock.Anything, expID, procStepID, mock.AnythingOfType("observation.Observation")).
+				repo.On("CreateObservation", mock.Anything, mock.AnythingOfType("observation.Observation")).
 					Return(observation.Observation{}, errors.New("database connection error"))
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},

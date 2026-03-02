@@ -111,7 +111,7 @@ func (s *service) CreateObservation(
 	}
 
 	observation := MapCreateInputToObservation(input, userId, expId, procStepId)
-	createdObs, createErr := s.observationRepo.CreateObservation(ctx, expId, procStepId, observation)
+	createdObs, createErr := s.observationRepo.CreateObservation(ctx, observation)
 	if createErr != nil {
 		return CreatedObservationResponseDto{}, createErr
 	}
