@@ -18,4 +18,5 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 
 	// Observation routes
 	observationsGroup.GET("/:experimentId/:procedureStepId", GetAllObservationsHandler(observationService))
+	observationsGroup.POST("/:experimentId/:procedureStepId", CreateObservationHandler(observationService))
 }

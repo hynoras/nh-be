@@ -41,7 +41,7 @@ type CreatedObservationResponseDto struct {
 type CreateObservationDto struct {
 	Title                 string    `json:"title" binding:"required,max=150"`
 	Notes                 *string   `json:"notes" binding:"omitempty,max=5000"`
-	PreviousObservationID *string   `json:"previous_observation_id" binding:"omitempty,uuidv4"`
+	PreviousObservationID *string   `json:"previous_observation_id" binding:"omitempty,uuid4"`
 	ObservedAt            time.Time `json:"observed_at" binding:"required"`
 }
 
