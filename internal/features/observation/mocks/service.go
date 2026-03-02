@@ -26,6 +26,65 @@ func (_m *Service) EXPECT() *Service_Expecter {
 	return &Service_Expecter{mock: &_m.Mock}
 }
 
+// CreateObservation provides a mock function with given fields: ctx, expId, procStepId, input
+func (_m *Service) CreateObservation(ctx context.Context, expId uuid.UUID, procStepId uuid.UUID, input observation.CreateObservationInput) (observation.CreatedObservationResponseDto, error) {
+	ret := _m.Called(ctx, expId, procStepId, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateObservation")
+	}
+
+	var r0 observation.CreatedObservationResponseDto
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, observation.CreateObservationInput) (observation.CreatedObservationResponseDto, error)); ok {
+		return rf(ctx, expId, procStepId, input)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, observation.CreateObservationInput) observation.CreatedObservationResponseDto); ok {
+		r0 = rf(ctx, expId, procStepId, input)
+	} else {
+		r0 = ret.Get(0).(observation.CreatedObservationResponseDto)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, observation.CreateObservationInput) error); ok {
+		r1 = rf(ctx, expId, procStepId, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Service_CreateObservation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateObservation'
+type Service_CreateObservation_Call struct {
+	*mock.Call
+}
+
+// CreateObservation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - expId uuid.UUID
+//   - procStepId uuid.UUID
+//   - input observation.CreateObservationInput
+func (_e *Service_Expecter) CreateObservation(ctx interface{}, expId interface{}, procStepId interface{}, input interface{}) *Service_CreateObservation_Call {
+	return &Service_CreateObservation_Call{Call: _e.mock.On("CreateObservation", ctx, expId, procStepId, input)}
+}
+
+func (_c *Service_CreateObservation_Call) Run(run func(ctx context.Context, expId uuid.UUID, procStepId uuid.UUID, input observation.CreateObservationInput)) *Service_CreateObservation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(observation.CreateObservationInput))
+	})
+	return _c
+}
+
+func (_c *Service_CreateObservation_Call) Return(_a0 observation.CreatedObservationResponseDto, _a1 error) *Service_CreateObservation_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *Service_CreateObservation_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, observation.CreateObservationInput) (observation.CreatedObservationResponseDto, error)) *Service_CreateObservation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAllObservations provides a mock function with given fields: ctx, expId, procId, offset, limit, sortBy, sortOrder
 func (_m *Service) GetAllObservations(ctx context.Context, expId uuid.UUID, procId uuid.UUID, offset int, limit int, sortBy *string, sortOrder *constant.Order) ([]observation.ObservationsResponseDto, int64, error) {
 	ret := _m.Called(ctx, expId, procId, offset, limit, sortBy, sortOrder)
