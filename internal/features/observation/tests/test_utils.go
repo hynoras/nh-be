@@ -31,6 +31,20 @@ func TestObservationMetadataList(count int) []observation.ObservationMetadata {
 	return list
 }
 
+func TestObservation() observation.Observation {
+	procStepID := uuid.MustParse("cccc3333-3333-3333-3333-333333333333")
+	return observation.Observation{
+		ID:              uuid.MustParse("aaaa1111-1111-1111-1111-111111111111"),
+		ObservedAt:      time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+		Title:           "Test Observation",
+		Notes:           stringutil.StringPtr("Test Notes"),
+		CreatedBy:       uuid.MustParse("bbbb2222-2222-2222-2222-222222222222"),
+		CreatedAt:       time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+		ExperimentID:    uuid.MustParse("11111111-1111-1111-1111-111111111111"),
+		ProcedureStepID: &procStepID,
+	}
+}
+
 func TestObservationsResponseDtoList(count int) []observation.ObservationsResponseDto {
 	list := make([]observation.ObservationsResponseDto, count)
 	for i := 0; i < count; i++ {

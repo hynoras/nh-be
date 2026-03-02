@@ -9,6 +9,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -388,6 +389,129 @@ func TestRepository_GetAllObsByExpIDAndProcID(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Len(t, result, tc.expectedDataCount)
 				assert.Equal(t, tc.expectedCount, count)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepository_CreateObservation(t *testing.T) {
+	expId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	procId := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+
+	tests := []struct {
+		name          string
+		setupMock     func(mock sqlmock.Sqlmock, obs *observation.Observation)
+		expectedError error
+	}{
+		{
+			name: "success",
+			setupMock: func(mock sqlmock.Sqlmock, obs *observation.Observation) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "observations"`).
+					WithArgs(
+						obs.ObservedAt,
+						obs.Title,
+						obs.Notes,
+						obs.CreatedBy,
+						obs.ExperimentID,
+						obs.ProcedureStepID,
+						obs.ID,
+						obs.CreatedAt,
+					).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).
+						AddRow(obs.ID, obs.CreatedAt))
+				mock.ExpectCommit()
+			},
+			expectedError: nil,
+		},
+		{
+			name: "experiment_not_found",
+			setupMock: func(mock sqlmock.Sqlmock, obs *observation.Observation) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "observations"`).
+					WithArgs(
+						obs.ObservedAt,
+						obs.Title,
+						obs.Notes,
+						obs.CreatedBy,
+						obs.ExperimentID,
+						obs.ProcedureStepID,
+						obs.ID,
+						obs.CreatedAt,
+					).
+					WillReturnError(&pgconn.PgError{
+						Code:           "23503",
+						ConstraintName: "observations_experiment_id_fkey",
+					})
+				mock.ExpectRollback()
+			},
+			expectedError: constant.ErrExperimentNotFound,
+		},
+		{
+			name: "procedure_step_not_found",
+			setupMock: func(mock sqlmock.Sqlmock, obs *observation.Observation) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "observations"`).
+					WithArgs(
+						obs.ObservedAt,
+						obs.Title,
+						obs.Notes,
+						obs.CreatedBy,
+						obs.ExperimentID,
+						obs.ProcedureStepID,
+						obs.ID,
+						obs.CreatedAt,
+					).
+					WillReturnError(&pgconn.PgError{
+						Code:           "23503",
+						ConstraintName: "observations_procedure_step_id_fkey",
+					})
+				mock.ExpectRollback()
+			},
+			expectedError: constant.ErrProcedureNotFound,
+		},
+		{
+			name: "database_error",
+			setupMock: func(mock sqlmock.Sqlmock, obs *observation.Observation) {
+				mock.ExpectBegin()
+				mock.ExpectQuery(`INSERT INTO "observations"`).
+					WithArgs(
+						obs.ObservedAt,
+						obs.Title,
+						obs.Notes,
+						obs.CreatedBy,
+						obs.ExperimentID,
+						obs.ProcedureStepID,
+						obs.ID,
+						obs.CreatedAt,
+					).
+					WillReturnError(assert.AnError)
+				mock.ExpectRollback()
+			},
+			expectedError: assert.AnError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			repo := observation.NewRepository(db)
+			ctx := context.Background()
+
+			obs := TestObservation()
+
+			tc.setupMock(mock, &obs)
+
+			result, err := repo.CreateObservation(ctx, expId, procId, obs)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+				assert.Equal(t, observation.Observation{}, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, obs, result)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())

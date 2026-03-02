@@ -26,6 +26,65 @@ func (_m *Repository) EXPECT() *Repository_Expecter {
 	return &Repository_Expecter{mock: &_m.Mock}
 }
 
+// CreateObservation provides a mock function with given fields: ctx, expId, procId, _a3
+func (_m *Repository) CreateObservation(ctx context.Context, expId uuid.UUID, procId uuid.UUID, _a3 observation.Observation) (observation.Observation, error) {
+	ret := _m.Called(ctx, expId, procId, _a3)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateObservation")
+	}
+
+	var r0 observation.Observation
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, observation.Observation) (observation.Observation, error)); ok {
+		return rf(ctx, expId, procId, _a3)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, observation.Observation) observation.Observation); ok {
+		r0 = rf(ctx, expId, procId, _a3)
+	} else {
+		r0 = ret.Get(0).(observation.Observation)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, observation.Observation) error); ok {
+		r1 = rf(ctx, expId, procId, _a3)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Repository_CreateObservation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateObservation'
+type Repository_CreateObservation_Call struct {
+	*mock.Call
+}
+
+// CreateObservation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - expId uuid.UUID
+//   - procId uuid.UUID
+//   - _a3 observation.Observation
+func (_e *Repository_Expecter) CreateObservation(ctx interface{}, expId interface{}, procId interface{}, _a3 interface{}) *Repository_CreateObservation_Call {
+	return &Repository_CreateObservation_Call{Call: _e.mock.On("CreateObservation", ctx, expId, procId, _a3)}
+}
+
+func (_c *Repository_CreateObservation_Call) Run(run func(ctx context.Context, expId uuid.UUID, procId uuid.UUID, _a3 observation.Observation)) *Repository_CreateObservation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(observation.Observation))
+	})
+	return _c
+}
+
+func (_c *Repository_CreateObservation_Call) Return(_a0 observation.Observation, _a1 error) *Repository_CreateObservation_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *Repository_CreateObservation_Call) RunAndReturn(run func(context.Context, uuid.UUID, uuid.UUID, observation.Observation) (observation.Observation, error)) *Repository_CreateObservation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAllObsByExpIDAndProcID provides a mock function with given fields: ctx, expId, procId, offset, limit, sortBy, sortOrder
 func (_m *Repository) GetAllObsByExpIDAndProcID(ctx context.Context, expId uuid.UUID, procId uuid.UUID, offset int, limit int, sortBy *string, sortOrder *constant.Order) ([]observation.ObservationMetadata, int64, error) {
 	ret := _m.Called(ctx, expId, procId, offset, limit, sortBy, sortOrder)
