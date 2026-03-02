@@ -60,3 +60,27 @@ func TestObservationsResponseDtoList(count int) []observation.ObservationsRespon
 	}
 	return list
 }
+
+func TestCreateObservationDto() observation.CreateObservationDto {
+	return observation.CreateObservationDto{
+		Title:                 "Test Observation",
+		Notes:                 stringutil.StringPtr("Test Notes"),
+		PreviousObservationID: nil,
+		ObservedAt:            time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+	}
+}
+
+func TestCreatedObservationResponseDto() observation.CreatedObservationResponseDto {
+	procStepID := "cccc3333-3333-3333-3333-333333333333"
+	return observation.CreatedObservationResponseDto{
+		ID:                    "aaaa1111-1111-1111-1111-111111111111",
+		ExperimentID:          "11111111-1111-1111-1111-111111111111",
+		ProcedureStepID:       &procStepID,
+		ObservedAt:            "2026-02-03T19:15:10Z",
+		Title:                 "Test Observation",
+		Notes:                 stringutil.StringPtr("Test Notes"),
+		PreviousObservationID: nil,
+		CreatedBy:             "bbbb2222-2222-2222-2222-222222222222",
+		CreatedAt:             "2026-02-03T19:15:10Z",
+	}
+}
