@@ -20,6 +20,11 @@ type Repository interface {
 		sortBy *string,
 		sortOrder *constant.Order,
 	) ([]ObservationMetadata, int64, error)
+	CreateObservation(
+		ctx context.Context,
+		expId, procId uuid.UUID,
+		observation Observation,
+	) (Observation, error)
 }
 
 type repository struct {
@@ -61,8 +66,7 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 		return []ObservationMetadata{}, 0, constant.ErrProcedureNotFound
 	}
 
-	baseQuery := r.db.WithContext(ctx).
-		Model(&Observation{}).
+	baseQuery := r.db.WithContext(ctx).Model(&Observation{}).
 		Where("procedure_step_id = ? AND experiment_id = ?", procId, expId)
 
 	var length int64
@@ -88,4 +92,23 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 	}
 
 	return observation, length, nil
+}
+
+func (r *repository) CreateObservation(
+	ctx context.Context,
+	expId, procId uuid.UUID,
+	observation Observation,
+) (Observation, error) {
+	result := r.db.WithContext(ctx).Create(&observation)
+
+	if result.Error != nil {
+		if dbutil.IsForeignKeyViolation(result.Error, "observations_experiment_id_fkey") {
+			return Observation{}, constant.ErrExperimentNotFound
+		}
+		if dbutil.IsForeignKeyViolation(result.Error, "observations_procedure_step_id_fkey") {
+			return Observation{}, constant.ErrProcedureNotFound
+		}
+		return Observation{}, result.Error
+	}
+	return observation, nil
 }

@@ -18,9 +18,9 @@ type Observation struct {
 	CreatedAt             time.Time    `gorm:"type:timestamp with time zone;not null;default:now()"`
 
 	ExperimentID    uuid.UUID          `gorm:"type:uuid;not null;index"`
-	Experiment      exp.Experiment     `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE"`
+	Experiment      exp.Experiment     `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE;constraint:observations_experiment_id_fkey"`
 	ProcedureStepID *uuid.UUID         `gorm:"type:uuid;index"`
-	ProcedureStep   proc.ProcedureStep `gorm:"foreignKey:ProcedureStepID;references:ID;OnDelete:SET NULL"`
+	ProcedureStep   proc.ProcedureStep `gorm:"foreignKey:ProcedureStepID;references:ID;OnDelete:SET NULL;constraint:observations_procedure_step_id_fkey"`
 }
 
 //TODO: Uncomment when implementing measurement
