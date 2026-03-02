@@ -18,6 +18,11 @@ type Service interface {
 		sortBy *string,
 		sortOrder *constant.Order,
 	) ([]ObservationsResponseDto, int64, error)
+	CreateObservation(
+		ctx context.Context,
+		expId, procStepId uuid.UUID,
+		input CreateObservationInput,
+	) (CreatedObservationResponseDto, error)
 }
 
 type service struct {
@@ -85,7 +90,33 @@ func (s *service) GetAllObservations(
 		return nil, 0, getObsErr
 	}
 
-	mappedObs := MapObservationsToDto(obs)
+	mappedObs := MapObservationsMetadataToDto(obs)
 
 	return mappedObs, length, nil
+}
+
+func (s *service) CreateObservation(
+	ctx context.Context,
+	expId, procStepId uuid.UUID,
+	input CreateObservationInput,
+) (CreatedObservationResponseDto, error) {
+	permErr := s.CanCreateObservation(ctx)
+	if permErr != nil {
+		return CreatedObservationResponseDto{}, permErr
+	}
+
+	userId, err := ctxutil.GetUserIdFromContext(ctx)
+	if err != nil {
+		return CreatedObservationResponseDto{}, err
+	}
+
+	observation := MapCreateInputToObservation(input, userId, expId, procStepId)
+	createdObs, createErr := s.observationRepo.CreateObservation(ctx, expId, procStepId, observation)
+	if createErr != nil {
+		return CreatedObservationResponseDto{}, createErr
+	}
+
+	mappedObs := MapObsToCreatedObsResponseDto(createdObs)
+
+	return mappedObs, nil
 }

@@ -9,18 +9,19 @@ import (
 )
 
 type Observation struct {
-	ID                    uuid.UUID    `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ObservedAt            time.Time    `gorm:"type:timestamp with time zone;not null;index"`
-	Title                 string       `gorm:"type:text;not null"`
-	Notes                 *string      `gorm:"type:text"`
-	PreviousObservationID *Observation `gorm:"foreignKey:PreviousObservationID;references:ID;OnDelete:SET NULL"`
-	CreatedBy             uuid.UUID    `gorm:"type:uuid;not null"`
-	CreatedAt             time.Time    `gorm:"type:timestamp with time zone;not null;default:now()"`
+	ID         uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	ObservedAt time.Time `gorm:"type:timestamp with time zone;not null;index"`
+	Title      string    `gorm:"type:text;not null"`
+	Notes      *string   `gorm:"type:text"`
+	CreatedBy  uuid.UUID `gorm:"type:uuid;not null"`
+	CreatedAt  time.Time `gorm:"type:timestamp with time zone;not null;default:now()"`
 
-	ExperimentID    uuid.UUID          `gorm:"type:uuid;not null;index"`
-	Experiment      exp.Experiment     `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE;constraint:observations_experiment_id_fkey"`
-	ProcedureStepID *uuid.UUID         `gorm:"type:uuid;index"`
-	ProcedureStep   proc.ProcedureStep `gorm:"foreignKey:ProcedureStepID;references:ID;OnDelete:SET NULL;constraint:observations_procedure_step_id_fkey"`
+	PreviousObservationID *uuid.UUID         `gorm:"type:uuid"`
+	PreviousObservation   *Observation       `gorm:"foreignKey:PreviousObservationID;references:ID;OnDelete:SET NULL;constraint:observations_previous_observation_id_fkey"`
+	ExperimentID          uuid.UUID          `gorm:"type:uuid;not null;index"`
+	Experiment            exp.Experiment     `gorm:"foreignKey:ExperimentID;references:ID;OnDelete:CASCADE;constraint:observations_experiment_id_fkey"`
+	ProcedureStepID       *uuid.UUID         `gorm:"type:uuid;index"`
+	ProcedureStep         proc.ProcedureStep `gorm:"foreignKey:ProcedureStepID;references:ID;OnDelete:SET NULL;constraint:observations_procedure_step_id_fkey"`
 }
 
 //TODO: Uncomment when implementing measurement

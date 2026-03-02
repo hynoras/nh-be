@@ -61,6 +61,7 @@ const (
 	//observation
 	ErrGetAllObservationsFailed = "Failed to get observations"
 	ErrGetProcedureStepsFailed  = "Failed to get procedure steps"
+	ErrCreateObservationFailed  = "Failed to create observation"
 )
 
 var (

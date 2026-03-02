@@ -22,7 +22,7 @@ type Repository interface {
 	) ([]ObservationMetadata, int64, error)
 	CreateObservation(
 		ctx context.Context,
-		expId, procId uuid.UUID,
+		expId, procStepId uuid.UUID,
 		observation Observation,
 	) (Observation, error)
 }
@@ -96,7 +96,7 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 
 func (r *repository) CreateObservation(
 	ctx context.Context,
-	expId, procId uuid.UUID,
+	expId, procStepId uuid.UUID,
 	observation Observation,
 ) (Observation, error) {
 	result := r.db.WithContext(ctx).Create(&observation)
