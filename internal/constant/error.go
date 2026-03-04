@@ -6,6 +6,8 @@ type ErrorDetail error
 type ErrorMessage string
 
 const (
+	ErrInvalidSortOrder = "Invalid sort order"
+
 	//auth
 	ErrAuthorizationFailed  = "Authorization failed"
 	ErrVerifyTokenFailed    = "Failed to verify token"
@@ -55,11 +57,16 @@ const (
 	ErrUpdateProcedureFailed     = "Failed to update procedure"
 	ErrUpdateProcedureStepFailed = "Failed to update procedure step"
 	ErrDeleteProcedureFailed     = "Failed to delete procedure"
-	ErrGetProcedureStepsFailed   = "Failed to get procedure steps"
+
+	//observation
+	ErrGetAllObservationsFailed = "Failed to get observations"
+	ErrGetProcedureStepsFailed  = "Failed to get procedure steps"
+	ErrCreateObservationFailed  = "Failed to create observation"
 )
 
 var (
-	ErrInvalidIDFormat ErrorDetail = errors.New("invalid id format")
+	ErrSortOrderShouldBeASCOrDESC ErrorDetail = errors.New("sort order should be ASC or DESC")
+	ErrInvalidIDFormat            ErrorDetail = errors.New("invalid id format")
 
 	// auth
 	ErrInvalidCredentials        ErrorDetail = errors.New("invalid credentials")
@@ -135,4 +142,9 @@ var (
 	ErrForbidDeleteProcedure  ErrorDetail = errors.New("you do not have permission to delete this procedure")
 	ErrProcedureStepNotFound  ErrorDetail = errors.New("procedure step not found")
 	ErrProcedureStepConflict  ErrorDetail = errors.New("This procedure step is modified by another request, please retry")
+
+	//observation
+	ErrObservationNotFound     ErrorDetail = errors.New("observation not found")
+	ErrForbidViewObservation   ErrorDetail = errors.New("you do not have permission to view observation")
+	ErrForbidCreateObservation ErrorDetail = errors.New("you do not have permission to create this observation")
 )

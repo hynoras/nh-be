@@ -273,6 +273,15 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 	case constant.ErrProcedureStepConflict:
 		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureStepFailed, err.Error())
 
+	//observation
+	case constant.ErrObservationNotFound:
+		MakeErrorResponse(c, http.StatusNotFound, "Observation not found", err.Error())
+	// case constant.ErrObservationAlreadyExists:
+	// 	MakeErrorResponse(c, http.StatusConflict, "Observation already exists", err.Error())
+	case constant.ErrForbidViewObservation,
+		constant.ErrForbidCreateObservation:
+		MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, err.Error())
+
 	//add other domain error here
 
 	default:

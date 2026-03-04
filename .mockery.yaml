@@ -30,4 +30,8 @@ packages:
     interfaces:
       Repository:
       Service:
+  nh-be/internal/features/observation:
+    interfaces:
+      Repository:
+      Service:
 
