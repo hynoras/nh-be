@@ -35,6 +35,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/internal/app"
+	"nh-be/internal/middleware"
 	"nh-be/router"
 
 	"github.com/gin-contrib/cors"
@@ -110,6 +111,9 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	r.Use(middleware.SetRequestID())
+	r.Use(middleware.RequestLogger())
+
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -135,7 +139,7 @@ func main() {
 	go func() {
 		slog.Info("Server is running", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Failed to start server: %v", err)
+			slog.Error("Failed to start server", "err", err)
 		}
 	}()
 
