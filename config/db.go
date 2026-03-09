@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"log"
-	"nh-be/pkg/env"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -13,16 +12,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func ConnectDatabase() *gorm.DB {
-	host := env.MustEnv("DB_HOST")
-	port := env.MustEnvInt("DB_PORT")
-	user := env.MustEnv("DB_USERNAME")
-	dbname := env.MustEnv("DB_NAME")
-	pass := env.MustEnv("DB_PASSWORD")
-
+func ConnectDatabase(cfg *Config) *gorm.DB {
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=require",
-		user, pass, host, port, dbname,
+		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName,
 	)
 
 	pgxCfg, err := pgx.ParseConfig(dsn)

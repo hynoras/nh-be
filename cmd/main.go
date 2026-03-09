@@ -21,13 +21,14 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"nh-be/config"
 	docs "nh-be/docs"
 
 	swaggerfiles "github.com/swaggo/files"
@@ -42,52 +43,66 @@ import (
 )
 
 func main() {
-	env := os.Getenv("APP_ENV")
-	if env == "" {
-		env = "dev"
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("Warning: No .env file found")
 	}
 
-	if env != "prod" {
-		if err := godotenv.Load(); err != nil {
-			log.Println("Warning: No .env file found")
-		}
+	cfg := config.LoadConfig()
+
+	slog.Info("starting app", "env", cfg.AppEnv)
+
+	service, err := app.InitializeServices(cfg)
+
+	if err != nil {
+		slog.Error("failed to initialize services", "error", err)
+		os.Exit(1)
 	}
-
-	log.Printf("Starting app in %s mode\n", env)
-
-	db, sqlDB, rdb, conn, pubCh, conCh, conCancel, err := app.InitializeServices()
 
 	defer func() {
-		conCancel()
-		if pubCh != nil {
-			pubCh.Close()
-			log.Println("RabbitMQ publisher channel closed")
+		if service == nil {
+			return
 		}
-		if conCh != nil {
-			conCh.Close()
-			log.Println("RabbitMQ consumer channel closed")
+		service.ConCancel()
+		service.WG.Wait()
+
+		if service.PubCh != nil {
+			service.PubCh.Close()
+			slog.Info("RabbitMQ publisher channel closed")
 		}
-		if conn != nil {
-			conn.Close()
-			log.Println("RabbitMQ connection closed")
+		if service.ConCh != nil {
+			service.ConCh.Close()
+			slog.Info("RabbitMQ consumer channel closed")
 		}
-		if sqlDB != nil {
-			sqlDB.Close()
-			log.Println("Database connection closed")
+		if service.RabbitMQ != nil {
+			service.RabbitMQ.Close()
+			slog.Info("RabbitMQ connection closed")
 		}
-		if rdb != nil {
-			rdb.Close()
-			log.Println("Redis connection closed")
+		if service.SQLDB != nil {
+			service.SQLDB.Close()
+			slog.Info("Database connection closed")
+		}
+		if service.Redis != nil {
+			service.Redis.Close()
+			slog.Info("Redis connection closed")
 		}
 	}()
 
-	if err != nil {
-		log.Fatalf("Failed to initialize services: %v", err)
+	var origin []string
+	if cfg.AppEnv == "dev" {
+		origin = []string{"http://localhost:3000"}
+	} else {
+		origin = []string{cfg.FrontendURL}
 	}
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     origin,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -104,36 +119,37 @@ func main() {
 		})
 	})
 
-	router.SetupRoutes(r, db, rdb, pubCh)
+	app.RegisterHealthRoutes(r, app.HealthDeps{
+		SQLDB:    service.SQLDB,
+		Redis:    service.Redis,
+		RabbitMQ: service.RabbitMQ,
+	})
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	router.SetupRoutes(r, service.DB, service.Redis, service.PubCh)
 
 	srv := &http.Server{
-		Addr:    ":" + port,
+		Addr:    ":" + cfg.Port,
 		Handler: r,
 	}
 
 	go func() {
-		log.Println("Server is running on http://localhost:8080")
+		slog.Info("Server is running", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			slog.Error("Failed to start server: %v", err)
 		}
 	}()
 
 	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server gracefully...")
+	slog.Info("Shutting down server gracefully...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		slog.Error("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("Server exited cleanly")
+	slog.Info("Server exited cleanly")
 }
