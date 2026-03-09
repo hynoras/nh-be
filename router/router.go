@@ -24,7 +24,6 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel
 
 	// Register auth routes (public)
 	auth.RegisterRoutes(v1, db, rdb, ch)
-	r.Use(middleware.SetRequestID())
 
 	// Protected routes group
 	protected := v1.Group("")
