@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"nh-be/config"
 	"nh-be/internal/utils/stringutil"
 	"nh-be/mq"
-	"nh-be/pkg/env"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -17,17 +17,23 @@ type EmailConsumer interface {
 }
 
 type emailConsumer struct {
-	channel *amqp.Channel
+	channel              *amqp.Channel
+	frontendURL          string
+	verifyEmailSuffixURL string
+	resendAPIKey         string
 }
 
-func NewEmailConsumer(ch *amqp.Channel) EmailConsumer {
-	return &emailConsumer{channel: ch}
+func NewEmailConsumer(ch *amqp.Channel, cfg *config.Config) EmailConsumer {
+	return &emailConsumer{
+		channel:              ch,
+		frontendURL:          cfg.FrontendURL,
+		verifyEmailSuffixURL: cfg.VerifyEmailSuffixURL,
+		resendAPIKey:         cfg.ResendAPIKey,
+	}
 }
 
 func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
-	resendClient := NewResendClient()
-	frontendURL := env.MustEnv("FRONTEND_URL")
-	verifyEmailSuffixURL := env.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
+	resendClient := NewResendClient(s.resendAPIKey)
 	msgs, err := mq.Consumer(
 		ctx,
 		s.channel,
@@ -51,7 +57,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 				continue
 			}
 
-			verificationURL := fmt.Sprintf("%s%s?token=%s", frontendURL, verifyEmailSuffixURL, req.Token)
+			verificationURL := fmt.Sprintf("%s%s?token=%s", s.frontendURL, s.verifyEmailSuffixURL, req.Token)
 
 			htmlContent, htmlErr := ConvertHtmlToString("verification_email.html", map[string]string{
 				"UserName":        stringutil.ExtractUsernameFromEmail(req.ToEmail),

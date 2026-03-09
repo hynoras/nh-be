@@ -2,19 +2,14 @@ package config
 
 import (
 	"log"
-	"nh-be/pkg/env"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRedisClient() *redis.Client {
-	host := env.MustEnv("REDIS_HOST")
-	port := env.MustEnv("REDIS_PORT")
-	pass := env.MustEnv("REDIS_PASSWORD")
-
+func NewRedisClient(cfg *Config) *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     host + ":" + port,
-		Password: pass,
+		Addr:     cfg.RedisHost + ":" + cfg.RedisPort,
+		Password: cfg.RedisPassword,
 		DB:       0,
 	})
 
