@@ -25,6 +25,7 @@ RUN apk add --no-cache ca-certificates wget \
 WORKDIR /app
 
 COPY --from=builder /app/server .
+COPY --from=builder /app/templates ./templates
 
 USER appuser
 
@@ -33,7 +34,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://localhost:8080/health/live || exit 1
-
+    CMD wget --spider -q http://localhost:8080/health/live || exit 1
+    
 # Run the server
 ENTRYPOINT ["./server"]
