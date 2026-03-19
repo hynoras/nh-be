@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -101,7 +102,8 @@ func main() {
 		origin = []string{cfg.FrontendURL}
 	}
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     origin,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -123,10 +125,13 @@ func main() {
 		})
 	})
 
+	shuttingDown := &atomic.Bool{}
+
 	app.RegisterHealthRoutes(r, app.HealthDeps{
-		SQLDB:    service.SQLDB,
-		Redis:    service.Redis,
-		RabbitMQ: service.RabbitMQ,
+		SQLDB:        service.SQLDB,
+		Redis:        service.Redis,
+		RabbitMQ:     service.RabbitMQ,
+		ShuttingDown: shuttingDown,
 	})
 
 	router.SetupRoutes(r, service.DB, service.Redis, service.PubCh)
@@ -147,12 +152,13 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	slog.Info("Shutting down server gracefully...")
+	shuttingDown.Store(true)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("Server forced to shutdown: %v", err)
+		slog.Error("Server forced to shutdown", "error", err)
 	}
 
 	slog.Info("Server exited cleanly")

@@ -3,6 +3,7 @@ package app
 import (
 	"database/sql"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -10,16 +11,19 @@ import (
 )
 
 type HealthDeps struct {
-	SQLDB    *sql.DB
-	Redis    *redis.Client
-	RabbitMQ *amqp.Connection
+	SQLDB        *sql.DB
+	Redis        *redis.Client
+	RabbitMQ     *amqp.Connection
+	ShuttingDown *atomic.Bool
 }
 
 func RegisterHealthRoutes(r *gin.Engine, deps HealthDeps) {
 	health := r.Group("/health")
 	{
 		health.GET("/live", liveHandler())
+		health.HEAD("/live", liveHandler())
 		health.GET("/ready", readyHandler(deps))
+		health.HEAD("/ready", readyHandler(deps))
 	}
 }
 
@@ -33,6 +37,12 @@ func liveHandler() gin.HandlerFunc {
 
 func readyHandler(deps HealthDeps) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if deps.ShuttingDown.Load() {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status": "shutting_down",
+			})
+			return
+		}
 		ready := true
 		checks := gin.H{}
 

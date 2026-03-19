@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"nh-be/config"
 	"nh-be/internal/email"
@@ -32,7 +33,10 @@ type Service struct {
 
 // InitializeServices initializes all the services and returns the database, redis, and rabbitmq publisher channel
 func InitializeServices(cfg *config.Config) (*Service, error) {
-	db := config.ConnectDatabase(cfg)
+	db, err := config.ConnectDatabase(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("postgresql: %w", err)
+	}
 	if cfg.AppEnv == "dev" {
 		db.AutoMigrate(
 			&auth.VerificationToken{},
@@ -46,31 +50,34 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 		slog.Info("Running AutoMigrate in dev mode")
 	}
 
-	rdb := config.NewRedisClient(cfg)
+	rdb, err := config.NewRedisClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("redis: %w", err)
+	}
 
 	conn, err := mq.NewRabbitMQConnection(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rabbitmq: %w", err)
 	}
 
 	pubCh, err := conn.Channel()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rabbitmq: failed to open publisher channel: %w", err)
 	}
 
 	conCh, err := conn.Channel()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rabbitmq: failed to open consumer channel: %w", err)
 	}
 
 	dqErr := mq.DeclareQueues(pubCh, email.SendVerificationEmailQueue)
 	if dqErr != nil {
-		return nil, dqErr
+		return nil, fmt.Errorf("rabbitmq: failed to declare queues: %w", dqErr)
 	}
 
 	deErr := mq.DeclareExchange(conCh, email.AuthExchangeName)
 	if deErr != nil {
-		return nil, deErr
+		return nil, fmt.Errorf("rabbitmq: failed to declare exchange: %w", deErr)
 	}
 
 	bqErr := mq.BindQueue(
@@ -80,7 +87,7 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 		email.AuthExchangeName,
 	)
 	if bqErr != nil {
-		return nil, bqErr
+		return nil, fmt.Errorf("rabbitmq: failed to bind queue: %w", bqErr)
 	}
 
 	wg := &sync.WaitGroup{}

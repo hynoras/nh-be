@@ -3,6 +3,7 @@ package middleware
 import (
 	"log/slog"
 	"nh-be/internal/constant"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,11 +14,13 @@ func RequestLogger() gin.HandlerFunc {
 		start := time.Now()
 		c.Next()
 		latency := time.Since(start)
+		hostName, _ := os.Hostname()
 
 		requestID, _ := c.Get(string(constant.CtxRequestId))
 
 		slog.Info("request",
 			"request_id", requestID,
+			"host_name", hostName,
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,
 			"status", c.Writer.Status(),

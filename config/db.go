@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,33 +12,35 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func ConnectDatabase(cfg *Config) *gorm.DB {
+func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=require",
+		"postgres://%s:%s@%s:%d/%s?sslmode=require&statement_cache_capacity=0&default_query_exec_mode=exec",
 		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName,
 	)
 
 	pgxCfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
-		log.Fatalf("Failed to parse pgx config: %v", err)
+		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
 	}
 
 	sqlDB := stdlib.OpenDB(*pgxCfg)
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: sqlDB,
+		Conn:                 sqlDB,
+		PreferSimpleProtocol: true,
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	// Connection Pool
-	sqlDB.SetMaxIdleConns(20)
-	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 
-	log.Println("Successfully connected to PostgreSQL")
-	return db
+	slog.Info("Successfully connected to PostgreSQL")
+	return db, nil
 }
