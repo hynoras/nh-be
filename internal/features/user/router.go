@@ -15,7 +15,8 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	sessionStore := infra.NewSessionStore(rdb)
 	userRepo := NewRepository(db)
 	permissionRepo := permission.NewRepository(db)
-	permissionService := permission.NewService(permissionRepo)
+	permissionCache := permission.NewPermissionCache(rdb)
+	permissionService := permission.NewService(permissionRepo, permissionCache)
 	userService := NewService(userRepo, permissionRepo, permissionService)
 
 	usersGroup.GET("", GetAllUsersHandler(userService))
