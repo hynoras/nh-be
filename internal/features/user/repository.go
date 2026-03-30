@@ -46,14 +46,21 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 	var users []User
 	var length int64
 
-	query := r.db.WithContext(ctx).Model(&User{}).
-		Preload("AssignedPermissionGroups").
-		Count(&length).
-		Select("id", "username", "email", "created_at").
-		Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
+	baseQuery := r.db.WithContext(ctx).Model(&User{})
+	if search != "" {
+		baseQuery = baseQuery.Where("LOWER(username) LIKE ?", "%"+strings.ToLower(search)+"%")
+	}
+	if err := baseQuery.Count(&length).Error; err != nil {
+		return nil, 0, err
+	}
 
-	result := query.Scopes(dbutil.Paginate(page, pageSize)).Find(&users).Error
-	return users, length, result
+	err := baseQuery.
+		Preload("AssignedPermissionGroups").
+		Select("id", "username", "email", "created_at").
+		Scopes(dbutil.Paginate(page, pageSize)).
+		Find(&users).Error
+
+	return users, length, err
 }
 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {

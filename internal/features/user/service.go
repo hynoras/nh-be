@@ -225,6 +225,9 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 		return err
 	}
 
+	// Invalidate permission cache for the updated user
+	_ = s.permissionService.InvalidateUserPermissionCache(ctx, id)
+
 	return nil
 }
 

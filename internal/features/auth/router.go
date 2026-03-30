@@ -19,7 +19,8 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client, ch *amq
 	userRepo := user.NewRepository(db)
 	emailPublisher := email.NewEmailPublisher(ch)
 	permissionRepo := permission.NewRepository(db)
-	permissionService := permission.NewService(permissionRepo)
+	permissionCache := permission.NewPermissionCache(rdb)
+	permissionService := permission.NewService(permissionRepo, permissionCache)
 	sessionStore := infra.NewSessionStore(rdb)
 	authService := NewService(sessionStore, authRepo, userRepo, permissionService, emailPublisher)
 

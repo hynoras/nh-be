@@ -173,7 +173,7 @@ func SetupTestRouter(db *gorm.DB) *gin.Engine {
 
 	resultRepo := result.NewRepository(db)
 	permissionRepo := permission.NewRepository(db)
-	permissionService := permission.NewService(permissionRepo)
+	permissionService := permission.NewService(permissionRepo, permission.NewNoOpPermissionCache())
 	resultService := result.NewService(resultRepo, permissionService)
 
 	experimentsGroup.POST("/:experimentId/result", result.CreateResultHandler(resultService))
