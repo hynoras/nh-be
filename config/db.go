@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	infradb "nh-be/infra/db"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -33,6 +34,10 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	if err := db.Use(&infradb.DbMetricsPlugin{}); err != nil {
+		return nil, fmt.Errorf("failed to register db metrics plugin: %w", err)
 	}
 
 	// Connection Pool

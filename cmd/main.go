@@ -35,9 +35,13 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	infra "nh-be/infra/prometheus"
 	"nh-be/internal/app"
 	"nh-be/internal/middleware"
 	"nh-be/router"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -65,6 +69,8 @@ func main() {
 		slog.Error("failed to initialize services", "error", err)
 		os.Exit(1)
 	}
+
+	prometheus.MustRegister(infra.NewDbPoolCollector(service.SQLDB))
 
 	defer func() {
 		if service == nil {
@@ -115,6 +121,7 @@ func main() {
 
 	r.Use(middleware.SetRequestID())
 	r.Use(middleware.RequestLogger())
+	r.Use(middleware.MetricsMiddleware())
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
@@ -124,6 +131,8 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	shuttingDown := &atomic.Bool{}
 
