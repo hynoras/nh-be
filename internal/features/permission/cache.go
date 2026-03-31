@@ -2,6 +2,7 @@ package permission
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -63,14 +64,17 @@ func (c *permissionCache) InvalidateUser(ctx context.Context, userId uuid.UUID) 
 
 func (c *permissionCache) InvalidateAll(ctx context.Context) error {
 	var cursor uint64
+	var errs []error
 	for {
 		keys, nextCursor, err := c.rdb.Scan(ctx, cursor, permCachePrefix+"*", 100).Result()
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			break
 		}
 		if len(keys) > 0 {
 			if err := c.rdb.Del(ctx, keys...).Err(); err != nil {
 				log.Printf("failed to delete permission cache keys: %v", err)
+				errs = append(errs, err)
 			}
 		}
 		cursor = nextCursor
@@ -78,7 +82,7 @@ func (c *permissionCache) InvalidateAll(ctx context.Context) error {
 			break
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // NoOpPermissionCache is a no-op implementation for testing without Redis.
