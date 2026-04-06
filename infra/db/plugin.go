@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	infra "nh-be/infra/prometheus"
+	infra "nh-be/infra/observability"
 
 	"gorm.io/gorm"
 )

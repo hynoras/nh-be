@@ -35,7 +35,7 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	infra "nh-be/infra/prometheus"
+	infra "nh-be/infra/observability"
 	"nh-be/internal/app"
 	"nh-be/internal/middleware"
 	"nh-be/router"

@@ -1,4 +1,18 @@
 services:
+  # redis:
+  #   image: redis:alpine
+  #   command: redis-server --requirepass redis --maxmemory 64mb --maxmemory-policy allkeys-lru
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "-a", "redis", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:management-alpine
     environment:
@@ -34,6 +48,8 @@ services:
     expose:
       - "8080"
     depends_on:
+      # redis:
+      #   condition: service_healthy
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
@@ -56,5 +72,20 @@ services:
       - rabbitmq
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   prometheus_data:
+  grafana_data:
+  # redis_data:

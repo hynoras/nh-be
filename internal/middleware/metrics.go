@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	infra "nh-be/infra/prometheus"
+	infra "nh-be/infra/observability"
 	"strconv"
 	"time"
 
