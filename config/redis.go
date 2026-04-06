@@ -14,6 +14,8 @@ func NewRedisClient(cfg *Config) (*redis.Client, error) {
 		Addr:     cfg.RedisHost + ":" + cfg.RedisPort,
 		Password: cfg.RedisPassword,
 		DB:       0,
+		// PoolSize:     10,
+		// MinIdleConns: 2,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -26,4 +28,3 @@ func NewRedisClient(cfg *Config) (*redis.Client, error) {
 	slog.Info("Successfully connected to Redis")
 	return redisClient, nil
 }
-

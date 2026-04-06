@@ -25,10 +25,10 @@ func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
 		userID, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"error":   "invalid_user_id",
-				"message": "Invalid user ID in session",
+				"error":   "Failed to get session",
+				"message": err,
 			})
 			return
 		}
@@ -37,8 +37,8 @@ func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"error":   "invalid_user_id",
-				"message": "Invalid user ID in session",
+				"error":   "Failed to parse user ID",
+				"message": err,
 			})
 			return
 		}
