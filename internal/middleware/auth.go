@@ -2,12 +2,14 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"nh-be/internal/constant"
 	"nh-be/internal/infra"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
@@ -25,10 +27,19 @@ func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
 		userID, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			if err == redis.Nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"error":   "session_expired",
+					"message": "Session not found or expired",
+				})
+				return
+			}
+			slog.Error("redis session lookup failed", "error", err)
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
 				"success": false,
-				"error":   "Failed to get session",
-				"message": err,
+				"error":   "service_unavailable",
+				"message": "Session service temporarily unavailable",
 			})
 			return
 		}
