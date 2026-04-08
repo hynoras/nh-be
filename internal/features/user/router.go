@@ -2,6 +2,7 @@ package user
 
 import (
 	"nh-be/internal/features/permission"
+	"nh-be/internal/middleware"
 
 	"nh-be/internal/infra"
 
@@ -12,6 +13,8 @@ import (
 
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	usersGroup := rg.Group("/users")
+	usersGroup.Use(middleware.WithService("user-service"))
+
 	sessionStore := infra.NewSessionStore(rdb)
 	userRepo := NewRepository(db)
 	permissionRepo := permission.NewRepository(db)

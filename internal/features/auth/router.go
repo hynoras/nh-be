@@ -15,6 +15,8 @@ import (
 
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel) {
 	authGroup := rg.Group("/auth")
+	authGroup.Use(middleware.WithService("auth-service"))
+
 	authRepo := NewRepository(db)
 	userRepo := user.NewRepository(db)
 	emailPublisher := email.NewEmailPublisher(ch)

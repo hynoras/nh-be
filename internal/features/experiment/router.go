@@ -3,6 +3,7 @@ package experiment
 import (
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/procedure"
+	"nh-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -11,6 +12,7 @@ import (
 
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	experimentsGroup := rg.Group("/experiments")
+	experimentsGroup.Use(middleware.WithService("experiment-service"))
 
 	// Setup shared dependencies
 	experimentRepo := NewRepository(db)

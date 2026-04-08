@@ -2,6 +2,7 @@ package observation
 
 import (
 	"nh-be/internal/features/permission"
+	"nh-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -10,6 +11,7 @@ import (
 
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	observationsGroup := rg.Group("/observations")
+	observationsGroup.Use(middleware.WithService("observation-service"))
 
 	// Setup shared dependencies
 	observationRepo := NewRepository(db)
