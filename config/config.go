@@ -1,6 +1,8 @@
 package config
 
 import (
+	"log/slog"
+	"nh-be/infra/secret"
 	"nh-be/pkg/env"
 )
 
@@ -33,31 +35,68 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
+	appEnv := env.MustEnv("APP_ENV")
+
+	// Initialize Vault
+	vaultClient := secret.NewVaultClient()
+	secret.AuthenticateVault(vaultClient)
+
+	// Fetch secrets from Vault
+	basePath := "noheir/" + appEnv
+
+	dbSecrets, err := secret.GetSecret(vaultClient, basePath+"/db")
+	if err != nil {
+		slog.Error("failed to fetch db secrets from vault", "error", err)
+		panic(err)
+	}
+
+	redisSecrets, err := secret.GetSecret(vaultClient, basePath+"/redis")
+	if err != nil {
+		slog.Error("failed to fetch redis secrets from vault", "error", err)
+		panic(err)
+	}
+
+	rabbitmqSecrets, err := secret.GetSecret(vaultClient, basePath+"/rabbitmq")
+	if err != nil {
+		slog.Error("failed to fetch rabbitmq secrets from vault", "error", err)
+		panic(err)
+	}
+
 	cfg := &Config{
-		AppEnv: env.MustEnv("APP_ENV"),
+		AppEnv: appEnv,
 		Port:   env.MustEnv("PORT"),
 
-		DBHost:     env.MustEnv("DB_HOST"),
+		// DB: sensitive from Vault, non-sensitive from env
+		DBHost:     secret.MustGetSecretValue(dbSecrets, "DB_HOST"),
 		DBPort:     env.MustEnvInt("DB_PORT"),
-		DBUsername: env.MustEnv("DB_USERNAME"),
+		DBUsername: secret.MustGetSecretValue(dbSecrets, "DB_USERNAME"),
 		DBName:     env.MustEnv("DB_NAME"),
-		DBPassword: env.MustEnv("DB_PASSWORD"),
+		DBPassword: secret.MustGetSecretValue(dbSecrets, "DB_PASSWORD"),
 
-		RedisHost:     env.MustEnv("REDIS_HOST"),
+		// Redis: sensitive from Vault, non-sensitive from env
+		RedisHost:     secret.MustGetSecretValue(redisSecrets, "REDIS_HOST"),
 		RedisPort:     env.MustEnv("REDIS_PORT"),
-		RedisPassword: env.MustEnv("REDIS_PASSWORD"),
+		RedisPassword: secret.MustGetSecretValue(redisSecrets, "REDIS_PASSWORD"),
 
+		// RabbitMQ: password from Vault, rest from env
 		RabbitMQHost:     env.MustEnv("RABBITMQ_HOST"),
 		RabbitMQPort:     env.MustEnvInt("RABBITMQ_PORT"),
 		RabbitMQUsername: env.MustEnv("RABBITMQ_USERNAME"),
-		RabbitMQPassword: env.MustEnv("RABBITMQ_PASSWORD"),
+		RabbitMQPassword: secret.MustGetSecretValue(rabbitmqSecrets, "RABBITMQ_PASSWORD"),
 	}
 
 	if cfg.AppEnv == "prod" {
+		resendSecrets, err := secret.GetSecret(vaultClient, basePath+"/resend")
+		if err != nil {
+			slog.Error("failed to fetch resend secrets from vault", "error", err)
+			panic(err)
+		}
+
 		cfg.FrontendURL = env.MustEnv("FRONTEND_URL")
-		cfg.ResendAPIKey = env.MustEnv("RESEND_API_KEY")
+		cfg.ResendAPIKey = secret.MustGetSecretValue(resendSecrets, "RESEND_API_KEY")
 		cfg.VerifyEmailSuffixURL = env.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
 	}
 
 	return cfg
 }
+
