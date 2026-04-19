@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
+
+	"nh-be/pkg/env"
 
 	vault "github.com/hashicorp/vault/api"
 )
 
 func NewVaultClient() *vault.Client {
 	config := vault.DefaultConfig()
-	config.Address = os.Getenv("VAULT_ADDR")
+	config.Address = env.MustEnv("VAULT_ADDR")
 
 	client, err := vault.NewClient(config)
 	if err != nil {
@@ -23,8 +24,8 @@ func NewVaultClient() *vault.Client {
 
 func AuthenticateVault(client *vault.Client) {
 	data := map[string]interface{}{
-		"role_id":   os.Getenv("VAULT_ROLE_ID"),
-		"secret_id": os.Getenv("VAULT_SECRET_ID"),
+		"role_id":   env.MustEnv("VAULT_ROLE_ID"),
+		"secret_id": env.MustEnv("VAULT_SECRET_ID"),
 	}
 
 	secret, err := client.Logical().Write("auth/approle/login", data)
