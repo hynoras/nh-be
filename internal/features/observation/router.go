@@ -2,18 +2,22 @@ package observation
 
 import (
 	"nh-be/internal/features/permission"
+	"nh-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	observationsGroup := rg.Group("/observations")
+	observationsGroup.Use(middleware.WithService("observation-service"))
 
 	// Setup shared dependencies
 	observationRepo := NewRepository(db)
 	permissionRepo := permission.NewRepository(db)
-	permissionService := permission.NewService(permissionRepo)
+	permissionCache := permission.NewPermissionCache(rdb)
+	permissionService := permission.NewService(permissionRepo, permissionCache)
 	observationService := NewService(observationRepo, permissionService)
 
 	// Observation routes

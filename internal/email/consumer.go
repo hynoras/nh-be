@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"nh-be/config"
 	"nh-be/internal/utils/stringutil"
 	"nh-be/mq"
-	"nh-be/pkg/env"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -17,17 +17,23 @@ type EmailConsumer interface {
 }
 
 type emailConsumer struct {
-	channel *amqp.Channel
+	channel              *amqp.Channel
+	frontendURL          string
+	verifyEmailSuffixURL string
+	resendAPIKey         string
 }
 
-func NewEmailConsumer(ch *amqp.Channel) EmailConsumer {
-	return &emailConsumer{channel: ch}
+func NewEmailConsumer(ch *amqp.Channel, cfg *config.Config) EmailConsumer {
+	return &emailConsumer{
+		channel:              ch,
+		frontendURL:          cfg.FrontendURL,
+		verifyEmailSuffixURL: cfg.VerifyEmailSuffixURL,
+		resendAPIKey:         cfg.ResendAPIKey,
+	}
 }
 
 func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
-	resendClient := NewResendClient()
-	frontendURL := env.MustEnv("FRONTEND_URL")
-	verifyEmailSuffixURL := env.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
+	resendClient := NewResendClient(s.resendAPIKey)
 	msgs, err := mq.Consumer(
 		ctx,
 		s.channel,
@@ -47,11 +53,11 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			if err := json.Unmarshal(d.Body, &req); err != nil {
 				log.Printf("Failed to unmarshal message: %v", err)
-				d.Nack(false, false)
+				_ = d.Nack(false, false)
 				continue
 			}
 
-			verificationURL := fmt.Sprintf("%s%s?token=%s", frontendURL, verifyEmailSuffixURL, req.Token)
+			verificationURL := fmt.Sprintf("%s%s?token=%s", s.frontendURL, s.verifyEmailSuffixURL, req.Token)
 
 			htmlContent, htmlErr := ConvertHtmlToString("verification_email.html", map[string]string{
 				"UserName":        stringutil.ExtractUsernameFromEmail(req.ToEmail),
@@ -60,7 +66,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			if htmlErr != nil {
 				log.Printf("Failed to convert HTML to string: %v", htmlErr)
-				d.Nack(false, false)
+				_ = d.Nack(false, false)
 				continue
 			}
 
@@ -74,11 +80,11 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			if sendEmailErr != nil {
 				log.Printf("Failed to send email: %v", sendEmailErr)
-				d.Nack(false, false)
+				_ = d.Nack(false, false)
 				continue
 			}
 
-			d.Ack(false)
+			_ = d.Ack(false)
 		}
 	}()
 	<-ctx.Done()

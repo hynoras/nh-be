@@ -1,0 +1,55 @@
+// Discover Docker containers on the host
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  refresh_interval = "10s"
+}
+
+// Relabel to extract useful metadata as labels
+discovery.relabel "docker_labels" {
+  targets = discovery.docker.containers.targets
+
+  // Use container name as the primary label
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Add compose service name
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // Add compose project name
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+}
+
+// Collect logs from discovered Docker containers
+loki.source.docker "containers" {
+  host    = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.docker_labels.output
+
+  forward_to = [loki.process.filter_logs.receiver]
+}
+
+// Filter out noisy logs before sending to Loki
+loki.process "filter_logs" {
+  // Drop noisy SSH authentication logs
+  stage.drop {
+    expression  = ".*Connection closed by authenticating user root.*"
+    drop_counter_reason = "noisy_ssh"
+  }
+
+  forward_to = [loki.write.grafana_loki.receiver]
+}
+
+// Push logs to Loki
+loki.write "grafana_loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

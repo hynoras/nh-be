@@ -28,3 +28,9 @@ dist/
 # Go cache
 tmp/
 coverage.out
+
+# test files
+**/*_test.go
+**/tests/
+**/mocks/
+*.md

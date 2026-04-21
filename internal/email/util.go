@@ -2,7 +2,6 @@ package email
 
 import (
 	"bytes"
-	"nh-be/pkg/env"
 	"text/template"
 
 	"github.com/resend/resend-go/v3"
@@ -10,8 +9,7 @@ import (
 
 var tmpl = template.Must(template.ParseGlob("templates/*.html"))
 
-func NewResendClient() *resend.Client {
-	apiKey := env.MustEnv("RESEND_API_KEY")
+func NewResendClient(apiKey string) *resend.Client {
 	return resend.NewClient(apiKey)
 }
 

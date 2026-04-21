@@ -11,7 +11,7 @@ tmp_dir = "tmp"
   bin = "tmp/noheir.exe"
   
   # Watch directories for changes
-  include_dir = ["cmd", "internal", "config", "router"]
+  include_dir = ["cmd", "internal", "config", "router", "pkg", "mq", "router", "config", "template", "tests"]
   # Exclude directories/files that don't need watching
   exclude_dir = ["tmp", "vendor", ".git"]
   # File types to watch

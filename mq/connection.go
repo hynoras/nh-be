@@ -3,19 +3,14 @@ package mq
 import (
 	"fmt"
 	"log"
-	"nh-be/pkg/env"
+	"nh-be/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func NewRabbitMQConnection() (*amqp.Connection, error) {
-	host := env.MustEnv("RABBITMQ_HOST")
-	port := env.MustEnvInt("RABBITMQ_PORT")
-	user := env.MustEnv("RABBITMQ_USERNAME")
-	pass := env.MustEnv("RABBITMQ_PASSWORD")
-
+func NewRabbitMQConnection(cfg *config.Config) (*amqp.Connection, error) {
 	conn, err := amqp.Dial(
-		fmt.Sprintf("amqp://%s:%s@%s:%d/", user, pass, host, port),
+		fmt.Sprintf("amqp://%s:%s@%s:%d/", cfg.RabbitMQUsername, cfg.RabbitMQPassword, cfg.RabbitMQHost, cfg.RabbitMQPort),
 	)
 	if err != nil {
 		return nil, err

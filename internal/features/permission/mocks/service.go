@@ -548,6 +548,53 @@ func (_c *Service_GetUserPermissionCodeNames_Call) RunAndReturn(run func(context
 	return _c
 }
 
+// InvalidateUserPermissionCache provides a mock function with given fields: ctx, userId
+func (_m *Service) InvalidateUserPermissionCache(ctx context.Context, userId uuid.UUID) error {
+	ret := _m.Called(ctx, userId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InvalidateUserPermissionCache")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = rf(ctx, userId)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Service_InvalidateUserPermissionCache_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InvalidateUserPermissionCache'
+type Service_InvalidateUserPermissionCache_Call struct {
+	*mock.Call
+}
+
+// InvalidateUserPermissionCache is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userId uuid.UUID
+func (_e *Service_Expecter) InvalidateUserPermissionCache(ctx interface{}, userId interface{}) *Service_InvalidateUserPermissionCache_Call {
+	return &Service_InvalidateUserPermissionCache_Call{Call: _e.mock.On("InvalidateUserPermissionCache", ctx, userId)}
+}
+
+func (_c *Service_InvalidateUserPermissionCache_Call) Run(run func(ctx context.Context, userId uuid.UUID)) *Service_InvalidateUserPermissionCache_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *Service_InvalidateUserPermissionCache_Call) Return(_a0 error) *Service_InvalidateUserPermissionCache_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *Service_InvalidateUserPermissionCache_Call) RunAndReturn(run func(context.Context, uuid.UUID) error) *Service_InvalidateUserPermissionCache_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdatePermissionGroup provides a mock function with given fields: ctx, id, permissionGroup
 func (_m *Service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permissionGroup *permission.PermissionGroupInput) error {
 	ret := _m.Called(ctx, id, permissionGroup)

@@ -30,10 +30,10 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel
 	protected.Use(middleware.RequireAuth(sessionStore))
 
 	user.RegisterRoutes(protected, db, rdb)
-	permission.RegisterRoutes(protected, db)
-	experiment.RegisterRoutes(protected, db)
-	result.RegisterRoutes(protected, db)
-	procedure.RegisterRoutes(protected, db)
+	permission.RegisterRoutes(protected, db, rdb)
+	experiment.RegisterRoutes(protected, db, rdb)
+	result.RegisterRoutes(protected, db, rdb)
+	procedure.RegisterRoutes(protected, db, rdb)
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{

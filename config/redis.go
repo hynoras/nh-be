@@ -1,23 +1,38 @@
 package config
 
 import (
-	"log"
-	"nh-be/pkg/env"
+	"context"
+	"fmt"
+	"log/slog"
+	"time"
 
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRedisClient() *redis.Client {
-	host := env.MustEnv("REDIS_HOST")
-	port := env.MustEnv("REDIS_PORT")
-	pass := env.MustEnv("REDIS_PASSWORD")
-
+func NewRedisClient(cfg *Config) (*redis.Client, error) {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     host + ":" + port,
-		Password: pass,
+		Addr:     cfg.RedisHost + ":" + cfg.RedisPort,
+		Password: cfg.RedisPassword,
 		DB:       0,
+		// PoolSize:     10,
+		// MinIdleConns: 2,
 	})
 
-	log.Println("Redis client created")
-	return redisClient
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to ping redis: %w", err)
+	}
+
+	if err := redisotel.InstrumentTracing(redisClient,
+		redisotel.WithDBStatement(false),
+		redisotel.WithCallerEnabled(false),
+	); err != nil {
+		return nil, fmt.Errorf("failed to register redis tracing plugin: %w", err)
+	}
+
+	slog.Info("Successfully connected to Redis")
+	return redisClient, nil
 }

@@ -163,7 +163,7 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (int
 		return nil, err
 	}
 
-	if isMe == false && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
+	if !isMe && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
 		return nil, constant.ErrForbidViewUser
 	}
 
@@ -178,7 +178,7 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (int
 		return nil, userErr
 	}
 
-	if isMe == true {
+	if isMe {
 		permissionCodes, permCodeErr = s.permissionService.GetUserPermissionCodeNames(ctx, id)
 		if permCodeErr != nil {
 			return nil, permCodeErr
@@ -224,6 +224,9 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 	if err != nil {
 		return err
 	}
+
+	// Invalidate permission cache for the updated user
+	_ = s.permissionService.InvalidateUserPermissionCache(ctx, id)
 
 	return nil
 }

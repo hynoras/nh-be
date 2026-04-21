@@ -1,7 +1,7 @@
 package env
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 )
@@ -9,7 +9,8 @@ import (
 func MustEnv(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		log.Fatalf("missing required env var: %s", key)
+		slog.Error("missing required env var", "key", key)
+		panic("missing required env var: " + key)
 	}
 	return v
 }
@@ -17,11 +18,21 @@ func MustEnv(key string) string {
 func MustEnvInt(key string) int {
 	v := os.Getenv(key)
 	if v == "" {
-		log.Fatalf("missing required env var: %s", key)
+		slog.Error("missing required env var", "key", key)
+		panic("missing required env var: " + key)
 	}
 	i, err := strconv.Atoi(v)
 	if err != nil {
-		log.Fatalf("invalid integer value for env var %s: %v", key, err)
+		slog.Error("invalid integer value for env var", "key", key, "error", err)
+		panic("invalid integer value for env var: " + key)
 	}
 	return i
+}
+
+func GetEnvOrDefault(key, defaultVal string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	return v
 }
