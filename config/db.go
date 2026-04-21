@@ -11,6 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
@@ -38,6 +39,13 @@ func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 
 	if err := db.Use(&infradb.DbMetricsPlugin{}); err != nil {
 		return nil, fmt.Errorf("failed to register db metrics plugin: %w", err)
+	}
+
+	if err := db.Use(tracing.NewPlugin(
+		tracing.WithoutMetrics(),
+		tracing.WithoutQueryVariables(),
+	)); err != nil {
+		return nil, fmt.Errorf("failed to register db tracing plugin: %w", err)
 	}
 
 	// Connection Pool
