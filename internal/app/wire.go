@@ -38,7 +38,7 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("postgresql: %w", err)
 	}
 	if cfg.AppEnv == "dev" {
-		db.AutoMigrate(
+		if err := db.AutoMigrate(
 			&auth.VerificationToken{},
 			&user.User{},
 			&permission.Permission{},
@@ -46,7 +46,9 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 			&user.UserPermission{},
 			&experiment.Experiment{},
 			&result.ExperimentResult{},
-		)
+		); err != nil {
+			return nil, fmt.Errorf("automigrate failed: %w", err)
+		}
 		slog.Info("Running AutoMigrate in dev mode")
 	}
 
@@ -98,7 +100,7 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		emailConsumer.SendVerificationEmail(conCtx)
+		_ = emailConsumer.SendVerificationEmail(conCtx)
 	}()
 
 	sqlDB, _ := db.DB()
