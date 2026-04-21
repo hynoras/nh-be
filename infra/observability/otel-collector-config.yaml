@@ -11,6 +11,28 @@ processors:
     timeout: 5s
     send_batch_size: 1024
 
+  filter/redis_fast:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["db.system"] == "redis" and (end_time_unix_nano - start_time_unix_nano) < Duration("100ms")
+
+  attributes/redact_redis:
+    include:
+      match_type: strict
+      attributes:
+        - key: db.system
+          value: redis
+    actions:
+      - key: db.connection_string
+        action: delete
+      - key: server.address
+        action: delete
+      - key: server.port
+        action: delete
+      - key: net.peer.name
+        action: delete
+
 exporters:
   otlp/tempo:
     endpoint: "tempo:4317"
@@ -24,5 +46,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [attributes/redact_redis, filter/redis_fast, batch]
       exporters: [otlp/tempo, debug]
