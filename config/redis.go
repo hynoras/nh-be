@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -23,6 +24,13 @@ func NewRedisClient(cfg *Config) (*redis.Client, error) {
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("failed to ping redis: %w", err)
+	}
+
+	if err := redisotel.InstrumentTracing(redisClient,
+		redisotel.WithDBStatement(false),
+		redisotel.WithCallerEnabled(false),
+	); err != nil {
+		return nil, fmt.Errorf("failed to register redis tracing plugin: %w", err)
 	}
 
 	slog.Info("Successfully connected to Redis")
