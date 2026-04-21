@@ -16,17 +16,32 @@ type DbMetricsPlugin struct{}
 func (p *DbMetricsPlugin) Name() string { return "dbMetrics" }
 
 func (p *DbMetricsPlugin) Initialize(db *gorm.DB) error {
-	// Register Before callbacks
-	db.Callback().Create().Before("gorm:create").Register("metrics:before_create", before)
-	db.Callback().Query().Before("gorm:query").Register("metrics:before_query", before)
-	db.Callback().Update().Before("gorm:update").Register("metrics:before_update", before)
-	db.Callback().Delete().Before("gorm:delete").Register("metrics:before_delete", before)
+	if err := db.Callback().Create().Before("gorm:create").Register("metrics:before_create", before); err != nil {
+		return err
+	}
+	if err := db.Callback().Query().Before("gorm:query").Register("metrics:before_query", before); err != nil {
+		return err
+	}
+	if err := db.Callback().Update().Before("gorm:update").Register("metrics:before_update", before); err != nil {
+		return err
+	}
+	if err := db.Callback().Delete().Before("gorm:delete").Register("metrics:before_delete", before); err != nil {
+		return err
+	}
 
 	// Register After callbacks
-	db.Callback().Create().After("gorm:create").Register("metrics:after_create", after("create"))
-	db.Callback().Query().After("gorm:query").Register("metrics:after_query", after("query"))
-	db.Callback().Update().After("gorm:update").Register("metrics:after_update", after("update"))
-	db.Callback().Delete().After("gorm:delete").Register("metrics:after_delete", after("delete"))
+	if err := db.Callback().Create().After("gorm:create").Register("metrics:after_create", after("create")); err != nil {
+		return err
+	}
+	if err := db.Callback().Query().After("gorm:query").Register("metrics:after_query", after("query")); err != nil {
+		return err
+	}
+	if err := db.Callback().Update().After("gorm:update").Register("metrics:after_update", after("update")); err != nil {
+		return err
+	}
+	if err := db.Callback().Delete().After("gorm:delete").Register("metrics:after_delete", after("delete")); err != nil {
+		return err
+	}
 
 	return nil
 }
