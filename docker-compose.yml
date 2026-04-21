@@ -96,6 +96,30 @@ services:
       - rabbitmq
     restart: unless-stopped
 
+  tempo:
+    image: grafana/tempo:latest
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./infra/observability/tempo-config.yaml:/etc/tempo/config.yaml:ro
+      - tempo_data:/var/tempo
+    command:
+      - '-config.file=/etc/tempo/config.yaml'
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./infra/observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    command:
+      - '--config=/etc/otelcol-contrib/config.yaml'
+    depends_on:
+      - tempo
+    restart: unless-stopped
+
   loki:
     image: grafana/loki:latest
     ports:
@@ -134,11 +158,13 @@ services:
     depends_on:
       - prometheus
       - loki
+      - tempo
     restart: unless-stopped
 
 volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  tempo_data:
   # vault_data:
   # redis_data:
