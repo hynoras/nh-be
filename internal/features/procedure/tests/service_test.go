@@ -41,7 +41,7 @@ func TestService_GetAllProcedures(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
-				repo.On("FindAll", mock.Anything, "", 0, 10, true).
+				repo.On("FindAll", mock.Anything, "", 0, 10).
 					Return(TestProcedureList(), int64(2), nil)
 			},
 			expectedResult: procedure.MapProceduresToDto(TestProcedureList()),
@@ -57,7 +57,7 @@ func TestService_GetAllProcedures(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
-				repo.On("FindAll", mock.Anything, "", 0, 10, true).
+				repo.On("FindAll", mock.Anything, "", 0, 10).
 					Return(TestProcedureList(), int64(2), nil)
 			},
 			expectedResult: procedure.MapProceduresToDto(TestProcedureList()),
@@ -122,7 +122,7 @@ func TestService_GetAllProcedures(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
-				repo.On("FindAll", mock.Anything, "", 0, 10, true).
+				repo.On("FindAll", mock.Anything, "", 0, 10).
 					Return([]procedure.Procedure{}, int64(0), nil)
 			},
 			expectedResult: []procedure.ProcedureListResponseDto{},
@@ -138,7 +138,7 @@ func TestService_GetAllProcedures(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
-				repo.On("FindAll", mock.Anything, "test", 0, 10, true).
+				repo.On("FindAll", mock.Anything, "test", 0, 10).
 					Return(nil, int64(0), errors.New("database connection error"))
 			},
 			expectedResult: nil,
@@ -157,7 +157,7 @@ func TestService_GetAllProcedures(t *testing.T) {
 			setupMocks: func(repo *procmocks.Repository, permSvc *mocks.Service) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
-				repo.On("FindAll", mock.Anything, "", 20, 50, true).
+				repo.On("FindAll", mock.Anything, "", 20, 50).
 					Return([]procedure.Procedure{}, int64(0), nil)
 			},
 			expectedResult: []procedure.ProcedureListResponseDto{},
