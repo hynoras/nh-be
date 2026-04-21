@@ -630,7 +630,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(nil)
 			},
@@ -653,7 +653,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(nil)
 			},
@@ -672,7 +672,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(constant.ErrProcedureStepNotFound)
 			},
@@ -693,7 +693,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(nil)
 			},
@@ -714,7 +714,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(constant.ErrProcedureConflict)
 			},
@@ -743,7 +743,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(nil)
 			},
@@ -766,7 +766,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
-						fn(repo)
+						_ = fn(repo)
 					}).
 					Return(nil)
 			},

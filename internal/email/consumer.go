@@ -53,7 +53,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			if err := json.Unmarshal(d.Body, &req); err != nil {
 				log.Printf("Failed to unmarshal message: %v", err)
-				d.Nack(false, false)
+				_ = d.Nack(false, false)
 				continue
 			}
 
@@ -66,7 +66,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			if htmlErr != nil {
 				log.Printf("Failed to convert HTML to string: %v", htmlErr)
-				d.Nack(false, false)
+				_ = d.Nack(false, false)
 				continue
 			}
 
@@ -80,11 +80,11 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 
 			if sendEmailErr != nil {
 				log.Printf("Failed to send email: %v", sendEmailErr)
-				d.Nack(false, false)
+				_ = d.Nack(false, false)
 				continue
 			}
 
-			d.Ack(false)
+			_ = d.Ack(false)
 		}
 	}()
 	<-ctx.Done()
