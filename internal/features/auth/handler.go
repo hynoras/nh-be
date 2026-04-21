@@ -1,0 +1,181 @@
+package auth
+
+import (
+	"net/http"
+	"nh-be/internal/constant"
+	"nh-be/internal/utils/httputil"
+
+	"github.com/gin-gonic/gin"
+)
+
+// VerifyTokenHandler godoc
+// @Summary Verify email token
+// @Description Verify email token and activate user account
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param token path string true "Token to verify"
+// @Success 200 {object} httputil.SuccessResponse "User verified successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid token"
+// @Failure 401 {object} httputil.ErrorResponse "Unauthorized"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to verify token"
+// @Router /auth/verify/{token} [get]
+func VerifyTokenHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Param("token")
+		sessionId, err := s.VerifyEmail(c.Request.Context(), token)
+		if err != nil {
+			httputil.MakeErrorResponse(
+				c,
+				http.StatusUnauthorized,
+				constant.ErrVerifyTokenFailed,
+				err.Error(),
+			)
+			return
+		}
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "auth_session",
+			Value:    sessionId,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   8 * 60 * 60,
+		})
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User verified successfully", nil)
+	}
+}
+
+// LoginHandler godoc
+// @Summary User login
+// @Description Authenticate user with email and password, returns user information with permissions and creates a session
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginDto true "Login credentials (email and password)"
+// @Success 200 {object} httputil.SuccessResponse{data=LoginResponseDto} "Successfully logged in"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid request format"
+// @Failure 401 {object} httputil.ErrorResponse "Invalid email or password"
+// @Failure 500 {object} httputil.ErrorResponse "Session save failed"
+// @Router /auth/login [post]
+func LoginHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req LoginDto
+		if err := httputil.ValidateRequestFormat(c, &req); err != nil {
+			return
+		}
+
+		userRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
+		if httputil.MakeServiceErrorResponse(c, err, constant.ErrLoginFailed) {
+			return
+		}
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "auth_session",
+			Value:    sessionId,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   8 * 60 * 60,
+		})
+
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", userRes)
+
+	}
+}
+
+// LogoutHandler godoc
+// @Summary User logout
+// @Description Clear user session and log out from the system
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Success 200 {object} httputil.SuccessResponse "Successfully logged out"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to logout"
+// @Security SessionAuth
+// @Router /auth/logout [post]
+func LogoutHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cookie, err := c.Request.Cookie("auth_session")
+		if err != nil {
+			httputil.MakeErrorResponse(
+				c,
+				http.StatusUnauthorized,
+				"Unauthorized",
+				err,
+			)
+			return
+		}
+
+		serviceErr := s.Logout(c.Request.Context(), cookie.Value)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrLogoutFailed) {
+			return
+		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged out successfully", nil)
+	}
+}
+
+// ChangePasswordHandler godoc
+// @Summary Change user password
+// @Description Update user password with new password and confirmation
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID (UUID format)"
+// @Param request body ChangePasswordDto true "New password and confirmation"
+// @Success 200 {object} httputil.SuccessResponse "Password changed successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid user ID or request body"
+// @Security SessionAuth
+// @Router /auth/users/{id}/change-password [put]
+func ChangePasswordHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := httputil.ParseStringToUUID(c.Param("id"))
+		if err != nil {
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid user ID", err.Error())
+			return
+		}
+
+		var req ChangePasswordDto
+		valReqErr := httputil.ValidateRequestFormat(c, &req)
+		if valReqErr != nil {
+			return
+		}
+
+		serviceErr := s.ChangePassword(c.Request.Context(), userID, req)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrChangePasswordFailed) {
+			return
+		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User password changed successfully", nil)
+	}
+}
+
+// SignUpHandler godoc
+// @Summary User sign up
+// @Description Register a new user with email and password
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body SignUpDto true "User registration details"
+// @Success 201 {object} httputil.SuccessResponse "User signed up successfully"
+// @Failure 400 {object} httputil.ErrorResponse "Invalid request format"
+// @Failure 409 {object} httputil.ErrorResponse "User already exists"
+// @Failure 500 {object} httputil.ErrorResponse "Failed to sign up"
+// @Router /auth/signup [post]
+func SignUpHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req SignUpDto
+		valReqErr := httputil.ValidateRequestFormat(c, &req)
+		if valReqErr != nil {
+			return
+		}
+
+		serviceErr := s.SignUp(c.Request.Context(), req)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrSignUpFailed) {
+			return
+		}
+		httputil.MakeSuccessResponse(c, http.StatusOK, "User signed up successfully", nil)
+	}
+}

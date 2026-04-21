@@ -21,67 +21,115 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
+	"nh-be/config"
 	docs "nh-be/docs"
+	"nh-be/pkg/env"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"nh-be/config"
-	experimentResult "nh-be/internal/experiment/result"
-	experiment "nh-be/internal/experiment/root"
-	"nh-be/internal/permission"
-	"nh-be/internal/user"
+	infra "nh-be/infra/observability"
+	"nh-be/internal/app"
+	"nh-be/internal/middleware"
 	"nh-be/router"
-	"nh-be/utils"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func main() {
-	env := os.Getenv("APP_ENV")
-	if env == "" {
-		env = "dev"
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("Warning: No .env file found")
 	}
 
-	if env != "prod" {
-		if err := godotenv.Load(); err != nil {
-			log.Println("Warning: No .env file found")
-		}
+	cfg := config.LoadConfig()
+
+	slog.Info("starting app", "env", cfg.AppEnv)
+
+	service, err := app.InitializeServices(cfg)
+
+	if err != nil {
+		slog.Error("failed to initialize services", "error", err)
+		os.Exit(1)
 	}
 
-	log.Printf("Starting app in %s mode\n", env)
+	prometheus.MustRegister(infra.NewDbPoolCollector(service.SQLDB))
 
-	db := config.ConnectDatabase()
-	db.AutoMigrate(
-		&user.User{},
-		&permission.Permission{},
-		&permission.PermissionGroup{},
-		&user.UserPermission{},
-		&experiment.Experiment{},
-		&experimentResult.ExperimentResult{},
-	)
-	sqlDB, _ := db.DB()
+	// Initialize OpenTelemetry tracer
+	otelEndpoint := env.GetEnvOrDefault("OTEL_EXPORTER_ENDPOINT", "otel-collector:4317")
+	tracerShutdown, err := infra.InitTracer(context.Background(), otelEndpoint)
+	if err != nil {
+		slog.Error("failed to initialize tracer", "error", err)
+		os.Exit(1)
+	}
+
 	defer func() {
-		if sqlDB != nil {
-			sqlDB.Close()
-			log.Println("Database connection closed")
+		// Flush pending traces before shutting down
+		if tracerShutdown != nil {
+			if err := tracerShutdown(context.Background()); err != nil {
+				slog.Error("failed to shutdown tracer", "error", err)
+			}
+			slog.Info("OpenTelemetry tracer shut down")
+		}
+
+		if service == nil {
+			return
+		}
+		service.ConCancel()
+		service.WG.Wait()
+
+		if service.PubCh != nil {
+			service.PubCh.Close()
+			slog.Info("RabbitMQ publisher channel closed")
+		}
+		if service.ConCh != nil {
+			service.ConCh.Close()
+			slog.Info("RabbitMQ consumer channel closed")
+		}
+		if service.RabbitMQ != nil {
+			service.RabbitMQ.Close()
+			slog.Info("RabbitMQ connection closed")
+		}
+		if service.SQLDB != nil {
+			service.SQLDB.Close()
+			slog.Info("Database connection closed")
+		}
+		if service.Redis != nil {
+			service.Redis.Close()
+			slog.Info("Redis connection closed")
 		}
 	}()
 
-	r := gin.Default()
+	var origin []string
+	if cfg.AppEnv == "dev" {
+		origin = []string{"http://localhost:3000"}
+	} else {
+		origin = []string{cfg.FrontendURL}
+	}
+
+	r := gin.New()
+	r.Use(gin.Recovery())
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     origin,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -89,17 +137,10 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	secret := utils.MustEnv("SESSION_SECRET")
-
-	store := cookie.NewStore([]byte(secret))
-	store.Options(sessions.Options{
-		MaxAge:   8 * 60 * 60, // 8 hours
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-	})
-	r.Use(sessions.Sessions("auth_session", store))
+	r.Use(otelgin.Middleware("noheir-api"))
+	r.Use(middleware.SetRequestID())
+	r.Use(middleware.RequestLogger())
+	r.Use(middleware.MetricsMiddleware())
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
@@ -110,36 +151,43 @@ func main() {
 		})
 	})
 
-	router.SetupRoutes(r, db)
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	shuttingDown := &atomic.Bool{}
+
+	app.RegisterHealthRoutes(r, app.HealthDeps{
+		SQLDB:        service.SQLDB,
+		Redis:        service.Redis,
+		RabbitMQ:     service.RabbitMQ,
+		ShuttingDown: shuttingDown,
+	})
+
+	router.SetupRoutes(r, service.DB, service.Redis, service.PubCh)
 
 	srv := &http.Server{
-		Addr:    ":" + port,
+		Addr:    ":" + cfg.Port,
 		Handler: r,
 	}
 
 	go func() {
-		log.Println("Server is running on http://localhost:8080")
+		slog.Info("Server is running", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			slog.Error("Failed to start server", "err", err)
 		}
 	}()
 
 	quit := make(chan os.Signal, 3)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server gracefully...")
+	slog.Info("Shutting down server gracefully...")
+	shuttingDown.Store(true)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		slog.Error("Server forced to shutdown", "error", err)
 	}
 
-	log.Println("Server exited cleanly")
+	slog.Info("Server exited cleanly")
 }

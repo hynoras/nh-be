@@ -2,8 +2,8 @@ package config
 
 import (
 	"fmt"
-	"log"
-	"nh-be/utils"
+	"log/slog"
+	infradb "nh-be/infra/db"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -11,41 +11,49 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
-func ConnectDatabase() *gorm.DB {
-	host := utils.MustEnv("DB_HOST")
-	port := utils.MustEnvInt("DB_PORT")
-	user := utils.MustEnv("DB_USERNAME")
-	dbname := utils.MustEnv("DB_NAME")
-	pass := utils.MustEnv("DB_PASSWORD")
-
+func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=require",
-		user, pass, host, port, dbname,
+		"postgres://%s:%s@%s:%d/%s?sslmode=require&statement_cache_capacity=0&default_query_exec_mode=exec",
+		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName,
 	)
 
 	pgxCfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
-		log.Fatalf("Failed to parse pgx config: %v", err)
+		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
 	}
 
 	sqlDB := stdlib.OpenDB(*pgxCfg)
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: sqlDB,
+		Conn:                 sqlDB,
+		PreferSimpleProtocol: true,
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	if err := db.Use(&infradb.DbMetricsPlugin{}); err != nil {
+		return nil, fmt.Errorf("failed to register db metrics plugin: %w", err)
+	}
+
+	if err := db.Use(tracing.NewPlugin(
+		tracing.WithoutMetrics(),
+		tracing.WithoutQueryVariables(),
+	)); err != nil {
+		return nil, fmt.Errorf("failed to register db tracing plugin: %w", err)
 	}
 
 	// Connection Pool
-	sqlDB.SetMaxIdleConns(20)
-	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 
-	log.Println("Connected to PostgreSQL")
-	return db
+	slog.Info("Successfully connected to PostgreSQL")
+	return db, nil
 }

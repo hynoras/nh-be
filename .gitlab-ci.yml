@@ -1,0 +1,83 @@
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+.go_default:
+  image: golang:1.25.1
+  interruptible: true
+  cache:
+    key: go-mod
+    paths:
+      - /go/pkg/mod
+      - ~/.cache/go-build
+  before_script:
+    - go version
+
+default:
+  interruptible: true
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+# -------------------------
+# Lint
+# -------------------------
+lint:
+  extends: .go_default
+  stage: lint
+  script:
+    - echo "Checking code..."
+    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    - golangci-lint run
+    - echo "No lint issues found."
+  # rules:
+  #   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  #   - if: $CI_COMMIT_BRANCH
+
+# -------------------------
+# Unit Tests
+# -------------------------
+unit_test:
+  extends: .go_default
+  stage: test
+  script:
+    - echo "Running experiment result..."
+    - go test -v ./internal/experiment/result/...
+    - echo "All test passed."
+  # rules:
+  #   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  #   - if: $CI_COMMIT_BRANCH
+
+# -------------------------
+# Build
+# -------------------------
+build:
+  extends: .go_default
+  stage: build
+  script:
+    - mkdir -p build
+    - go build -o build/app ./cmd/main.go
+  artifacts:
+    paths:
+      - build/app
+    expire_in: 1 day
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH
+
+# -------------------------
+# Deploy (production)
+# -------------------------
+deploy_production:
+  stage: deploy
+  environment:
+    name: production
+  script:
+    - echo "Deploying application..."
+    - echo "Application successfully deployed."
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == "main"
+  #     when: manual

@@ -2,19 +2,20 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
-	"nh-be/constant"
+	"nh-be/internal/constant"
+	"nh-be/internal/infra"
+	"nh-be/internal/utils/httputil"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
-func RequireAuth() gin.HandlerFunc {
+func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sess := sessions.Default(c)
-		userIDStr := sess.Get("user_id")
-		if userIDStr == nil {
+		cookie, err := c.Request.Cookie("auth_session")
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error":   "unauthorized",
@@ -23,19 +24,36 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// Parse user ID string to UUID and set in context
-		userID, err := uuid.Parse(userIDStr.(string))
+		userID, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
+
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			if err == redis.Nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"error":   "session_expired",
+					"message": "Session not found or expired",
+				})
+				return
+			}
+			slog.Error("redis session lookup failed", "error", err)
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
 				"success": false,
-				"error":   "invalid_user_id",
-				"message": "Invalid user ID in session",
+				"error":   "service_unavailable",
+				"message": "Session service temporarily unavailable",
 			})
 			return
 		}
 
-		// Set user ID in context for downstream handlers/services
-		ctx := context.WithValue(c.Request.Context(), constant.CtxUserId, userID)
+		parsedUserId, err := httputil.ParseStringToUUID(userID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"error":   "Failed to parse user ID",
+				"message": err,
+			})
+			return
+		}
+		ctx := context.WithValue(c.Request.Context(), constant.CtxUserId, parsedUserId)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()
