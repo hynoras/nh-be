@@ -31,6 +31,7 @@ import (
 
 	"nh-be/config"
 	docs "nh-be/docs"
+	"nh-be/pkg/env"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -46,6 +47,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func main() {
@@ -72,7 +74,23 @@ func main() {
 
 	prometheus.MustRegister(infra.NewDbPoolCollector(service.SQLDB))
 
+	// Initialize OpenTelemetry tracer
+	otelEndpoint := env.GetEnvOrDefault("OTEL_EXPORTER_ENDPOINT", "otel-collector:4317")
+	tracerShutdown, err := infra.InitTracer(context.Background(), otelEndpoint)
+	if err != nil {
+		slog.Error("failed to initialize tracer", "error", err)
+		os.Exit(1)
+	}
+
 	defer func() {
+		// Flush pending traces before shutting down
+		if tracerShutdown != nil {
+			if err := tracerShutdown(context.Background()); err != nil {
+				slog.Error("failed to shutdown tracer", "error", err)
+			}
+			slog.Info("OpenTelemetry tracer shut down")
+		}
+
 		if service == nil {
 			return
 		}
@@ -119,6 +137,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
+	r.Use(otelgin.Middleware("noheir-api"))
 	r.Use(middleware.SetRequestID())
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.MetricsMiddleware())

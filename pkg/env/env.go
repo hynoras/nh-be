@@ -28,3 +28,11 @@ func MustEnvInt(key string) int {
 	}
 	return i
 }
+
+func GetEnvOrDefault(key, defaultVal string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	return v
+}
