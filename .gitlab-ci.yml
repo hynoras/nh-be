@@ -5,7 +5,7 @@ stages:
   - deploy
 
 .go_default:
-  image: golang:1.25.1
+  image: golang:1.25-alpine
   interruptible: true
   cache:
     key: go-mod
@@ -32,7 +32,7 @@ lint:
   script:
     - echo "Checking code..."
     - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-    - golangci-lint run
+    - golangci-lint run --timeout=5m
     - echo "No lint issues found."
   # rules:
   #   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -46,7 +46,7 @@ unit_test:
   stage: test
   script:
     - echo "Running experiment result..."
-    - go test -v ./internal/experiment/result/...
+    - go test -v ./internal/features/...
     - echo "All test passed."
   # rules:
   #   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
