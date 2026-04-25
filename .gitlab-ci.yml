@@ -121,6 +121,7 @@ deploy_production:
           if [ -n "\$prev" ]; then
             echo "Rolling back to \$prev"
             ln -sfn $prev noheir-api
+            ls -l noheir-api
             sudo systemctl restart noheir
           fi
 
