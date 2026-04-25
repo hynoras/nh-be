@@ -91,22 +91,34 @@ deploy_production:
 
         cd /home/quang
 
-        ts=\$(date +%s)
+        ts=$(date +%s)
 
-        prev=\$(readlink -f noheir-api)
+        # Get current target safely
+        if [ -L noheir-api ]; then
+          prev=$(readlink noheir-api)
+        else
+          prev=""
+        fi
 
-        mv noheir-api.new noheir-api-\$ts
-        chmod +x noheir-api-\$ts
-        ln -sf noheir-api-\$ts noheir-api
+        # Deploy new version
+        mv noheir-api.new noheir-api-$ts
+        chmod +x noheir-api-$ts
+
+        # Point symlink to new version
+        ln -sfn noheir-api-$ts noheir-api
 
         sudo systemctl restart noheir
 
         sleep 3
 
         curl -f https://noheir-api.duckdns.org/health/live || (
-          echo 'Health check failed, rolling back...' &&
-          ln -sf \$prev noheir-api &&
-          sudo systemctl restart noheir &&
+          echo "Health check failed, rolling back..."
+
+          if [ -n "$prev" ]; then
+            ln -sfn $prev noheir-api
+            sudo systemctl restart noheir
+          fi
+
           exit 1
         )
       "
