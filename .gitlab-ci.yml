@@ -87,28 +87,21 @@ deploy_production:
     - scp build/noheir-api.new quang@noheir-api.duckdns.org:/home/quang/
     - |
       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-        set -ex
+        set -e
 
         cd /home/quang
 
         ts=\$(date +%s)
 
-        # Get current target safely
         if [ -L noheir-api ]; then
           prev=\$(readlink noheir-api)
         else
-          prev=""
+          prev=\"\"
         fi
 
-        echo "ts=\$ts"
-        echo "prev=\$prev"
-        ls -l noheir-api || true
-
-        # Deploy new version
         mv noheir-api.new noheir-api-\$ts
         chmod +x noheir-api-\$ts
 
-        # Point symlink to new version
         ln -sfn noheir-api-\$ts noheir-api
 
         sudo systemctl restart noheir
@@ -116,18 +109,12 @@ deploy_production:
         sleep 3
 
         curl -f https://noheir-api.duckdns.org/health/live || (
-          echo "Health check failed, rolling back..."
-
-          if [ -n "\$prev" ]; then
-            echo "Rolling back to \$prev"
+          if [ -n \"\$prev\" ]; then
             ln -sfn \$prev noheir-api
-            ls -l noheir-api
             sudo systemctl restart noheir
           fi
-
           exit 1
         )
       "
-
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
