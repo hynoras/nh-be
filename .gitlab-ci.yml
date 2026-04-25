@@ -87,18 +87,22 @@ deploy_production:
     - scp build/noheir-api.new quang@noheir-api.duckdns.org:/home/quang/
     - |
       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-        set -e
+        set -ex
 
         cd /home/quang
 
-        ts=$(date +%s)
+        ts=\$(date +%s)
 
         # Get current target safely
         if [ -L noheir-api ]; then
-          prev=$(readlink noheir-api)
+          prev=\$(readlink noheir-api)
         else
           prev=""
         fi
+
+        echo "ts=\$ts"
+        echo "prev=\$prev"
+        ls -l noheir-api || true
 
         # Deploy new version
         mv noheir-api.new noheir-api-$ts
@@ -114,7 +118,8 @@ deploy_production:
         curl -f https://noheir-api.duckdns.org/health/live || (
           echo "Health check failed, rolling back..."
 
-          if [ -n "$prev" ]; then
+          if [ -n "\$prev" ]; then
+            echo "Rolling back to \$prev"
             ln -sfn $prev noheir-api
             sudo systemctl restart noheir
           fi
