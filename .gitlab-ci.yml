@@ -87,7 +87,7 @@ deploy_production:
     - scp build/noheir-api.new quang@noheir-api.duckdns.org:/home/quang/
     - |
       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-        set -ex
+        set -e
 
         cd /home/quang
 
@@ -106,11 +106,17 @@ deploy_production:
 
         sudo systemctl restart noheir
 
-        sleep 3
+        for i in 1 2 3 4 5; do
+          if curl -fsS https://noheir-api.duckdns.org/health/live; then
+            break
+          fi
+          sleep 2
+        done
 
-        curl -f https://noheir-api.duckdns.org/health/live || (
-          if [ -n \"\$prev\" ]; then
-            ln -sfn \$prev noheir-api
+        # Final check
+        curl -fsS https://noheir-api.duckdns.org/health/live || (
+          if [ -n "$prev" ]; then
+            ln -sfn $prev noheir-api
             sudo systemctl restart noheir
           fi
           exit 1
