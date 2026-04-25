@@ -93,7 +93,7 @@ deploy_production:
 
         ts=\$(date +%s)
 
-        cp \$(readlink -f noheir-api) noheir-api.bak || true
+        prev=\$(readlink -f noheir-api)
 
         mv noheir-api.new noheir-api-\$ts
         chmod +x noheir-api-\$ts
@@ -101,14 +101,15 @@ deploy_production:
 
         sudo systemctl restart noheir
 
-        sleep 2
+        sleep 3
 
         curl -f https://noheir-api.duckdns.org/health/live || (
           echo 'Health check failed, rolling back...' &&
-          ln -sf noheir-api.bak noheir-api &&
+          ln -sf \$prev noheir-api &&
           sudo systemctl restart noheir &&
           exit 1
         )
       "
+
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
