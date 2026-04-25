@@ -105,11 +105,11 @@ deploy_production:
         ls -l noheir-api || true
 
         # Deploy new version
-        mv noheir-api.new noheir-api-$ts
-        chmod +x noheir-api-$ts
+        mv noheir-api.new noheir-api-\$ts
+        chmod +x noheir-api-\$ts
 
         # Point symlink to new version
-        ln -sfn noheir-api-$ts noheir-api
+        ln -sfn noheir-api-\$ts noheir-api
 
         sudo systemctl restart noheir
 
@@ -120,7 +120,7 @@ deploy_production:
 
           if [ -n "\$prev" ]; then
             echo "Rolling back to \$prev"
-            ln -sfn $prev noheir-api
+            ln -sfn \$prev noheir-api
             ls -l noheir-api
             sudo systemctl restart noheir
           fi
