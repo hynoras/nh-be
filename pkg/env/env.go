@@ -36,3 +36,16 @@ func GetEnvOrDefault(key, defaultVal string) string {
 	}
 	return v
 }
+
+func GetEnvOrDefaultBool(key string, defaultVal bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		slog.Warn("invalid boolean value for env var, using default", "key", key, "value", v, "default", defaultVal)
+		return defaultVal
+	}
+	return b
+}
