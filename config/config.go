@@ -36,7 +36,16 @@ type Config struct {
 
 func LoadConfig() *Config {
 	appEnv := env.MustEnv("APP_ENV")
+	useVault := env.GetEnvOrDefaultBool("USE_VAULT", false)
 
+	if useVault {
+		return loadConfigFromVault(appEnv)
+	}
+
+	return loadConfigFromEnv(appEnv)
+}
+
+func loadConfigFromVault(appEnv string) *Config {
 	// Initialize Vault
 	vaultClient := secret.NewVaultClient()
 	secret.AuthenticateVault(vaultClient)
@@ -94,6 +103,38 @@ func LoadConfig() *Config {
 
 		cfg.FrontendURL = env.MustEnv("FRONTEND_URL")
 		cfg.ResendAPIKey = secret.MustGetSecretValue(resendSecrets, "RESEND_API_KEY")
+		cfg.VerifyEmailSuffixURL = env.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
+	}
+
+	return cfg
+}
+
+func loadConfigFromEnv(appEnv string) *Config {
+	slog.Info("loading config from .env (Vault disabled)")
+
+	cfg := &Config{
+		AppEnv: appEnv,
+		Port:   env.MustEnv("PORT"),
+
+		DBHost:     env.MustEnv("DB_HOST"),
+		DBPort:     env.MustEnvInt("DB_PORT"),
+		DBUsername: env.MustEnv("DB_USERNAME"),
+		DBName:     env.MustEnv("DB_NAME"),
+		DBPassword: env.MustEnv("DB_PASSWORD"),
+
+		RedisHost:     env.MustEnv("REDIS_HOST"),
+		RedisPort:     env.MustEnv("REDIS_PORT"),
+		RedisPassword: env.MustEnv("REDIS_PASSWORD"),
+
+		RabbitMQHost:     env.MustEnv("RABBITMQ_HOST"),
+		RabbitMQPort:     env.MustEnvInt("RABBITMQ_PORT"),
+		RabbitMQUsername: env.MustEnv("RABBITMQ_USERNAME"),
+		RabbitMQPassword: env.MustEnv("RABBITMQ_PASSWORD"),
+	}
+
+	if cfg.AppEnv == "prod" {
+		cfg.FrontendURL = env.MustEnv("FRONTEND_URL")
+		cfg.ResendAPIKey = env.MustEnv("RESEND_API_KEY")
 		cfg.VerifyEmailSuffixURL = env.MustEnv("VERIFY_EMAIL_SUFFIX_URL")
 	}
 
