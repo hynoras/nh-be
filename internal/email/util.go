@@ -2,14 +2,13 @@ package email
 
 import (
 	"bytes"
-	"embed"
 	"text/template"
 
 	"github.com/resend/resend-go/v3"
+	"nh-be/templates"
 )
 
-var templateFS embed.FS
-var tmpl = template.Must(template.ParseFS(templateFS, "templates/*.html"))
+var tmpl = template.Must(template.ParseFS(templates.FS, "*.html"))
 
 func NewResendClient(apiKey string) *resend.Client {
 	return resend.NewClient(apiKey)
