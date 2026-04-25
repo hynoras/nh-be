@@ -87,7 +87,7 @@ deploy_production:
     - scp build/noheir-api.new quang@noheir-api.duckdns.org:/home/quang/
     - |
       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-        set -e
+        set -ex
 
         cd /home/quang
 
