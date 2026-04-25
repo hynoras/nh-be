@@ -55,18 +55,18 @@ default:
 # -------------------------
 # Build
 # -------------------------
-# build:
-#   extends: .go_default
-#   stage: build
-#   script:
-#     - mkdir -p build
-#     - GOOS=linux GOARCH=amd64 go build -o build/noheir-api.new ./cmd/main.go
-#   artifacts:
-#     paths:
-#       - build/noheir-api.new
-#     expire_in: 7 days
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "main"
+build:
+  extends: .go_default
+  stage: build
+  script:
+    - mkdir -p build
+    - GOOS=linux GOARCH=amd64 go build -o build/noheir-api.new ./cmd/main.go
+  artifacts:
+    paths:
+      - build/noheir-api.new
+    expire_in: 7 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
 # -------------------------
 # Deploy (production)
