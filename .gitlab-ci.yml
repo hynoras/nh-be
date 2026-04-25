@@ -26,31 +26,31 @@ default:
 # -------------------------
 # Lint
 # -------------------------
-lint:
-  extends: .go_default
-  stage: lint
-  script:
-    - echo "Checking code..."
-    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-    - golangci-lint run --timeout=5m
-    - echo "No lint issues found."
-  # rules:
-  #   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  #   - if: $CI_COMMIT_BRANCH
+# lint:
+#   extends: .go_default
+#   stage: lint
+#   script:
+#     - echo "Checking code..."
+#     - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+#     - golangci-lint run --timeout=5m
+#     - echo "No lint issues found."
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#     - if: $CI_COMMIT_BRANCH
 
-# -------------------------
-# Unit Tests
-# -------------------------
-unit_test:
-  extends: .go_default
-  stage: test
-  script:
-    - echo "Running experiment result..."
-    - go test -v ./internal/features/...
-    - echo "All test passed."
-  # rules:
-  #   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  #   - if: $CI_COMMIT_BRANCH
+# # -------------------------
+# # Unit Tests
+# # -------------------------
+# unit_test:
+#   extends: .go_default
+#   stage: test
+#   script:
+#     - echo "Running experiment result..."
+#     - go test -v ./internal/features/...
+#     - echo "All test passed."
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#     - if: $CI_COMMIT_BRANCH
 
 # -------------------------
 # Build
@@ -60,24 +60,38 @@ build:
   stage: build
   script:
     - mkdir -p build
-    - go build -o build/app ./cmd/main.go
+    - GOOS=linux GOARCH=amd64 go build -o build/noheir-api.new ./cmd/main.go
   artifacts:
     paths:
-      - build/app
+      - build/noheir-api.new
     expire_in: 1 day
-  # rules:
-  #   - if: $CI_COMMIT_BRANCH
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
 
 # -------------------------
 # Deploy (production)
 # -------------------------
 deploy_production:
   stage: deploy
-  environment:
-    name: production
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan 103.90.226.110 >> ~/.ssh/known_hosts
+
   script:
-    - echo "Deploying application..."
-    - echo "Application successfully deployed."
-  # rules:
-  #   - if: $CI_COMMIT_BRANCH == "main"
-  #     when: manual
+    - scp build/noheir-api.new quang@103.90.226.110:/home/quang/
+    - |
+      ssh quang@103.90.226.110 "
+        mv noheir-api noheir-api.bak || true &&
+        mv noheir-api.new noheir-api &&
+        systemctl restart noheir &&
+        curl -f http://localhost:8080/health/live
+      "
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
