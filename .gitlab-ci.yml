@@ -52,28 +52,28 @@
 #     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 #     - if: $CI_COMMIT_BRANCH
 
-# # -------------------------
-# # Build
-# # -------------------------
-# build:
-#   extends: .go_default
-#   stage: build
-#   script:
-#     - mkdir -p build
-#     #- GOOS=linux GOARCH=amd64 go build -o build/noheir-api.new ./cmd/main.go
-#     - docker login -u $REGISTRY_USER -p $REGISTRY_TOKEN
-#     - docker build -t $REGISTRY_URL/$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA .
-#     - docker push $REGISTRY_URL/$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA
-#   artifacts:
-#     paths:
-#       - build/noheir-api.new
-#     expire_in: 7 days
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "main"
+# -------------------------
+# Build
+# -------------------------
+build:
+  extends: .go_default
+  stage: build
+  script:
+    - mkdir -p build
+    #- GOOS=linux GOARCH=amd64 go build -o build/noheir-api.new ./cmd/main.go
+    - docker login -u $REGISTRY_USER -p $REGISTRY_TOKEN
+    - docker build -t $REGISTRY_URL/$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA .
+    - docker push $REGISTRY_URL/$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA
+  artifacts:
+    paths:
+      - build/noheir-api.new
+    expire_in: 7 days
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == "main"
 
-# # -------------------------
-# # Deploy (production)
-# # -------------------------
+# -------------------------
+# Deploy (production)
+# -------------------------
 # deploy_production:
 #   stage: deploy
 #   image: alpine:latest
