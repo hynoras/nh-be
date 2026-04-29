@@ -16,6 +16,7 @@ type Config struct {
 	DBUsername string
 	DBName     string
 	DBPassword string
+	DBSslMode  string
 
 	// Redis
 	RedisHost     string
@@ -81,6 +82,7 @@ func loadConfigFromVault(appEnv string) *Config {
 		DBUsername: secret.MustGetSecretValue(dbSecrets, "DB_USERNAME"),
 		DBName:     env.MustEnv("DB_NAME"),
 		DBPassword: secret.MustGetSecretValue(dbSecrets, "DB_PASSWORD"),
+		DBSslMode:  env.MustEnv("DB_SSL_MODE"),
 
 		// Redis: sensitive from Vault, non-sensitive from env
 		RedisHost:     secret.MustGetSecretValue(redisSecrets, "REDIS_HOST"),
@@ -140,4 +142,3 @@ func loadConfigFromEnv(appEnv string) *Config {
 
 	return cfg
 }
-
