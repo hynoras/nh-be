@@ -75,56 +75,55 @@ build:
 # -------------------------
 # Deploy (production)
 # -------------------------
-# deploy_production:
-#   stage: deploy
-#   image: alpine:latest
-#   timeout: 5m
-#   before_script:
-#     - apk add --no-cache openssh-client
-#     - eval $(ssh-agent -s)
-#     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-#     - mkdir -p ~/.ssh
-#     - chmod 700 ~/.ssh
-#     - ssh-keyscan noheir-api.duckdns.org >> ~/.ssh/known_hosts
+deploy_production:
+  stage: deploy
+  image: alpine:latest
+  timeout: 5m
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan noheir-api.duckdns.org >> ~/.ssh/known_hosts
 
-#   script:
-#     - scp build/noheir-api.new quang@noheir-api.duckdns.org:/home/quang/
-#     - |
-#       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-#         set -e
+  script:
+    - |
+      ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
+        set -ex
 
-#         cd /home/quang
+        cd /home/quang
 
-#         ts=\$(date +%s)
+        if [ -f current_version.txt ]; then
+          cp current_version.txt previous_version.txt
+        fi
 
-#         if [ -L noheir-api ]; then
-#           prev=\$(readlink noheir-api)
-#         else
-#           prev=\"\"
-#         fi
+        echo $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA > current_version.txt
 
-#         mv noheir-api.new noheir-api-\$ts
-#         chmod +x noheir-api-\$ts
+        touch .env
+        grep -v '^IMAGE_TAG=' .env > .env.tmp || true
+        echo IMAGE_TAG=\$(cat current_version.txt) >> .env.tmp
+        mv .env.tmp .env
 
-#         ln -sfn noheir-api-\$ts noheir-api
+        docker compose pull
+        docker compose up -d --remove-orphans
 
-#         sudo systemctl restart noheir
+        sleep 25
 
-#         for i in 1 2 3 4 5; do
-#           if curl -fsS https://noheir-api.duckdns.org/health/live; then
-#             break
-#           fi
-#           sleep 2
-#         done
+        STATUS=\$(docker inspect --format='{{.State.Health.Status}}' \$(docker compose ps -q api))
 
-#         # Final check
-#         curl -fsS https://noheir-api.duckdns.org/health/live || (
-#           if [ -n "$prev" ]; then
-#             ln -sfn $prev noheir-api
-#             sudo systemctl restart noheir
-#           fi
-#           exit 1
-#         )
-#       "
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "main"
+        if [ \"\$STATUS\" != \"healthy\" ]; then
+          echo \"Deploy failed, rolling back\"
+
+          if [ -f previous_version.txt ]; then
+            IMAGE_TAG=\$(cat previous_version.txt) docker compose up -d
+          else
+            echo \"No previous version found, cannot rollback\"
+            exit 1
+          fi
+
+          exit 1
+        fi
+      "
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == "main"
