@@ -16,9 +16,17 @@ import (
 
 func ConnectDatabase(cfg *Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=require&statement_cache_capacity=0&default_query_exec_mode=exec",
+		"postgres://%s:%s@%s:%d/%s?statement_cache_capacity=0&default_query_exec_mode=exec",
 		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName,
 	)
+
+	if cfg.DBSslMode != "" {
+		dsn += fmt.Sprintf("&sslmode=%s", cfg.DBSslMode)
+	} else {
+		dsn += "&sslmode=disable"
+	}
+
+	slog.Info("Database SSL Mode", "sslmode", cfg.DBSslMode)
 
 	pgxCfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
