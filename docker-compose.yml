@@ -13,6 +13,23 @@ services:
   #     retries: 5
   #   restart: unless-stopped
 
+  #  postgres:
+  #    image: postgres:16.3-alpine
+  #    environment:
+  #      POSTGRES_USER: postgres
+  #      POSTGRES_PASSWORD: CHANGEMEPLEASE123!
+  #      POSTGRES_DB: app
+  #    ports:
+  #      - "5432:5432"
+  #    volumes:
+  #      - postgres_data:/var/lib/postgresql/data
+  #    healthcheck:
+  #      test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #      interval: 10s
+  #      timeout: 5s
+  #      retries: 5
+  #    restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:management-alpine
     environment:
@@ -70,6 +87,8 @@ services:
     expose:
       - "8080"
     depends_on:
+      # postgres:
+      #   condition: service_healthy
       # redis:
       #   condition: service_healthy
       rabbitmq:
@@ -166,5 +185,6 @@ volumes:
   grafana_data:
   loki_data:
   tempo_data:
+  # postgres_data:
   # vault_data:
   # redis_data:
