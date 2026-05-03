@@ -26,31 +26,31 @@ default:
 # -------------------------
 # Lint
 # -------------------------
-# lint:
-#   extends: .go_default
-#   stage: lint
-#   script:
-#     - echo "Checking code..."
-#     - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-#     - golangci-lint run --timeout=5m
-#     - echo "No lint issues found."
-#   rules:
-#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#     - if: $CI_COMMIT_BRANCH
+lint:
+  extends: .go_default
+  stage: lint
+  script:
+    - echo "Checking code..."
+    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    - golangci-lint run --timeout=5m
+    - echo "No lint issues found."
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
 
-# # -------------------------
-# # Unit Tests
-# # -------------------------
-# unit_test:
-#   extends: .go_default
-#   stage: test
-#   script:
-#     - echo "Running experiment result..."
-#     - go test -v ./internal/features/...
-#     - echo "All test passed."
-#   rules:
-#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#     - if: $CI_COMMIT_BRANCH
+# -------------------------
+# Unit Tests
+# -------------------------
+unit_test:
+  extends: .go_default
+  stage: test
+  script:
+    - echo "Running experiment result..."
+    - go test -v ./internal/features/...
+    - echo "All test passed."
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
 
 # -------------------------
 # Build
@@ -69,8 +69,8 @@ build:
     - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE:latest
-  # rules:
-  #   - if: $CI_COMMIT_BRANCH == "main"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
 # -------------------------
 # Deploy (production)
@@ -176,5 +176,5 @@ deploy_production:
 
           echo '--- Deployment successful ---'
       "
-  # rules:
-  #   - if: $CI_COMMIT_BRANCH == "main"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
