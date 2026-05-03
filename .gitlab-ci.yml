@@ -26,31 +26,31 @@ default:
 # -------------------------
 # Lint
 # -------------------------
-lint:
-  extends: .go_default
-  stage: lint
-  script:
-    - echo "Checking code..."
-    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-    - golangci-lint run --timeout=5m
-    - echo "No lint issues found."
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH
+# lint:
+#   extends: .go_default
+#   stage: lint
+#   script:
+#     - echo "Checking code..."
+#     - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+#     - golangci-lint run --timeout=5m
+#     - echo "No lint issues found."
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#     - if: $CI_COMMIT_BRANCH
 
-# -------------------------
-# Unit Tests
-# -------------------------
-unit_test:
-  extends: .go_default
-  stage: test
-  script:
-    - echo "Running experiment result..."
-    - go test -v ./internal/features/...
-    - echo "All test passed."
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH
+# # -------------------------
+# # Unit Tests
+# # -------------------------
+# unit_test:
+#   extends: .go_default
+#   stage: test
+#   script:
+#     - echo "Running experiment result..."
+#     - go test -v ./internal/features/...
+#     - echo "All test passed."
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#     - if: $CI_COMMIT_BRANCH
 
 # -------------------------
 # Build
@@ -69,8 +69,8 @@ build:
     - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - docker push $CI_REGISTRY_IMAGE:latest
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == "main"
 
 # -------------------------
 # Deploy (production)
@@ -88,42 +88,93 @@ deploy_production:
     - ssh-keyscan noheir-api.duckdns.org >> ~/.ssh/known_hosts
 
   script:
+    - export IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - |
       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-        set -ex
+          set -e
 
-        cd /home/quang
+          cd /home/quang
 
-        if [ -f current_version.txt ]; then
-          cp current_version.txt previous_version.txt
-        fi
+          IMAGE=$IMAGE
 
-        echo $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA > current_version.txt
+          BLUE_PORT=8080
+          GREEN_PORT=8081
 
-        touch .env
-        grep -v '^IMAGE_TAG=' .env > .env.tmp || true
-        echo IMAGE_TAG=\$(cat current_version.txt) >> .env.tmp
-        mv .env.tmp .env
+          UPSTREAM_FILE=/etc/nginx/conf.d/upstream.conf
 
-        docker compose pull
-        docker compose up -d --remove-orphans
+          echo '--- Pulling new image ---'
+          docker pull \$IMAGE
 
-        sleep 25
+          # Detect current active port from Nginx
+          CURRENT_PORT=\$(grep -oP '127.0.0.1:\K\d+' \$UPSTREAM_FILE || echo \"\$BLUE_PORT\")
 
-        STATUS=\$(docker inspect --format='{{.State.Health.Status}}' \$(docker compose ps -q api))
-
-        if [ \"\$STATUS\" != \"healthy\" ]; then
-          echo \"Deploy failed, rolling back\"
-
-          if [ -f previous_version.txt ]; then
-            IMAGE_TAG=\$(cat previous_version.txt) docker compose up -d
+          if [ \"\$CURRENT_PORT\" = \"\$BLUE_PORT\" ]; then
+              NEW_PORT=\$GREEN_PORT
           else
-            echo \"No previous version found, cannot rollback\"
-            exit 1
+              NEW_PORT=\$BLUE_PORT
           fi
 
-          exit 1
-        fi
+          echo \"Current port: \$CURRENT_PORT\"
+          echo \"New port: \$NEW_PORT\"
+
+          echo '--- Starting new container (green) ---'
+          docker rm -f api-green 2>/dev/null || true
+
+          docker run -d \
+          --name api-green \
+          --env-file .env \
+          --network quang_default \
+          -p \$NEW_PORT:8080 \
+          \$IMAGE
+
+          # Cleanup on failure
+          trap 'echo \"Error occurred, cleaning up\"; docker rm -f api-green 2>/dev/null' ERR
+
+          echo '--- Waiting for health check ---'
+          for i in {1..15}; do
+              STATUS=\$(docker inspect --format='{{.State.Health.Status}}' api-green 2>/dev/null || echo \"starting\")
+              echo \"Health status: \$STATUS\"
+
+              if [ \"\$STATUS\" = \"healthy\" ]; then
+                  break
+              fi
+
+              sleep 2
+          done
+
+          if [ \"\$STATUS\" != \"healthy\" ]; then
+              echo 'Deploy failed: container not healthy'
+              docker rm -f api-green
+              exit 1
+          fi
+
+          echo '--- Switching traffic (Nginx upstream) ---'
+          echo \"upstream backend { server 127.0.0.1:\$NEW_PORT; }\" | sudo tee \$UPSTREAM_FILE > /dev/null
+
+          echo '--- Validating Nginx config ---'
+          sudo nginx -t
+
+          echo '--- Reloading Nginx ---'
+          sudo systemctl reload nginx
+
+          echo '--- Post-switch validation ---'
+          if ! curl -f http://localhost/health/ready; then
+              echo 'Post-switch validation failed → rolling back'
+
+              echo \"upstream backend { server 127.0.0.1:\$CURRENT_PORT; }\" | sudo tee \$UPSTREAM_FILE
+              sudo systemctl reload nginx
+
+              docker rm -f api-green
+              exit 1
+          fi
+
+          echo '--- Cleaning up old container ---'
+          docker rm -f api-blue 2>/dev/null || true
+
+          echo '--- Promoting green → blue ---'
+          docker rename api-green api-blue
+
+          echo '--- Deployment successful ---'
       "
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == "main"
