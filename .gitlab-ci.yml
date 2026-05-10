@@ -91,7 +91,7 @@ deploy_production:
     - export IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
     - |
       ssh -o ConnectTimeout=10 quang@noheir-api.duckdns.org "
-          set -e
+          set -ex
 
           cd /home/quang
 
@@ -104,6 +104,20 @@ deploy_production:
 
           echo '--- Pulling new image ---'
           docker pull \$IMAGE
+
+          echo '--- Running database migrations ---'
+          docker run --rm \
+            --env-file .env \
+            --network quang_default \
+            --entrypoint sh \
+            \$IMAGE \
+            -c '
+              DB_SSL_MODE=\${DB_SSL_MODE:-disable}
+              DB_DSN=\"postgres://\${DB_USERNAME}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_NAME}?sslmode=\${DB_SSL_MODE}\"
+              /usr/local/bin/migrate -path /app/migrations -database \"\$DB_DSN\" up
+            '
+
+          echo '--- Migration succeeded ---'
 
           # Detect current active port from Nginx
           CURRENT_PORT=\$(grep -oP '127.0.0.1:\K\d+' \$UPSTREAM_FILE || echo \"\$BLUE_PORT\")

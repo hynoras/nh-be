@@ -10,6 +10,10 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+COPY ./migrations ./migrations
+
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
@@ -26,6 +30,9 @@ WORKDIR /app
 
 COPY --from=builder /app/server .
 COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/migrations ./migrations
+
+COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 
 USER appuser
 
