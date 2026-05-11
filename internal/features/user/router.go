@@ -3,8 +3,7 @@ package user
 import (
 	"nh-be/internal/features/permission"
 	"nh-be/internal/middleware"
-
-	"nh-be/internal/infra"
+	"nh-be/internal/platform/session"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -15,7 +14,7 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	usersGroup := rg.Group("/users")
 	usersGroup.Use(middleware.WithService("user-service"))
 
-	sessionStore := infra.NewSessionStore(rdb)
+	sessionStore := session.NewSessionStore(rdb)
 	userRepo := NewRepository(db)
 	permissionRepo := permission.NewRepository(db)
 	permissionCache := permission.NewPermissionCache(rdb)
