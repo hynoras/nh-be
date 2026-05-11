@@ -1,10 +1,8 @@
-package db
+package observability
 
 import (
 	"context"
 	"time"
-
-	infra "nh-be/infra/observability"
 
 	"gorm.io/gorm"
 )
@@ -53,7 +51,7 @@ func before(db *gorm.DB) {
 func after(operation string) func(*gorm.DB) {
 	return func(db *gorm.DB) {
 		if start, ok := db.Statement.Context.Value(dbMetricsKey{}).(time.Time); ok {
-			infra.DbQueryDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
+			DbQueryDuration.WithLabelValues(operation).Observe(time.Since(start).Seconds())
 		}
 	}
 }

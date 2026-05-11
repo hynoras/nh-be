@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	infra "nh-be/infra/observability"
+	obs "nh-be/internal/platform/observability"
 	"strconv"
 	"time"
 
@@ -10,21 +10,21 @@ import (
 
 func MetricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		infra.HttpRequestsInFlight.Inc()
+		obs.HttpRequestsInFlight.Inc()
 		start := time.Now()
 
 		c.Next()
 
-		infra.HttpRequestsInFlight.Dec()
+		obs.HttpRequestsInFlight.Dec()
 		duration := time.Since(start).Seconds()
 
-		infra.HttpRequestsTotal.WithLabelValues(
+		obs.HttpRequestsTotal.WithLabelValues(
 			c.Request.Method,
 			c.Request.URL.Path,
 			strconv.Itoa(c.Writer.Status()),
 		).Inc()
 
-		infra.HttpRequestDuration.WithLabelValues(
+		obs.HttpRequestDuration.WithLabelValues(
 			c.Request.Method,
 			c.FullPath(),
 		).Observe(duration)

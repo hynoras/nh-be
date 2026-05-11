@@ -9,3 +9,7 @@ build/
 
 # Vault local data
 infra/secret/data/
+
+dist/
+
+main.exe

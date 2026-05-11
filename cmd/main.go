@@ -29,17 +29,17 @@ import (
 	"syscall"
 	"time"
 
-	"nh-be/config"
 	docs "nh-be/docs"
+	"nh-be/internal/config"
 	"nh-be/pkg/env"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	infra "nh-be/infra/observability"
 	"nh-be/internal/app"
 	"nh-be/internal/middleware"
-	"nh-be/router"
+	obs "nh-be/internal/platform/observability"
+	"nh-be/internal/router"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -72,11 +72,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	prometheus.MustRegister(infra.NewDbPoolCollector(service.SQLDB))
+	prometheus.MustRegister(obs.NewDbPoolCollector(service.SQLDB))
 
 	// Initialize OpenTelemetry tracer
 	otelEndpoint := env.GetEnvOrDefault("OTEL_EXPORTER_ENDPOINT", "otel-collector:4317")
-	tracerShutdown, err := infra.InitTracer(context.Background(), otelEndpoint)
+	tracerShutdown, err := obs.InitTracer(context.Background(), otelEndpoint)
 	if err != nil {
 		slog.Error("failed to initialize tracer", "error", err)
 		os.Exit(1)

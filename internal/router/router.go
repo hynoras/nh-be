@@ -7,8 +7,8 @@ import (
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/features/user"
-	"nh-be/internal/infra"
 	"nh-be/internal/middleware"
+	"nh-be/internal/platform/session"
 
 	"github.com/gin-gonic/gin"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -18,7 +18,7 @@ import (
 
 // SetupRoutes initializes all application routes
 func SetupRoutes(r *gin.Engine, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel) {
-	sessionStore := infra.NewSessionStore(rdb)
+	sessionStore := session.NewSessionStore(rdb)
 	// API version 1 group
 	v1 := r.Group("/api/v1")
 

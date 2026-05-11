@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"nh-be/internal/constant"
-	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
-	"nh-be/internal/infra"
+	"nh-be/internal/platform/email"
+	"nh-be/internal/platform/session"
 	"nh-be/internal/utils/crypto"
 	"nh-be/internal/utils/stringutil"
 
@@ -26,7 +26,7 @@ type Service interface {
 }
 
 type service struct {
-	sessionStore      infra.SessionStore
+	sessionStore      session.SessionStore
 	authRepo          Repository
 	userRepo          user.Repository
 	permissionService permission.Service
@@ -34,7 +34,7 @@ type service struct {
 }
 
 func NewService(
-	sessionStore infra.SessionStore,
+	sessionStore session.SessionStore,
 	authRepo Repository,
 	userRepo user.Repository,
 	permissionService permission.Service,

@@ -5,14 +5,14 @@ import (
 	"log/slog"
 	"net/http"
 	"nh-be/internal/constant"
-	"nh-be/internal/infra"
+	"nh-be/internal/platform/session"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
 
-func RequireAuth(sessionStore infra.SessionStore) gin.HandlerFunc {
+func RequireAuth(sessionStore session.SessionStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Request.Cookie("auth_session")
 		if err != nil {
