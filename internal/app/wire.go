@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"nh-be/internal/config"
-	"nh-be/internal/email"
 	"nh-be/internal/features/auth"
 	"nh-be/internal/features/experiment"
 	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
+	"nh-be/internal/platform/email"
 	"nh-be/internal/platform/mq"
 	"sync"
 

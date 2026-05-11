@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/middleware"
+	"nh-be/internal/platform/email"
 	"nh-be/internal/platform/session"
 
 	"github.com/gin-gonic/gin"

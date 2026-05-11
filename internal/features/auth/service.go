@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"nh-be/internal/constant"
-	"nh-be/internal/email"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
+	"nh-be/internal/platform/email"
 	"nh-be/internal/platform/session"
 	"nh-be/internal/utils/crypto"
 	"nh-be/internal/utils/stringutil"
