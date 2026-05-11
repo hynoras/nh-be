@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"nh-be/mq"
+	"nh-be/internal/platform/mq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

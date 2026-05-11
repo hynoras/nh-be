@@ -12,7 +12,7 @@ import (
 	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
-	"nh-be/mq"
+	"nh-be/internal/platform/mq"
 	"sync"
 
 	amqp "github.com/rabbitmq/amqp091-go"

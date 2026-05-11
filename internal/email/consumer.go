@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"nh-be/internal/config"
+	"nh-be/internal/platform/mq"
 	"nh-be/internal/utils/stringutil"
-	"nh-be/mq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
