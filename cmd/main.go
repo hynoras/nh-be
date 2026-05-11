@@ -39,7 +39,7 @@ import (
 	infra "nh-be/infra/observability"
 	"nh-be/internal/app"
 	"nh-be/internal/middleware"
-	"nh-be/router"
+	"nh-be/internal/router"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
