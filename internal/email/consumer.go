@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"nh-be/config"
+	"nh-be/internal/config"
 	"nh-be/internal/utils/stringutil"
 	"nh-be/mq"
 

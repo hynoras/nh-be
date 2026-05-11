@@ -29,8 +29,8 @@ import (
 	"syscall"
 	"time"
 
-	"nh-be/config"
 	docs "nh-be/docs"
+	"nh-be/internal/config"
 	"nh-be/pkg/env"
 
 	swaggerfiles "github.com/swaggo/files"

@@ -3,7 +3,7 @@ package mq
 import (
 	"fmt"
 	"log"
-	"nh-be/config"
+	"nh-be/internal/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

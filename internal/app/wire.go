@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"nh-be/config"
+	"nh-be/internal/config"
 	"nh-be/internal/email"
 	"nh-be/internal/features/auth"
 	"nh-be/internal/features/experiment"
