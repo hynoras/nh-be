@@ -1,4 +1,4 @@
-package infra
+package observability
 
 import (
 	"github.com/prometheus/client_golang/prometheus"

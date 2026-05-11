@@ -1,4 +1,4 @@
-package infra
+package observability
 
 import (
 	"database/sql"
