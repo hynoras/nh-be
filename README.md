@@ -148,19 +148,20 @@ graph LR
 ## Project Structure
 
 ```text
-/build         # Build artifacts or scripts
 /cmd           # Application entrypoint (main.go)
-/config        # Configuration loading + Vault integration
+/deploy        # Deployment & Infrastructure configs (Docker, Nginx, Observability, Vault)
 /docs          # Swagger documentation
-/infra         # Infrastructure setup (database, redis, observability, secrets)
 /internal
+  /app         # App bootstrap and manual DI wiring
+  /config      # Configuration loading + Vault integration
   /features    # Feature modules (auth, experiment, permission, procedure, user)
+  /platform    # Infrastructure logic (mq, email, observability, vault, session)
   /middleware  # Gin middlewares (auth, tracing, metrics, request ID)
-/mq            # RabbitMQ configuration
-/pkg           # Shared utilities
-/router        # Route definitions
+  /router      # Route definitions
+/migrations    # SQL migration files
+/pkg           # Truly shared, reusable utilities
 /templates     # Email templates
-/tests         # Test suite
+/tests         # Integration test suite
 ```
 
 ---
@@ -175,7 +176,7 @@ graph LR
 
 > **Note on Managed Infrastructure:** The application is designed to be flexible. You can use your own managed infrastructure (such as **Supabase** for PostgreSQL or **Redis Cloud**) by updating the `.env` variables, or spin up local instances using the provided `docker-compose.yml`. By default, the local PostgreSQL and Redis services in the compose file are commented out, assuming the use of a managed database like Supabase.
 
-> **Note on HashiCorp Vault:** To mirror production behavior, Vault is configured to use the **Raft consensus algorithm** for persistent storage (mapped to `infra/secret/data`). This setup requires a manual initialization and unseal process, ensuring a secure, production-grade workflow even in development.
+> **Note on HashiCorp Vault:** To mirror production behavior, Vault is configured to use the **Raft consensus algorithm** for persistent storage (mapped to `deploy/vault/data`). This setup requires a manual initialization and unseal process, ensuring a secure, production-grade workflow even in development.
 
 ---
 
@@ -188,7 +189,7 @@ You can run the backend in development mode by starting only the required depend
 Start only core dependencies:
 
 ```bash
-docker compose up -d rabbitmq
+docker compose -f deploy/docker/docker-compose.yml up -d rabbitmq
 ```
 
 Then run the API:
@@ -212,7 +213,7 @@ air
 Start all supporting services, including observability and Vault:
 
 ```bash
-docker compose up -d --build rabbitmq vault prometheus tempo loki otel-collector alloy grafana
+docker compose -f deploy/docker/docker-compose.yml up -d --build rabbitmq vault prometheus tempo loki otel-collector alloy grafana
 ```
 
 Then run the API:
@@ -339,7 +340,7 @@ Deployment is handled via **GitLab CI/CD**.
 * Updated using:
 
 ```bash
-docker compose up -d
+docker compose -f deploy/docker/docker-compose.yml up -d
 ```
 
 ### Reliability
