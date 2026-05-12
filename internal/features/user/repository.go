@@ -164,18 +164,6 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, u *User) error {
 }
 
 func (r *repository) Delete(ctx context.Context, id uuid.UUID) error {
-	// return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-	//   var u User
-	//   if err := tx.First(&u, id).Error; err != nil {
-	//     return err
-	//   }
-
-	//   if err := tx.Model(&u).Association("AssignedPermissionGroups").Clear(); err != nil {
-	//     return err
-	//   }
-
-	//   return tx.Delete(&u).Error
-	// })
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&User{}).Error
 }
 
