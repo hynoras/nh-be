@@ -70,13 +70,13 @@ func (s *service) CreateVerificationToken(
 	userId uuid.UUID,
 	tokenType VerificationTokenType,
 ) (CreatedTokenDto, error) {
-	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(userId)
+	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(ctx, userId)
 	if findErr != nil && !errors.Is(findErr, constant.ErrVerificationTokenNotFound) {
 		return CreatedTokenDto{}, findErr
 	}
 
 	if existingToken != nil {
-		deleteErr := s.authRepo.DeleteVerificationToken(existingToken)
+		deleteErr := s.authRepo.DeleteVerificationToken(ctx, existingToken)
 		if deleteErr != nil {
 			return CreatedTokenDto{}, deleteErr
 		}
@@ -90,7 +90,7 @@ func (s *service) CreateVerificationToken(
 	hashedToken := crypto.HashToken(generatedToken)
 	verificationToken := MapCreateDtoToVerificationToken(userId, hashedToken, tokenType)
 
-	createdToken, createErr := s.authRepo.CreateVerificationToken(verificationToken)
+	createdToken, createErr := s.authRepo.CreateVerificationToken(ctx, verificationToken)
 	if createErr != nil {
 		return CreatedTokenDto{}, createErr
 	}
@@ -138,7 +138,7 @@ func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 
 func (s *service) VerifyEmail(ctx context.Context, token string) (string, error) {
 	hashedToken := crypto.HashToken(token)
-	existingToken, findErr := s.authRepo.FindVerificationTokenByCodeHash(hashedToken)
+	existingToken, findErr := s.authRepo.FindVerificationTokenByCodeHash(ctx, hashedToken)
 	if findErr != nil {
 		return "", findErr
 	}
@@ -156,7 +156,7 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 		return "", updateErr
 	}
 
-	deleteErr := s.authRepo.DeleteVerificationToken(existingToken)
+	deleteErr := s.authRepo.DeleteVerificationToken(ctx, existingToken)
 	if deleteErr != nil {
 		return "", deleteErr
 	}

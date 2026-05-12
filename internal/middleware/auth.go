@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"nh-be/internal/constant"
@@ -27,7 +28,7 @@ func RequireAuth(sessionStore session.SessionStore) gin.HandlerFunc {
 		userID, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
 
 		if err != nil {
-			if err == redis.Nil {
+			if errors.Is(err, redis.Nil) {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"success": false,
 					"error":   "session_expired",

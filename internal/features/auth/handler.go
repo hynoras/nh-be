@@ -34,15 +34,7 @@ func VerifyTokenHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		http.SetCookie(c.Writer, &http.Cookie{
-			Name:     "auth_session",
-			Value:    sessionId,
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   8 * 60 * 60,
-		})
+		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
 
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User verified successfully", nil)
 	}
@@ -72,15 +64,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		http.SetCookie(c.Writer, &http.Cookie{
-			Name:     "auth_session",
-			Value:    sessionId,
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   8 * 60 * 60,
-		})
+		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
 
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", userRes)
 

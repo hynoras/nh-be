@@ -2,6 +2,7 @@ package experiment
 
 import (
 	"context"
+	"errors"
 	"nh-be/internal/constant"
 	"nh-be/internal/utils/dbutil"
 	"strings"
@@ -58,10 +59,10 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*Experiment, e
 		Where("id = ?", id).
 		Preload("CreatedBy").
 		First(&e)
-	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
 	}
-	if result.Error == gorm.ErrRecordNotFound {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, constant.ErrExperimentNotFound
 	}
 	return &e, nil
@@ -111,10 +112,10 @@ func (r *repository) GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid
 		Select("procedure_id").
 		Where("id = ?", id).
 		First(&e)
-	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return uuid.Nil, result.Error
 	}
-	if result.Error == gorm.ErrRecordNotFound {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return uuid.Nil, constant.ErrExperimentNotFound
 	}
 	if e.ProcedureID == nil {

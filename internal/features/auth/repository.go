@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+	"errors"
 	"nh-be/internal/constant"
 
 	"github.com/google/uuid"
@@ -8,11 +10,11 @@ import (
 )
 
 type Repository interface {
-	FindVerificationTokenByUserId(userId uuid.UUID) (*VerificationToken, error)
-	FindVerificationTokenByCodeHash(codeHash string) (*VerificationToken, error)
-	CreateVerificationToken(token *VerificationToken) (VerificationToken, error)
+	FindVerificationTokenByUserId(ctx context.Context, userId uuid.UUID) (*VerificationToken, error)
+	FindVerificationTokenByCodeHash(ctx context.Context, codeHash string) (*VerificationToken, error)
+	CreateVerificationToken(ctx context.Context, token *VerificationToken) (VerificationToken, error)
 
-	DeleteVerificationToken(token *VerificationToken) error
+	DeleteVerificationToken(ctx context.Context, token *VerificationToken) error
 }
 
 type repository struct {
@@ -23,11 +25,11 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) FindVerificationTokenByUserId(userId uuid.UUID) (*VerificationToken, error) {
+func (r *repository) FindVerificationTokenByUserId(ctx context.Context, userId uuid.UUID) (*VerificationToken, error) {
 	var token VerificationToken
-	err := r.db.Model(&VerificationToken{}).Where("user_id = ?", userId).First(&token).Error
+	err := r.db.WithContext(ctx).Model(&VerificationToken{}).Where("user_id = ?", userId).First(&token).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, constant.ErrVerificationTokenNotFound
 		}
 		return nil, err
@@ -35,11 +37,11 @@ func (r *repository) FindVerificationTokenByUserId(userId uuid.UUID) (*Verificat
 	return &token, nil
 }
 
-func (r *repository) FindVerificationTokenByCodeHash(codeHash string) (*VerificationToken, error) {
+func (r *repository) FindVerificationTokenByCodeHash(ctx context.Context, codeHash string) (*VerificationToken, error) {
 	var token VerificationToken
-	err := r.db.Model(&VerificationToken{}).Where("code_hash = ?", codeHash).First(&token).Error
+	err := r.db.WithContext(ctx).Model(&VerificationToken{}).Where("code_hash = ?", codeHash).First(&token).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, constant.ErrVerificationTokenNotFound
 		}
 		return nil, err
@@ -47,14 +49,14 @@ func (r *repository) FindVerificationTokenByCodeHash(codeHash string) (*Verifica
 	return &token, nil
 }
 
-func (r *repository) CreateVerificationToken(token *VerificationToken) (VerificationToken, error) {
-	err := r.db.Create(token).Error
+func (r *repository) CreateVerificationToken(ctx context.Context, token *VerificationToken) (VerificationToken, error) {
+	err := r.db.WithContext(ctx).Create(token).Error
 	if err != nil {
 		return VerificationToken{}, err
 	}
 	return *token, nil
 }
 
-func (r *repository) DeleteVerificationToken(token *VerificationToken) error {
-	return r.db.Delete(token).Error
+func (r *repository) DeleteVerificationToken(ctx context.Context, token *VerificationToken) error {
+	return r.db.WithContext(ctx).Delete(token).Error
 }

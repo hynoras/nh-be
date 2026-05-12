@@ -123,6 +123,7 @@ func loadConfigFromEnv(appEnv string) *Config {
 		DBUsername: env.MustEnv("DB_USERNAME"),
 		DBName:     env.MustEnv("DB_NAME"),
 		DBPassword: env.MustEnv("DB_PASSWORD"),
+		DBSslMode:  env.MustEnv("DB_SSL_MODE"),
 
 		RedisHost:     env.MustEnv("REDIS_HOST"),
 		RedisPort:     env.MustEnv("REDIS_PORT"),

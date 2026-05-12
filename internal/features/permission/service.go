@@ -2,7 +2,7 @@ package permission
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"nh-be/internal/constant"
 	"nh-be/internal/utils/ctxutil"
 	"slices"
@@ -94,7 +94,7 @@ func (s *service) GetUserPermissionCodeNames(ctx context.Context, userId uuid.UU
 
 	// Populate cache (non-fatal on error)
 	if cacheErr := s.cache.SetCodeNames(ctx, userId, codeNames); cacheErr != nil {
-		log.Printf("failed to cache permission code names for user %s: %v", userId, cacheErr)
+		slog.Warn("failed to cache permission code names", "userId", userId, "error", cacheErr)
 	}
 
 	return codeNames, nil
@@ -239,7 +239,7 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 
 	// Invalidate all cached permissions since group changes affect multiple users
 	if cacheErr := s.cache.InvalidateAll(ctx); cacheErr != nil {
-		log.Printf("failed to invalidate permission cache after group update: %v", cacheErr)
+		slog.Error("failed to invalidate permission cache after group update", "error", cacheErr)
 	}
 	return nil
 }
@@ -274,7 +274,7 @@ func (s *service) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
 
 	// Invalidate all cached permissions since group deletion affects multiple users
 	if cacheErr := s.cache.InvalidateAll(ctx); cacheErr != nil {
-		log.Printf("failed to invalidate permission cache after group delete: %v", cacheErr)
+		slog.Error("failed to invalidate permission cache after group delete", "error", cacheErr)
 	}
 	return nil
 }

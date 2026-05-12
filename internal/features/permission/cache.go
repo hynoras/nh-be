@@ -3,7 +3,7 @@ package permission
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -73,7 +73,7 @@ func (c *permissionCache) InvalidateAll(ctx context.Context) error {
 		}
 		if len(keys) > 0 {
 			if err := c.rdb.Del(ctx, keys...).Err(); err != nil {
-				log.Printf("failed to delete permission cache keys: %v", err)
+				slog.Error("failed to delete permission cache keys", "error", err)
 				errs = append(errs, err)
 			}
 		}

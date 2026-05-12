@@ -18,4 +18,4 @@ test:
 
 # Clean up build files
 clean:
-	rm -rf tmp bin
+	rm -rf tmp bin build main.exe
