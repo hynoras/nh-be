@@ -105,36 +105,34 @@ Client → Nginx → API (Gin)
 ## Diagram
 
 ```mermaid
-graph LR
-    Client[Client Browser] --> Nginx[Nginx Proxy]
+flowchart LR
+    Client["Client Browser"] --> Nginx["Nginx Proxy"]
     
     subgraph "Noheir Backend"
-        Nginx --> API[API (Gin)]
+        Nginx --> API["API (Gin)"]
         
         subgraph "Core Services"
-            API -->|Primary Storage| DB[(PostgreSQL)]
-            API -->|Sessions/Cache| Redis[(Redis)]
-            API -->|Async Tasks| MQ[(RabbitMQ)]
+            API -->|"Primary Storage"| DB[("PostgreSQL")]
+            API -->|"Sessions/Cache"| Redis[("Redis")]
+            API -->|"Async Tasks"| MQ[("RabbitMQ")]
         end
         
         subgraph "Observability Stack"
-            API -.->|Traces| OTel[OTel Collector]
-            API -.->|Metrics| OTel
-            API -.->|Logs| OTel
+            API -.->|"Traces/Metrics/Logs"| OTel["OTel Collector"]
             
-            OTel -->|Metrics| Prometheus[(Prometheus)]
-            OTel -->|Traces| Tempo[(Grafana Tempo)]
-            OTel -->|Logs| Loki[(Grafana Loki)]
+            OTel -->|"Metrics"| Prometheus[("Prometheus")]
+            OTel -->|"Traces"| Tempo[("Grafana Tempo")]
+            OTel -->|"Logs"| Loki[("Grafana Loki")]
             
-            Prometheus --> Grafana[Grafana]
+            Prometheus --> Grafana["Grafana"]
             Tempo --> Grafana
             Loki --> Grafana
         end
     end
     
     subgraph "External"
-        Nginx -->|Forwarding| Vault[(HashiCorp Vault)]
-        Nginx -->|HTTPS/SSL| Internet[(Internet)]
+        Nginx -->|"Forwarding"| Vault[("HashiCorp Vault")]
+        Nginx -->|"HTTPS/SSL"| Internet[("Internet")]
     end
     
     style DB fill:#9f9,stroke:#333,stroke-width:2px
