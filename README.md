@@ -115,24 +115,21 @@ flowchart LR
             API -->|"Primary Storage"| DB[("PostgreSQL")]
             API -->|"Sessions/Cache"| Redis[("Redis")]
             API -->|"Async Tasks"| MQ[("RabbitMQ")]
+            API -->|"Secrets"| Vault[("HashiCorp Vault")]
         end
         
         subgraph "Observability Stack"
-            API -.->|"Traces/Metrics/Logs"| OTel["OTel Collector"]
+            API -.->|"Pushes Traces"| OTel["OTel Collector"]
+            Prometheus[("Prometheus")] -.->|"Scrapes Metrics"| API
+            Alloy["Grafana Alloy"] -.->|"Collects Logs"| API
             
-            OTel -->|"Metrics"| Prometheus[("Prometheus")]
             OTel -->|"Traces"| Tempo[("Grafana Tempo")]
-            OTel -->|"Logs"| Loki[("Grafana Loki")]
+            Alloy -->|"Logs"| Loki[("Grafana Loki")]
             
             Prometheus --> Grafana["Grafana"]
             Tempo --> Grafana
             Loki --> Grafana
         end
-    end
-    
-    subgraph "External"
-        Nginx -->|"Forwarding"| Vault[("HashiCorp Vault")]
-        Nginx -->|"HTTPS/SSL"| Internet[("Internet")]
     end
     
     style DB fill:#9f9,stroke:#333,stroke-width:2px
