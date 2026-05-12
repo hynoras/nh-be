@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"nh-be/internal/constant"
 
 	"github.com/google/uuid"
@@ -28,7 +29,7 @@ func (r *repository) FindVerificationTokenByUserId(ctx context.Context, userId u
 	var token VerificationToken
 	err := r.db.WithContext(ctx).Model(&VerificationToken{}).Where("user_id = ?", userId).First(&token).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, constant.ErrVerificationTokenNotFound
 		}
 		return nil, err
@@ -40,7 +41,7 @@ func (r *repository) FindVerificationTokenByCodeHash(ctx context.Context, codeHa
 	var token VerificationToken
 	err := r.db.WithContext(ctx).Model(&VerificationToken{}).Where("code_hash = ?", codeHash).First(&token).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, constant.ErrVerificationTokenNotFound
 		}
 		return nil, err

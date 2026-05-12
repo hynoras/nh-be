@@ -2,6 +2,7 @@ package observation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"nh-be/internal/constant"
 	exp "nh-be/internal/features/experiment"
@@ -46,10 +47,10 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 		Select("id").
 		Where("id = ?", expId).
 		Take(&exp.Experiment{}).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return []ObservationMetadata{}, 0, err
 	}
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return []ObservationMetadata{}, 0, constant.ErrExperimentNotFound
 	}
 
@@ -58,10 +59,10 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 		Select("id").
 		Where("id = ?", procId).
 		Take(&proc.ProcedureStep{}).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return []ObservationMetadata{}, 0, err
 	}
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return []ObservationMetadata{}, 0, constant.ErrProcedureNotFound
 	}
 
