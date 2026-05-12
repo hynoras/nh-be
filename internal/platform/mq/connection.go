@@ -2,7 +2,7 @@ package mq
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"nh-be/internal/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -16,6 +16,6 @@ func NewRabbitMQConnection(cfg *config.Config) (*amqp.Connection, error) {
 		return nil, err
 	}
 
-	log.Println("Connected to RabbitMQ")
+	slog.Info("Connected to RabbitMQ")
 	return conn, nil
 }

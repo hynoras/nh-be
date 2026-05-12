@@ -3,7 +3,7 @@ package email
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"nh-be/internal/platform/mq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -29,7 +29,7 @@ func (s *emailPublisher) SendVerificationEmail(ctx context.Context, dto SendVeri
 
 	err = mq.Publish(ctx, s.channel, AuthExchangeName, UserRegisteredRoutingKey, string(body), false, false)
 	if err != nil {
-		log.Printf("Failed to publish message: %v", err)
+		slog.Error("Failed to publish message", "error", err)
 		return err
 	}
 	return nil

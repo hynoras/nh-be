@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"nh-be/internal/config"
 	"nh-be/internal/platform/mq"
 	"nh-be/internal/utils/stringutil"
@@ -43,7 +43,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 	)
 
 	if err != nil {
-		log.Printf("Failed to start consumer: %v", err)
+		slog.Error("Failed to start consumer", "error", err)
 		return err
 	}
 
@@ -52,7 +52,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 			var req SendVerificationEmailDto
 
 			if err := json.Unmarshal(d.Body, &req); err != nil {
-				log.Printf("Failed to unmarshal message: %v", err)
+				slog.Error("Failed to unmarshal message", "error", err)
 				_ = d.Nack(false, false)
 				continue
 			}
@@ -65,7 +65,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 			})
 
 			if htmlErr != nil {
-				log.Printf("Failed to convert HTML to string: %v", htmlErr)
+				slog.Error("Failed to convert HTML to string", "error", htmlErr)
 				_ = d.Nack(false, false)
 				continue
 			}
@@ -79,7 +79,7 @@ func (s *emailConsumer) SendVerificationEmail(ctx context.Context) error {
 			)
 
 			if sendEmailErr != nil {
-				log.Printf("Failed to send email: %v", sendEmailErr)
+				slog.Error("Failed to send email", "error", sendEmailErr)
 				_ = d.Nack(false, false)
 				continue
 			}
