@@ -123,7 +123,7 @@ func main() {
 	if cfg.AppEnv == "dev" {
 		origin = []string{"http://localhost:3000"}
 	} else {
-		origin = []string{cfg.FrontendURL}
+		origin = []string{"http://localhost:3000", cfg.FrontendURL}
 	}
 
 	r := gin.New()
