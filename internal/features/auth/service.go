@@ -220,11 +220,11 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
 		return err
 	}
 	if oldPassword == nil {
-		return errors.New("user not found")
+		return constant.ErrUserNotFound
 	}
 
 	if changePasswordDto.NewPassword != changePasswordDto.ConfirmPassword {
-		return errors.New("new password and confirm password do not match")
+		return constant.ErrNewPasswordAndConfirmPasswordDoNotMatch
 	}
 
 	newHashedPassword, err := crypto.HashPassword(changePasswordDto.NewPassword)
@@ -233,7 +233,7 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
 	}
 
 	if crypto.CheckPasswordHash(changePasswordDto.NewPassword, *oldPassword) {
-		return errors.New("new password is the same as the old password")
+		return constant.ErrNewPasswordIsTheSameAsOldPassword
 	}
 
 	err = s.userRepo.Update(ctx, id, &user.User{
