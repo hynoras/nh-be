@@ -2,11 +2,11 @@ package procedure
 
 import (
 	"context"
+	"errors"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
-	"nh-be/internal/utils/ctxutil"
+	"nh-be/internal/utils/authutil"
 	"nh-be/internal/utils/timeutil"
-	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,46 +33,23 @@ func NewService(repository Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) CanViewProcedure(ctx context.Context, id uuid.UUID) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidViewProcedure
-	}
-
-	return nil
+	return authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewProcedure, constant.ViewExperiment, constant.ManageExperiment)
 }
 
 func (s *service) CanManageProcedure(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
-		return err
+	var forbidErr error
+	switch action {
+	case constant.Create:
+		forbidErr = constant.ErrForbidCreateProcedure
+	case constant.Update:
+		forbidErr = constant.ErrForbidUpdateProcedure
+	case constant.Delete:
+		forbidErr = constant.ErrForbidDeleteProcedure
+	default:
+		forbidErr = errors.New("you do not have permission to manage this procedure")
 	}
 
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		switch action {
-		case constant.Create:
-			return constant.ErrForbidCreateProcedure
-		case constant.Update:
-			return constant.ErrForbidUpdateProcedure
-		case constant.Delete:
-			return constant.ErrForbidDeleteProcedure
-		}
-	}
-
-	return nil
+	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
 }
 
 func (s *service) GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error) {

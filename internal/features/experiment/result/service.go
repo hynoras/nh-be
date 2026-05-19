@@ -4,8 +4,7 @@ import (
 	"context"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
-	"nh-be/internal/utils/ctxutil"
-	"slices"
+	"nh-be/internal/utils/authutil"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,18 +29,8 @@ func NewService(resultRepo Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error) {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewExperimentResult, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return nil, constant.ErrForbidViewExperimentResult
 	}
 
 	result, err := s.resultRepo.FindByExperimentID(ctx, experimentID)
@@ -53,18 +42,8 @@ func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid
 }
 
 func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto *CreateResultDto) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidCreateExperimentResult, constant.ManageExperiment); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidCreateExperimentResult
 	}
 
 	result := &ExperimentResult{
@@ -83,22 +62,12 @@ func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto 
 }
 
 func (s *service) UpdateResult(ctx context.Context, resultID uuid.UUID, experimentID uuid.UUID, dto *UpdateResultDto) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidUpdateExperimentResult, constant.ManageExperiment); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidUpdateExperimentResult
 	}
 
 	// Use FindByIDAndExperimentID to validate both IDs and get current version
-	_, err = s.resultRepo.FindByIDAndExperimentID(ctx, resultID, experimentID)
+	_, err := s.resultRepo.FindByIDAndExperimentID(ctx, resultID, experimentID)
 	if err != nil {
 		return err
 	}
