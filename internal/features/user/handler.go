@@ -3,7 +3,7 @@ package user
 import (
 	"net/http"
 	"nh-be/internal/constant"
-	"nh-be/internal/platform/session"
+	"nh-be/internal/utils/ctxutil"
 	"nh-be/internal/utils/httputil"
 	"strings"
 
@@ -139,20 +139,9 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 // @Failure 500 {object} httputil.ErrorResponse "Failed to get me"
 // @Security SessionAuth
 // @Router /users/me [get]
-func GetMeHandler(s Service, sessionStore session.SessionStore) gin.HandlerFunc {
+func GetMeHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cookie, err := c.Request.Cookie("auth_session")
-		if err != nil {
-			httputil.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
-			return
-		}
-		userId, err := sessionStore.GetUserSession(c.Request.Context(), cookie.Value)
-		if err != nil {
-			httputil.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
-			return
-		}
-
-		parsedUuid, err := httputil.ParseStringToUUID(userId)
+		parsedUuid, err := ctxutil.GetUserIdFromContext(c.Request.Context())
 		if err != nil {
 			httputil.MakeErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "User not found")
 			return
