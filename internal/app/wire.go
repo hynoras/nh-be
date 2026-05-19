@@ -4,15 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"nh-be/internal/config"
-	"nh-be/internal/features/auth"
-	"nh-be/internal/features/experiment"
-	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/features/permission"
-	"nh-be/internal/features/user"
 	"nh-be/internal/platform/email"
 	"nh-be/internal/platform/mq"
+	"nh-be/internal/platform/session"
 	"sync"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -37,20 +33,7 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("postgresql: %w", err)
 	}
-	if cfg.AppEnv == "dev" {
-		if err := db.AutoMigrate(
-			&auth.VerificationToken{},
-			&user.User{},
-			&permission.Permission{},
-			&permission.PermissionGroup{},
-			&user.UserPermission{},
-			&experiment.Experiment{},
-			&result.ExperimentResult{},
-		); err != nil {
-			return nil, fmt.Errorf("automigrate failed: %w", err)
-		}
-		slog.Info("Running AutoMigrate in dev mode")
-	}
+
 
 	rdb, err := config.NewRedisClient(cfg)
 	if err != nil {
@@ -115,4 +98,27 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 		ConCancel: conCancel,
 		WG:        wg,
 	}, nil
+}
+
+type SharedDeps struct {
+	DB                *gorm.DB
+	Redis             *redis.Client
+	PubCh             *amqp.Channel
+	SessionStore      session.SessionStore
+	PermissionService permission.Service
+}
+
+func (s *Service) NewSharedDeps() *SharedDeps {
+	sessionStore := session.NewSessionStore(s.Redis)
+	permissionRepo := permission.NewRepository(s.DB)
+	permissionCache := permission.NewPermissionCache(s.Redis)
+	permissionService := permission.NewService(permissionRepo, permissionCache)
+
+	return &SharedDeps{
+		DB:                s.DB,
+		Redis:             s.Redis,
+		PubCh:             s.PubCh,
+		SessionStore:      sessionStore,
+		PermissionService: permissionService,
+	}
 }

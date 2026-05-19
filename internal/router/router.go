@@ -1,6 +1,7 @@
 package router
 
 import (
+	"nh-be/internal/app"
 	"nh-be/internal/features/auth"
 	"nh-be/internal/features/experiment"
 	"nh-be/internal/features/experiment/result"
@@ -8,32 +9,27 @@ import (
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/features/user"
 	"nh-be/internal/middleware"
-	"nh-be/internal/platform/session"
 
 	"github.com/gin-gonic/gin"
-	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
 // SetupRoutes initializes all application routes
-func SetupRoutes(r *gin.Engine, db *gorm.DB, rdb *redis.Client, ch *amqp.Channel) {
-	sessionStore := session.NewSessionStore(rdb)
+func SetupRoutes(r *gin.Engine, deps *app.SharedDeps) {
 	// API version 1 group
 	v1 := r.Group("/api/v1")
 
 	// Register auth routes (public)
-	auth.RegisterRoutes(v1, db, rdb, ch)
+	auth.RegisterRoutes(v1, deps)
 
 	// Protected routes group
 	protected := v1.Group("")
-	protected.Use(middleware.RequireAuth(sessionStore))
+	protected.Use(middleware.RequireAuth(deps.SessionStore))
 
-	user.RegisterRoutes(protected, db, rdb)
-	permission.RegisterRoutes(protected, db, rdb)
-	experiment.RegisterRoutes(protected, db, rdb)
-	result.RegisterRoutes(protected, db, rdb)
-	procedure.RegisterRoutes(protected, db, rdb)
+	user.RegisterRoutes(protected, deps)
+	permission.RegisterRoutes(protected, deps.PermissionService)
+	experiment.RegisterRoutes(protected, deps)
+	result.RegisterRoutes(protected, deps)
+	procedure.RegisterRoutes(protected, deps)
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{

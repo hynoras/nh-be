@@ -4,14 +4,9 @@ import (
 	"nh-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
-	permissionRepo := NewRepository(db)
-	permissionCache := NewPermissionCache(rdb)
-	s := NewService(permissionRepo, permissionCache)
+func RegisterRoutes(r *gin.RouterGroup, s Service) {
 
 	// Permissions
 	permissions := r.Group("/permissions")

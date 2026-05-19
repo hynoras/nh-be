@@ -37,6 +37,11 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"nh-be/internal/app"
+	"nh-be/internal/features/auth"
+	"nh-be/internal/features/experiment"
+	"nh-be/internal/features/experiment/result"
+	"nh-be/internal/features/permission"
+	"nh-be/internal/features/user"
 	"nh-be/internal/middleware"
 	obs "nh-be/internal/platform/observability"
 	"nh-be/internal/router"
@@ -70,6 +75,22 @@ func main() {
 	if err != nil {
 		slog.Error("failed to initialize services", "error", err)
 		os.Exit(1)
+	}
+
+	if cfg.AppEnv == "dev" {
+		if err := service.DB.AutoMigrate(
+			&auth.VerificationToken{},
+			&user.User{},
+			&permission.Permission{},
+			&permission.PermissionGroup{},
+			&user.UserPermission{},
+			&experiment.Experiment{},
+			&result.ExperimentResult{},
+		); err != nil {
+			slog.Error("failed to run GORM AutoMigrate", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Running AutoMigrate in dev mode")
 	}
 
 	prometheus.MustRegister(obs.NewDbPoolCollector(service.SQLDB))
@@ -162,7 +183,8 @@ func main() {
 		ShuttingDown: shuttingDown,
 	})
 
-	router.SetupRoutes(r, service.DB, service.Redis, service.PubCh)
+	deps := service.NewSharedDeps()
+	router.SetupRoutes(r, deps)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
