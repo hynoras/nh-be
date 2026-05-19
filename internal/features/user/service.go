@@ -246,11 +246,13 @@ func (s *service) DeleteUsers(ctx context.Context, ids []uuid.UUID) error {
 		return constant.ErrForbidDeleteUser
 	}
 
-	for _, id := range ids {
-		err := s.userRepo.Delete(ctx, id)
-		if err != nil {
-			return err
+	return s.userRepo.WithTransaction(ctx, func(txRepo Repository) error {
+		for _, id := range ids {
+			err := txRepo.Delete(ctx, id)
+			if err != nil {
+				return err
+			}
 		}
-	}
-	return nil
+		return nil
+	})
 }

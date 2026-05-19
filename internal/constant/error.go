@@ -69,13 +69,15 @@ var (
 	ErrInvalidIDFormat            ErrorDetail = errors.New("invalid id format")
 
 	// auth
-	ErrInvalidCredentials        ErrorDetail = errors.New("invalid credentials")
-	ErrVerificationTokenNotFound ErrorDetail = errors.New("token not found")
-	ErrUnauthenticated           ErrorDetail = errors.New("unauthenticated")
-	ErrEmailAlreadyExists        ErrorDetail = errors.New("email already exists")
-	ErrVerificationTokenExpired  ErrorDetail = errors.New("token expired")
-	ErrInvalidVerificationToken  ErrorDetail = errors.New("invalid token, please check token type")
-	ErrSessionNotFound           ErrorDetail = errors.New("session not found")
+	ErrInvalidCredentials                      ErrorDetail = errors.New("invalid credentials")
+	ErrVerificationTokenNotFound               ErrorDetail = errors.New("token not found")
+	ErrUnauthenticated                         ErrorDetail = errors.New("unauthenticated")
+	ErrEmailAlreadyExists                      ErrorDetail = errors.New("email already exists")
+	ErrVerificationTokenExpired                ErrorDetail = errors.New("token expired")
+	ErrInvalidVerificationToken                ErrorDetail = errors.New("invalid token, please check token type")
+	ErrSessionNotFound                         ErrorDetail = errors.New("session not found")
+	ErrNewPasswordAndConfirmPasswordDoNotMatch ErrorDetail = errors.New("new password and confirm password do not match")
+	ErrNewPasswordIsTheSameAsOldPassword       ErrorDetail = errors.New("new password is the same as the old password")
 
 	//permission
 	ErrPermissionNotFound               ErrorDetail = errors.New("permission not found")

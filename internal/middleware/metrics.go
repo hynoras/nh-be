@@ -20,7 +20,7 @@ func MetricsMiddleware() gin.HandlerFunc {
 
 		obs.HttpRequestsTotal.WithLabelValues(
 			c.Request.Method,
-			c.Request.URL.Path,
+			c.FullPath(),
 			strconv.Itoa(c.Writer.Status()),
 		).Inc()
 

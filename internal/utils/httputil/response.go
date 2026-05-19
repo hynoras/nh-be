@@ -163,6 +163,10 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		MakeErrorResponse(c, http.StatusUnauthorized, "Invalid verification token", err.Error())
 	case constant.ErrSessionNotFound:
 		MakeErrorResponse(c, http.StatusUnauthorized, "Session not found", err.Error())
+	case constant.ErrNewPasswordAndConfirmPasswordDoNotMatch:
+		MakeErrorResponse(c, http.StatusBadRequest, "Passwords do not match", err.Error())
+	case constant.ErrNewPasswordIsTheSameAsOldPassword:
+		MakeErrorResponse(c, http.StatusBadRequest, "Password must be different", err.Error())
 
 	//permission
 	case constant.ErrPermissionNotFound:
