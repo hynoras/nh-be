@@ -13,6 +13,8 @@ const (
 	usernameAllowedChars = `^[a-zA-Z0-9._]+$`
 )
 
+var usernamePattern = regexp.MustCompile(usernameAllowedChars)
+
 // ValidateUsername validates a username against all rules:
 // - Length: 3-30 characters
 // - Allowed chars: a-z, A-Z, 0-9, _, .
@@ -28,7 +30,7 @@ func ValidateUsername(username string) error {
 	}
 
 	// Check allowed characters
-	if !regexp.MustCompile(usernameAllowedChars).MatchString(username) {
+	if !usernamePattern.MatchString(username) {
 		return constant.ErrInvalidUsernameChars
 	}
 
