@@ -7,6 +7,8 @@ import (
 
 	"nh-be/internal/constant"
 	"nh-be/internal/features/observation"
+	"nh-be/internal/features/procedure"
+	"nh-be/internal/features/experiment"
 	obsmocks "nh-be/internal/features/observation/mocks"
 	"nh-be/internal/features/permission/mocks"
 	"nh-be/internal/utils/testutil"
@@ -51,7 +53,7 @@ func TestService_GetAllObservations(t *testing.T) {
 			},
 			expectedResult: nil,
 			expectedLength: 0,
-			expectedError:  constant.ErrForbidViewObservation,
+			expectedError:  observation.ErrForbidViewObservation,
 		},
 		{
 			name:   "forbidden_view_permission_error",
@@ -325,7 +327,7 @@ func TestService_CreateObservation(t *testing.T) {
 					mock.Anything, mock.Anything)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
-			expectedError:  constant.ErrForbidCreateObservation,
+			expectedError:  observation.ErrForbidCreateObservation,
 		},
 		{
 			name:       "missing_user_id_in_context",
@@ -354,10 +356,10 @@ func TestService_CreateObservation(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("CreateObservation", mock.Anything, mock.AnythingOfType("observation.Observation")).
-					Return(observation.Observation{}, constant.ErrExperimentNotFound)
+					Return(observation.Observation{}, experiment.ErrExperimentNotFound)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
-			expectedError:  constant.ErrExperimentNotFound,
+			expectedError:  experiment.ErrExperimentNotFound,
 		},
 		{
 			name:       "procedure_not_found",
@@ -369,10 +371,10 @@ func TestService_CreateObservation(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("CreateObservation", mock.Anything, mock.AnythingOfType("observation.Observation")).
-					Return(observation.Observation{}, constant.ErrProcedureNotFound)
+					Return(observation.Observation{}, procedure.ErrProcedureNotFound)
 			},
 			expectedResult: observation.CreatedObservationResponseDto{},
-			expectedError:  constant.ErrProcedureNotFound,
+			expectedError:  procedure.ErrProcedureNotFound,
 		},
 		{
 			name:       "unexpected_error",

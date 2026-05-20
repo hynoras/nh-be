@@ -2,7 +2,6 @@ package procedure
 
 import (
 	"context"
-	"errors"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/utils/authutil"
@@ -33,20 +32,20 @@ func NewService(repository Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) CanViewProcedure(ctx context.Context, id uuid.UUID) error {
-	return authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewProcedure, constant.ViewExperiment, constant.ManageExperiment)
+	return authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewProcedure, constant.ViewExperiment, constant.ManageExperiment)
 }
 
 func (s *service) CanManageProcedure(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
 	var forbidErr error
 	switch action {
 	case constant.Create:
-		forbidErr = constant.ErrForbidCreateProcedure
+		forbidErr = ErrForbidCreateProcedure
 	case constant.Update:
-		forbidErr = constant.ErrForbidUpdateProcedure
+		forbidErr = ErrForbidUpdateProcedure
 	case constant.Delete:
-		forbidErr = constant.ErrForbidDeleteProcedure
+		forbidErr = ErrForbidDeleteProcedure
 	default:
-		forbidErr = errors.New("you do not have permission to manage this procedure")
+		forbidErr = ErrForbidManageProcedure
 	}
 
 	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
@@ -166,7 +165,7 @@ func (s *service) UpdateProcedureStep(
 
 			version, exists := existingStepIds[input.ID]
 			if !exists {
-				return constant.ErrProcedureStepNotFound
+				return ErrProcedureStepNotFound
 			}
 
 			step := MapUpdateProcStepInputToProcStep(&input, now)

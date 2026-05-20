@@ -3,7 +3,6 @@ package httputil
 import (
 	"errors"
 	"net/http"
-	"nh-be/internal/constant"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -163,84 +162,7 @@ func RegisterError(err error, statusCode int, message string) {
 	})
 }
 
-func init() {
-	// auth
-	RegisterError(constant.ErrInvalidCredentials, http.StatusUnauthorized, "Invalid credentials")
-	RegisterError(constant.ErrVerificationTokenNotFound, http.StatusNotFound, "Verification token not found")
-	RegisterError(constant.ErrUnauthenticated, http.StatusUnauthorized, "Unauthenticated")
-	RegisterError(constant.ErrEmailAlreadyExists, http.StatusConflict, "Email already exists")
-	RegisterError(constant.ErrVerificationTokenExpired, http.StatusUnauthorized, "Verification token expired")
-	RegisterError(constant.ErrInvalidVerificationToken, http.StatusUnauthorized, "Invalid verification token")
-	RegisterError(constant.ErrSessionNotFound, http.StatusUnauthorized, "Session not found")
-	RegisterError(constant.ErrNewPasswordAndConfirmPasswordDoNotMatch, http.StatusBadRequest, "Passwords do not match")
-	RegisterError(constant.ErrNewPasswordIsTheSameAsOldPassword, http.StatusBadRequest, "Password must be different")
 
-	// permission
-	RegisterError(constant.ErrPermissionNotFound, http.StatusNotFound, "Permission not found")
-	RegisterError(constant.ErrPermissionGroupNotFound, http.StatusNotFound, "Permission group not found")
-	RegisterError(constant.ErrNotNullPermissions, http.StatusBadRequest, "Permissions can not be null")
-	RegisterError(constant.ErrCannotDeleteSuperAdmin, http.StatusForbidden, constant.ErrDeletePermissionFailed)
-	RegisterError(constant.ErrForbidViewPermissions, http.StatusForbidden, constant.ErrGetAllPermissionFailed)
-	RegisterError(constant.ErrPermissionGroupNameAlreadyExists, http.StatusConflict, constant.ErrCreatePermissionGroupFailed)
-	RegisterError(constant.ErrForbidViewPermissionGroups, http.StatusForbidden, constant.ErrGetAllPermissionGroupFailed)
-	RegisterError(constant.ErrForbidViewPermissionGroup, http.StatusForbidden, constant.ErrGetPermissionGroupDetailFailed)
-	RegisterError(constant.ErrForbidCreatePermissionGroup, http.StatusForbidden, constant.ErrCreatePermissionGroupFailed)
-	RegisterError(constant.ErrForbidUpdatePermissionGroup, http.StatusForbidden, constant.ErrUpdatePermissionGroupFailed)
-	RegisterError(constant.ErrForbidDeletePermissionGroup, http.StatusForbidden, constant.ErrDeletePermissionGroupFailed)
-
-	// user
-	RegisterError(constant.ErrUserNotFound, http.StatusNotFound, "User not found")
-	RegisterError(constant.ErrForbidViewUsers, http.StatusForbidden, constant.ErrGetAllUsersFailed)
-	RegisterError(constant.ErrForbidViewUser, http.StatusForbidden, constant.ErrGetUserDetailFailed)
-	RegisterError(constant.ErrForbidUpdateUser, http.StatusForbidden, constant.ErrUpdateUserFailed)
-	RegisterError(constant.ErrForbidDeleteUser, http.StatusForbidden, constant.ErrDeleteUserFailed)
-	RegisterError(constant.ErrDuplicateUsername, http.StatusConflict, "Invalid username")
-	RegisterError(constant.ErrDuplicateEmail, http.StatusConflict, "Invalid email")
-	RegisterError(constant.ErrUsernameMustStartWithLetter, http.StatusBadRequest, "Invalid username")
-	RegisterError(constant.ErrUsernameMustEndWithLetterOrNumber, http.StatusBadRequest, "Invalid username")
-	RegisterError(constant.ErrUsernameNoConsecutiveSpecialChars, http.StatusBadRequest, "Invalid username")
-	RegisterError(constant.ErrUsernameNoAdjacentSpecialChars, http.StatusBadRequest, "Invalid username")
-	RegisterError(constant.ErrReservedUsername, http.StatusBadRequest, "Invalid username")
-
-	// experiment
-	RegisterError(constant.ErrForbidViewExperiments, http.StatusForbidden, constant.ErrGetAllExperimentFailed)
-	RegisterError(constant.ErrForbidViewExperiment, http.StatusForbidden, constant.ErrGetExperimentDetailFailed)
-	RegisterError(constant.ErrForbidUpdateExperiment, http.StatusForbidden, constant.ErrUpdateExperimentFailed)
-	RegisterError(constant.ErrForbidDeleteExperiment, http.StatusForbidden, constant.ErrAuthorizationFailed)
-	RegisterError(constant.ErrStatusTransitionFromDraftToPlanning, http.StatusBadRequest, constant.ErrInvalidStatusTransition)
-	RegisterError(constant.ErrStatusTransitionFromPlanningToRunning, http.StatusBadRequest, constant.ErrInvalidStatusTransition)
-	RegisterError(constant.ErrStatusTransitionFromRunningToCompletedOrAborted, http.StatusBadRequest, constant.ErrInvalidStatusTransition)
-	RegisterError(constant.ErrExperimentConflict, http.StatusConflict, constant.ErrUpdateExperimentFailed)
-	RegisterError(constant.ErrExperimentAlreadyInTargetState, http.StatusBadRequest, constant.ErrUpdateExperimentFailed)
-	RegisterError(constant.ErrExperimentNotFound, http.StatusNotFound, "Experiment not found")
-	RegisterError(constant.ErrDuplicateProcedureAssignment, http.StatusConflict, constant.ErrAssignProcedureToExperimentFailed)
-
-	// experiment result
-	RegisterError(constant.ErrExperimentResultNotFound, http.StatusNotFound, "Experiment result not found")
-	RegisterError(constant.ErrExperimentResultAlreadyExists, http.StatusConflict, "Experiment result already exists")
-	RegisterError(constant.ErrForbidCreateExperimentResult, http.StatusForbidden, constant.ErrCreateExperimentFailed)
-	RegisterError(constant.ErrForbidViewExperimentResult, http.StatusForbidden, constant.ErrGetExperimentDetailFailed)
-	RegisterError(constant.ErrForbidUpdateExperimentResult, http.StatusForbidden, constant.ErrUpdateExperimentFailed)
-	RegisterError(constant.ErrInvalidOutcome, http.StatusBadRequest, "Invalid outcome value")
-	RegisterError(constant.ErrInvalidConfidenceLevel, http.StatusBadRequest, "Invalid confidence level value")
-	RegisterError(constant.ErrExperimentResultConflict, http.StatusConflict, constant.ErrUpdateExperimentFailed)
-
-	// procedure
-	RegisterError(constant.ErrForbidViewProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
-	RegisterError(constant.ErrForbidCreateProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
-	RegisterError(constant.ErrForbidUpdateProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
-	RegisterError(constant.ErrForbidDeleteProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
-	RegisterError(constant.ErrProcedureNotFound, http.StatusNotFound, "Procedure not found")
-	RegisterError(constant.ErrProcedureAlreadyExists, http.StatusConflict, "Procedure already exists")
-	RegisterError(constant.ErrProcedureConflict, http.StatusConflict, constant.ErrUpdateProcedureFailed)
-	RegisterError(constant.ErrProcedureStepNotFound, http.StatusNotFound, "Procedure step not found")
-	RegisterError(constant.ErrProcedureStepConflict, http.StatusConflict, constant.ErrUpdateProcedureStepFailed)
-
-	// observation
-	RegisterError(constant.ErrObservationNotFound, http.StatusNotFound, "Observation not found")
-	RegisterError(constant.ErrForbidViewObservation, http.StatusForbidden, constant.ErrAuthorizationFailed)
-	RegisterError(constant.ErrForbidCreateObservation, http.StatusForbidden, constant.ErrAuthorizationFailed)
-}
 
 func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 	if err == nil {

@@ -2,7 +2,6 @@ package experiment
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +32,7 @@ func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 		}
 
 		experiments, length, serviceErr := s.GetAllExperiments(c.Request.Context(), search, pageInt, pageSizeInt)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, "Failed to get experiments") {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllExperimentFailed) {
 			return
 		}
 
@@ -63,7 +62,7 @@ func GetExperimentByIDHandler(s Service) gin.HandlerFunc {
 		}
 
 		experiment, serviceErr := s.GetExperimentByID(c.Request.Context(), *parsedId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetExperimentDetailFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetExperimentDetailFailed) {
 			return
 		}
 
@@ -94,7 +93,7 @@ func CreateExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.CreateExperiment(c.Request.Context(), &dto)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateExperimentFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrCreateExperimentFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusCreated, "Experiment created successfully", nil)
@@ -130,7 +129,7 @@ func UpdateExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdateExperiment(c.Request.Context(), *parsedId, &dto)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateExperimentFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdateExperimentFailed) {
 			return
 		}
 
@@ -170,7 +169,7 @@ func UpdateExperimentStatusHandler(s Service) gin.HandlerFunc {
 		status := ExperimentStatus(dto.Status)
 
 		serviceErr := s.UpdateExperimentStatus(c.Request.Context(), *parsedId, status)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateExperimentFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdateExperimentFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment status updated successfully", nil)
@@ -196,7 +195,7 @@ func AssignProcedureToExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.AssignProcedureToExperiment(c.Request.Context(), *parsedExpId, *parsedProcId, dto.Version)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrAssignProcedureToExperimentFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrAssignProcedureToExperimentFailed) {
 			return
 		}
 
@@ -226,7 +225,7 @@ func DeleteExperimentHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.DeleteExperiment(c.Request.Context(), *parsedId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeleteExperimentFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrDeleteExperimentFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment deleted successfully", nil)

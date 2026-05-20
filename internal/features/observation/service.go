@@ -38,11 +38,11 @@ func NewService(observationRepo Repository, permissionService permission.Service
 }
 
 func (s *service) CanViewObservation(ctx context.Context) error {
-	return authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewObservation, constant.ViewExperiment, constant.ManageExperiment)
+	return authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewObservation, constant.ViewExperiment, constant.ManageExperiment)
 }
 
 func (s *service) CanCreateObservation(ctx context.Context) error {
-	return authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidCreateObservation, constant.ManageExperiment)
+	return authutil.RequirePermission(ctx, s.permissionService, ErrForbidCreateObservation, constant.ManageExperiment)
 }
 
 func (s *service) GetAllObservations(

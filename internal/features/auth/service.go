@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/platform/email"
@@ -71,7 +70,7 @@ func (s *service) CreateVerificationToken(
 	tokenType VerificationTokenType,
 ) (CreatedTokenDto, error) {
 	existingToken, findErr := s.authRepo.FindVerificationTokenByUserId(ctx, userId)
-	if findErr != nil && !errors.Is(findErr, constant.ErrVerificationTokenNotFound) {
+	if findErr != nil && !errors.Is(findErr, ErrVerificationTokenNotFound) {
 		return CreatedTokenDto{}, findErr
 	}
 
@@ -102,7 +101,7 @@ func (s *service) CreateVerificationToken(
 func (s *service) SignUp(ctx context.Context, req SignUpDto) error {
 	u, err := s.userRepo.FindByEmail(ctx, req.Email)
 
-	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, user.ErrUserNotFound) {
 		return err
 	}
 
@@ -143,10 +142,10 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 		return "", findErr
 	}
 	if existingToken.Type != VerifyEmail {
-		return "", constant.ErrInvalidVerificationToken
+		return "", ErrInvalidVerificationToken
 	}
 	if existingToken.ExpireAt.Before(time.Now()) {
-		return "", constant.ErrVerificationTokenExpired
+		return "", ErrVerificationTokenExpired
 	}
 
 	updateErr := s.userRepo.Update(ctx, existingToken.UserID, &user.User{
@@ -179,10 +178,10 @@ func (s *service) Login(ctx context.Context, email, password string) (*UserRespo
 		return nil, "", err
 	}
 	if u == nil {
-		return nil, "", constant.ErrInvalidCredentials
+		return nil, "", ErrInvalidCredentials
 	}
 	if !crypto.CheckPasswordHash(password, u.Password) {
-		return nil, "", constant.ErrInvalidCredentials
+		return nil, "", ErrInvalidCredentials
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)
@@ -220,11 +219,11 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
 		return err
 	}
 	if oldPassword == nil {
-		return constant.ErrUserNotFound
+		return user.ErrUserNotFound
 	}
 
 	if changePasswordDto.NewPassword != changePasswordDto.ConfirmPassword {
-		return constant.ErrNewPasswordAndConfirmPasswordDoNotMatch
+		return ErrNewPasswordAndConfirmPasswordDoNotMatch
 	}
 
 	newHashedPassword, err := crypto.HashPassword(changePasswordDto.NewPassword)
@@ -233,7 +232,7 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
 	}
 
 	if crypto.CheckPasswordHash(changePasswordDto.NewPassword, *oldPassword) {
-		return constant.ErrNewPasswordIsTheSameAsOldPassword
+		return ErrNewPasswordIsTheSameAsOldPassword
 	}
 
 	err = s.userRepo.Update(ctx, id, &user.User{

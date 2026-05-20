@@ -2,7 +2,6 @@ package experiment
 
 import (
 	"context"
-	"errors"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/procedure"
@@ -41,20 +40,20 @@ func (s *service) CanManageExperiment(ctx context.Context, id uuid.UUID, action 
 	var forbidErr error
 	switch action {
 	case constant.Create:
-		forbidErr = constant.ErrForbidCreateExperiment
+		forbidErr = ErrForbidCreateExperiment
 	case constant.Update:
-		forbidErr = constant.ErrForbidUpdateExperiment
+		forbidErr = ErrForbidUpdateExperiment
 	case constant.Delete:
-		forbidErr = constant.ErrForbidDeleteExperiment
+		forbidErr = ErrForbidDeleteExperiment
 	default:
-		forbidErr = errors.New("you do not have permission to manage this experiment")
+		forbidErr = ErrForbidManageExperiment
 	}
 
 	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
 }
 
 func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error) {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewExperiments, constant.ViewExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperiments, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, 0, err
 	}
 
@@ -69,7 +68,7 @@ func (s *service) GetAllExperiments(ctx context.Context, search string, page, pa
 }
 
 func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error) {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewExperiment, constant.ViewExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperiment, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +87,7 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 		return err
 	}
 
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidCreateExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidCreateExperiment, constant.ManageExperiment); err != nil {
 		return err
 	}
 
@@ -107,7 +106,7 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 }
 
 func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidUpdateExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateExperiment, constant.ManageExperiment); err != nil {
 		return err
 	}
 
@@ -128,7 +127,7 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 }
 
 func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidUpdateExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateExperiment, constant.ManageExperiment); err != nil {
 		return err
 	}
 
@@ -140,18 +139,18 @@ func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, stat
 	}
 
 	if exp.Status == status {
-		return constant.ErrExperimentAlreadyInTargetState
+		return ErrExperimentAlreadyInTargetState
 	}
 
 	// validate status
 	if exp.Status == ExperimentDraft && status != ExperimentPlanning {
-		return constant.ErrStatusTransitionFromDraftToPlanning
+		return ErrStatusTransitionFromDraftToPlanning
 	}
 	if exp.Status == ExperimentPlanning && status != ExperimentRunning {
-		return constant.ErrStatusTransitionFromPlanningToRunning
+		return ErrStatusTransitionFromPlanningToRunning
 	}
 	if exp.Status == ExperimentRunning && (status != ExperimentCompleted && status != ExperimentAborted) {
-		return constant.ErrStatusTransitionFromRunningToCompletedOrAborted
+		return ErrStatusTransitionFromRunningToCompletedOrAborted
 	}
 
 	return s.experimentRepo.UpdateStatus(ctx, id, status, exp.Version)
@@ -176,14 +175,14 @@ func (s *service) AssignProcedureToExperiment(ctx context.Context, experimentId 
 	}
 
 	if assignedProcedureId == procedureId {
-		return constant.ErrDuplicateProcedureAssignment
+		return ErrDuplicateProcedureAssignment
 	}
 
 	return s.experimentRepo.UpdateProcedureID(ctx, experimentId, procedureId, version)
 }
 
 func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidDeleteExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidDeleteExperiment, constant.ManageExperiment); err != nil {
 		return err
 	}
 

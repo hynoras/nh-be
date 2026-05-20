@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"nh-be/internal/constant"
+	"nh-be/internal/features/experiment"
 	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/utils/testutil"
 
@@ -61,7 +61,7 @@ func TestRepository_Create(t *testing.T) {
 					WillReturnError(errors.New(`pq: insert or update on table "experiment_results" violates foreign key constraint "experiment_results_experiment_id_fkey"`))
 				mock.ExpectRollback()
 			},
-			expectedError: constant.ErrExperimentNotFound,
+			expectedError: experiment.ErrExperimentNotFound,
 		},
 		{
 			name: "duplicate_experiment_id",
@@ -82,7 +82,7 @@ func TestRepository_Create(t *testing.T) {
 					WillReturnError(errors.New(`pq: duplicate key value violates unique constraint "experiment_results_experiment_id_key"`))
 				mock.ExpectRollback()
 			},
-			expectedError: constant.ErrExperimentResultAlreadyExists,
+			expectedError: result.ErrExperimentResultAlreadyExists,
 		},
 	}
 
@@ -135,7 +135,7 @@ func TestRepository_Update(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrExperimentResultConflict,
+			expectedError: result.ErrExperimentResultConflict,
 		},
 		{
 			name: "optimistic_lock_non_existent_result",
@@ -145,7 +145,7 @@ func TestRepository_Update(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrExperimentResultConflict,
+			expectedError: result.ErrExperimentResultConflict,
 		},
 		{
 			name: "optimistic_lock_stale_version",
@@ -155,7 +155,7 @@ func TestRepository_Update(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0)) // No rows affected
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrExperimentResultConflict,
+			expectedError: result.ErrExperimentResultConflict,
 		},
 	}
 

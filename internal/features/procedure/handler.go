@@ -2,7 +2,6 @@ package procedure
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +32,7 @@ func GetAllProceduresHandler(s Service) gin.HandlerFunc {
 		}
 
 		procedures, length, serviceErr := s.GetAllProcedures(c.Request.Context(), search, pageInt, pageSizeInt)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllProceduresFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllProceduresFailed) {
 			return
 		}
 
@@ -62,7 +61,7 @@ func GetProcedureByIDHandler(s Service) gin.HandlerFunc {
 			return
 		}
 		procedure, serviceErr := s.GetProcedureByID(c.Request.Context(), *procedureId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetProcedureDetailFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetProcedureDetailFailed) {
 			return
 		}
 
@@ -92,7 +91,7 @@ func CreateProcedureHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.CreateProcedure(c.Request.Context(), &dto)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateProcedureFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrCreateProcedureFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusCreated, "Procedure created successfully", nil)
@@ -127,7 +126,7 @@ func UpdateProcedureHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdateProcedure(c.Request.Context(), *procedureId, &dto)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateProcedureFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdateProcedureFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure updated successfully", nil)
@@ -156,7 +155,7 @@ func DeleteProcedureHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.DeleteProcedure(c.Request.Context(), *procedureId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeleteProcedureFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrDeleteProcedureFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure deleted successfully", nil)
@@ -192,7 +191,7 @@ func GetProcedureStepsHandler(s Service) gin.HandlerFunc {
 		}
 
 		steps, length, serviceErr := s.GetProcedureSteps(c.Request.Context(), *procedureId, pageInt, pageSizeInt)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetProcedureStepsFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetProcedureStepsFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure steps fetched successfully", steps, length)
@@ -230,7 +229,7 @@ func UpdateProcedureStepHandler(s Service) gin.HandlerFunc {
 		cleanInput := MapUpdateProcStepDtoToProcStepInputs(dto)
 
 		serviceErr := s.UpdateProcedureStep(c.Request.Context(), *procedureId, cleanInput)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateProcedureFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdateProcedureFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Procedure updated successfully", nil)

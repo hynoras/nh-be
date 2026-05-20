@@ -2,7 +2,6 @@ package observation
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -59,7 +58,7 @@ func GetAllObservationsHandler(s Service) gin.HandlerFunc {
 			&sortOrder,
 		)
 
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllObservationsFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllObservationsFailed) {
 			return
 		}
 
@@ -105,7 +104,7 @@ func CreateObservationHandler(s Service) gin.HandlerFunc {
 		}
 
 		observation, serviceErr := s.CreateObservation(c.Request.Context(), *parsedExpId, *parsedProcStepId, input)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateObservationFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrCreateObservationFailed) {
 			return
 		}
 

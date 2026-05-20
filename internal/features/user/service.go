@@ -46,7 +46,7 @@ func (s *service) CheckExistingUser(ctx context.Context, userId uuid.UUID) (*Use
 		return nil, err
 	}
 	if assignedUser == nil {
-		return nil, errors.New("assigned users not found")
+		return nil, ErrAssignedUserNotFound
 	}
 	return assignedUser, nil
 }
@@ -57,14 +57,14 @@ func (s *service) CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) (
 		return nil, err
 	}
 	if len(users) == 0 {
-		return nil, errors.New("users not found")
+		return nil, ErrUsersNotFound
 	}
 	return users, nil
 
 }
 
 func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidCreateUser, constant.ManageUser); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidCreateUser, constant.ManageUser); err != nil {
 		return err
 	}
 
@@ -74,7 +74,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return err
 	}
 	if existingUser != nil {
-		return constant.ErrDuplicateUsername
+		return ErrDuplicateUsername
 	}
 
 	// Check for duplicate email
@@ -83,7 +83,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		return err
 	}
 	if existingUser != nil {
-		return constant.ErrDuplicateEmail
+		return ErrDuplicateEmail
 	}
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
@@ -118,7 +118,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 }
 
 func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error) {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewUsers, constant.ViewUser, constant.ManageUser); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewUsers, constant.ViewUser, constant.ManageUser); err != nil {
 		return nil, 0, err
 	}
 
@@ -132,7 +132,7 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 
 func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error) {
 	if !isMe {
-		if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewUser, constant.ViewUser, constant.ManageUser); err != nil {
+		if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewUser, constant.ViewUser, constant.ManageUser); err != nil {
 			return nil, err
 		}
 	}
@@ -161,7 +161,7 @@ func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (int
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidUpdateUser, constant.ManageUser); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateUser, constant.ManageUser); err != nil {
 		return err
 	}
 
@@ -193,7 +193,7 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 }
 
 func (s *service) DeleteUsers(ctx context.Context, ids []uuid.UUID) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidDeleteUser, constant.ManageUser); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidDeleteUser, constant.ManageUser); err != nil {
 		return err
 	}
 

@@ -51,7 +51,7 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 		return []ObservationMetadata{}, 0, err
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return []ObservationMetadata{}, 0, constant.ErrExperimentNotFound
+		return []ObservationMetadata{}, 0, exp.ErrExperimentNotFound
 	}
 
 	err = r.db.WithContext(ctx).
@@ -63,7 +63,7 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 		return []ObservationMetadata{}, 0, err
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return []ObservationMetadata{}, 0, constant.ErrProcedureNotFound
+		return []ObservationMetadata{}, 0, proc.ErrProcedureNotFound
 	}
 
 	baseQuery := r.db.WithContext(ctx).Model(&Observation{}).
@@ -102,10 +102,10 @@ func (r *repository) CreateObservation(
 
 	if result.Error != nil {
 		if dbutil.IsForeignKeyViolation(result.Error, "observations_experiment_id_fkey") {
-			return Observation{}, constant.ErrExperimentNotFound
+			return Observation{}, exp.ErrExperimentNotFound
 		}
 		if dbutil.IsForeignKeyViolation(result.Error, "observations_procedure_step_id_fkey") {
-			return Observation{}, constant.ErrProcedureNotFound
+			return Observation{}, proc.ErrProcedureNotFound
 		}
 		return Observation{}, result.Error
 	}

@@ -29,7 +29,7 @@ func NewService(resultRepo Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid.UUID) (*ExperimentResult, error) {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidViewExperimentResult, constant.ViewExperiment, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperimentResult, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func (s *service) GetResultByExperimentID(ctx context.Context, experimentID uuid
 }
 
 func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto *CreateResultDto) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidCreateExperimentResult, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidCreateExperimentResult, constant.ManageExperiment); err != nil {
 		return err
 	}
 
@@ -62,7 +62,7 @@ func (s *service) CreateResult(ctx context.Context, experimentID uuid.UUID, dto 
 }
 
 func (s *service) UpdateResult(ctx context.Context, resultID uuid.UUID, experimentID uuid.UUID, dto *UpdateResultDto) error {
-	if err := authutil.RequirePermission(ctx, s.permissionService, constant.ErrForbidUpdateExperimentResult, constant.ManageExperiment); err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateExperimentResult, constant.ManageExperiment); err != nil {
 		return err
 	}
 

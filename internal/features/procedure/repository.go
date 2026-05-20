@@ -3,7 +3,6 @@ package procedure
 import (
 	"context"
 	"errors"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/dbutil"
 	"strings"
 
@@ -63,7 +62,7 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID, withSteps bool)
 	err := query.First(&procedure, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, constant.ErrProcedureNotFound
+			return nil, ErrProcedureNotFound
 		}
 		return nil, err
 	}
@@ -96,9 +95,9 @@ func (r *repository) UpdateProcedure(ctx context.Context, id uuid.UUID, procedur
 		}
 
 		if count == 0 {
-			return constant.ErrProcedureNotFound
+			return ErrProcedureNotFound
 		}
-		return constant.ErrProcedureConflict
+		return ErrProcedureConflict
 	}
 	return nil
 }
@@ -109,7 +108,7 @@ func (r *repository) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
 		return dbResult.Error
 	}
 	if dbResult.RowsAffected == 0 {
-		return constant.ErrProcedureNotFound
+		return ErrProcedureNotFound
 	}
 	return nil
 }
@@ -123,7 +122,7 @@ func (r *repository) GetProcStepsByProcID(ctx context.Context, procedureId uuid.
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, 0, constant.ErrProcedureNotFound
+			return nil, 0, ErrProcedureNotFound
 		}
 		return nil, 0, err
 	}
@@ -200,9 +199,9 @@ func (r *repository) UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, 
 		}
 
 		if count == 0 {
-			return constant.ErrProcedureStepNotFound
+			return ErrProcedureStepNotFound
 		}
-		return constant.ErrProcedureStepConflict
+		return ErrProcedureStepConflict
 	}
 
 	return nil
@@ -219,7 +218,7 @@ func (r *repository) DeleteProcedureStep(ctx context.Context, stepId uuid.UUID, 
 	}
 
 	if dbResult.RowsAffected == 0 {
-		return constant.ErrProcedureStepNotFound
+		return ErrProcedureStepNotFound
 	}
 
 	return nil

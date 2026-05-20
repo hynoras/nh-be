@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"nh-be/internal/constant"
 	"nh-be/internal/features/experiment"
 	"nh-be/internal/utils/testutil"
 
@@ -69,7 +68,7 @@ func TestRepository_GetProcedureIDByID(t *testing.T) {
 					WithArgs(id, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"procedure_id"}))
 			},
-			expectedError: constant.ErrExperimentNotFound,
+			expectedError: experiment.ErrExperimentNotFound,
 			checkResult: func(t *testing.T, result uuid.UUID) {
 				assert.Equal(t, uuid.Nil, result)
 			},
@@ -85,7 +84,7 @@ func TestRepository_GetProcedureIDByID(t *testing.T) {
 			},
 			checkError: func(t *testing.T, err error) {
 				assert.Error(t, err)
-				assert.NotErrorIs(t, err, constant.ErrExperimentNotFound)
+				assert.NotErrorIs(t, err, experiment.ErrExperimentNotFound)
 			},
 			checkResult: func(t *testing.T, result uuid.UUID) {
 				assert.Equal(t, uuid.Nil, result)
@@ -151,7 +150,7 @@ func TestRepository_UpdateProcedureID(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0))
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrExperimentConflict,
+			expectedError: experiment.ErrExperimentConflict,
 		},
 		{
 			name: "not_found",
@@ -162,7 +161,7 @@ func TestRepository_UpdateProcedureID(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0))
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrExperimentConflict,
+			expectedError: experiment.ErrExperimentConflict,
 		},
 		{
 			name: "db_error",

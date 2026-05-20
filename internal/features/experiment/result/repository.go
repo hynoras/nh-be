@@ -3,7 +3,7 @@ package result
 import (
 	"context"
 	"errors"
-	"nh-be/internal/constant"
+	exp "nh-be/internal/features/experiment"
 	"strings"
 
 	"github.com/google/uuid"
@@ -39,10 +39,10 @@ func (r *repository) Create(ctx context.Context, result *ExperimentResult) error
 	err := r.db.WithContext(ctx).Create(result).Error
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") && strings.Contains(err.Error(), "experiment_id") {
-			return constant.ErrExperimentResultAlreadyExists
+			return ErrExperimentResultAlreadyExists
 		}
 		if strings.Contains(err.Error(), "foreign key constraint") && strings.Contains(err.Error(), "experiment_id") {
-			return constant.ErrExperimentNotFound
+			return exp.ErrExperimentNotFound
 		}
 		return err
 	}
@@ -56,7 +56,7 @@ func (r *repository) FindByExperimentID(ctx context.Context, experimentID uuid.U
 		First(&result).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, constant.ErrExperimentResultNotFound
+			return nil, ErrExperimentResultNotFound
 		}
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*ExperimentRes
 		First(&result).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, constant.ErrExperimentResultNotFound
+			return nil, ErrExperimentResultNotFound
 		}
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (r *repository) FindByIDAndExperimentID(ctx context.Context, id uuid.UUID, 
 		First(&result).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, constant.ErrExperimentResultNotFound
+			return nil, ErrExperimentResultNotFound
 		}
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (r *repository) Update(ctx context.Context, id uuid.UUID, experimentID uuid
 	}
 
 	if dbResult.RowsAffected == 0 {
-		return constant.ErrExperimentResultConflict
+		return ErrExperimentResultConflict
 	}
 
 	return nil

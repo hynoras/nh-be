@@ -77,7 +77,7 @@ func TestService_GetAllProcedures(t *testing.T) {
 			},
 			expectedResult: nil,
 			expectedLength: 0,
-			expectedError:  constant.ErrForbidViewProcedure,
+			expectedError:  procedure.ErrForbidViewProcedure,
 		},
 		{
 			name:   "permission_service_error",
@@ -315,10 +315,10 @@ func TestService_GetProcedureByID(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
 				repo.On("FindByID", mock.Anything, procedureID, true).
-					Return(nil, constant.ErrProcedureNotFound)
+					Return(nil, procedure.ErrProcedureNotFound)
 			},
 			checkError: func(t *testing.T, err error) {
-				assert.ErrorIs(t, err, constant.ErrProcedureNotFound)
+				assert.ErrorIs(t, err, procedure.ErrProcedureNotFound)
 			},
 			checkResult: func(t *testing.T, result *procedure.ProcedureResponseDto) {
 				assert.Nil(t, result)
@@ -411,7 +411,7 @@ func TestService_CreateProcedure(t *testing.T) {
 					Return([]string{constant.ViewExperiment}, nil)
 				// Repo should NOT be called
 			},
-			expectedError: constant.ErrForbidCreateProcedure,
+			expectedError: procedure.ErrForbidCreateProcedure,
 		},
 		{
 			name: "missing_user_in_context",
@@ -496,7 +496,7 @@ func TestService_UpdateProcedure(t *testing.T) {
 					Return([]string{constant.ViewExperiment}, nil)
 				// Repo should NOT be called
 			},
-			expectedError: constant.ErrForbidUpdateProcedure,
+			expectedError: procedure.ErrForbidUpdateProcedure,
 		},
 		{
 			name:        "update_success",
@@ -520,9 +520,9 @@ func TestService_UpdateProcedure(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
-					Return(constant.ErrProcedureNotFound)
+					Return(procedure.ErrProcedureNotFound)
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name:        "repo_returns_conflict",
@@ -533,9 +533,9 @@ func TestService_UpdateProcedure(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("UpdateProcedure", mock.Anything, procedureID, mock.AnythingOfType("*procedure.Procedure")).
-					Return(constant.ErrProcedureConflict)
+					Return(procedure.ErrProcedureConflict)
 			},
-			expectedError: constant.ErrProcedureConflict,
+			expectedError: procedure.ErrProcedureConflict,
 		},
 		{
 			name:        "repo_returns_db_error",
@@ -597,7 +597,7 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 					Return([]string{constant.ViewExperiment}, nil)
 				// Repo should NOT be called
 			},
-			expectedError: constant.ErrForbidUpdateProcedure,
+			expectedError: procedure.ErrForbidUpdateProcedure,
 		},
 		{
 			name:        "transaction_error_is_propagated",
@@ -674,9 +674,9 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 						fn := args.Get(1).(func(procedure.Repository) error)
 						_ = fn(repo)
 					}).
-					Return(constant.ErrProcedureStepNotFound)
+					Return(procedure.ErrProcedureStepNotFound)
 			},
-			expectedError: constant.ErrProcedureStepNotFound,
+			expectedError: procedure.ErrProcedureStepNotFound,
 		},
 		{
 			name:        "delete_missing_step_when_not_in_input",
@@ -710,15 +710,15 @@ func TestService_UpdateProcedureStep(t *testing.T) {
 				repo.On("GetStepIDsByProcID", mock.Anything, procedureID).
 					Return(TestExistingStepMetadata(), nil)
 				repo.On("UpdateProcedureStep", mock.Anything, ExistingStepID1, procedureID, mock.AnythingOfType("*procedure.ProcedureStep")).
-					Return(constant.ErrProcedureConflict)
+					Return(procedure.ErrProcedureConflict)
 				repo.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(procedure.Repository) error")).
 					Run(func(args mock.Arguments) {
 						fn := args.Get(1).(func(procedure.Repository) error)
 						_ = fn(repo)
 					}).
-					Return(constant.ErrProcedureConflict)
+					Return(procedure.ErrProcedureConflict)
 			},
-			expectedError: constant.ErrProcedureConflict,
+			expectedError: procedure.ErrProcedureConflict,
 		},
 		{
 			name:        "mixed_create_update_delete_in_single_request",
@@ -831,7 +831,7 @@ func TestService_DeleteProcedure(t *testing.T) {
 					Return([]string{constant.ViewExperiment}, nil)
 				repo.AssertNotCalled(t, "DeleteProcedure", mock.Anything, procedureID)
 			},
-			expectedError: constant.ErrForbidDeleteProcedure,
+			expectedError: procedure.ErrForbidDeleteProcedure,
 		},
 		{
 			name:        "permission_service_error",
@@ -852,9 +852,9 @@ func TestService_DeleteProcedure(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("DeleteProcedure", mock.Anything, procedureID).
-					Return(constant.ErrProcedureNotFound)
+					Return(procedure.ErrProcedureNotFound)
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name:        "repository_db_error",
@@ -919,7 +919,7 @@ func TestService_GetProcedureSteps(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{}, nil)
 			},
-			expectedError: constant.ErrForbidViewProcedure,
+			expectedError: procedure.ErrForbidViewProcedure,
 		},
 		{
 			name:        "repo_returns_error",

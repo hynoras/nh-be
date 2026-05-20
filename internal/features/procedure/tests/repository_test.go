@@ -2,7 +2,6 @@ package procedure
 
 import (
 	"context"
-	"nh-be/internal/constant"
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/utils/stringutil"
 	"nh-be/internal/utils/testutil"
@@ -305,7 +304,7 @@ func TestRepository_FindByID(t *testing.T) {
 						"id", "title", "description", "version", "parent_id", "created_at", "updated_at",
 					}))
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 			checkResult: func(t *testing.T, result *procedure.Procedure) {
 				assert.Nil(t, result)
 			},
@@ -322,7 +321,7 @@ func TestRepository_FindByID(t *testing.T) {
 			},
 			checkError: func(t *testing.T, err error) {
 				assert.Error(t, err)
-				assert.NotErrorIs(t, err, constant.ErrProcedureNotFound)
+				assert.NotErrorIs(t, err, procedure.ErrProcedureNotFound)
 			},
 			checkResult: func(t *testing.T, result *procedure.Procedure) {
 				assert.Nil(t, result)
@@ -661,7 +660,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					WithArgs(id).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name: "version_conflict",
@@ -684,7 +683,7 @@ func TestRepository_UpdateProcedure(t *testing.T) {
 					WithArgs(id).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 			},
-			expectedError: constant.ErrProcedureConflict,
+			expectedError: procedure.ErrProcedureConflict,
 		},
 		{
 			name: "count_error",
@@ -978,7 +977,7 @@ func TestRepository_UpdateProcedureStep(t *testing.T) {
 					WithArgs(stepID, procedureID).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 			},
-			expectedError: constant.ErrProcedureStepNotFound,
+			expectedError: procedure.ErrProcedureStepNotFound,
 		},
 		{
 			name:        "optimistic_lock_conflict",
@@ -1001,7 +1000,7 @@ func TestRepository_UpdateProcedureStep(t *testing.T) {
 					WithArgs(stepID, procedureID).
 					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 			},
-			expectedError: constant.ErrProcedureStepConflict,
+			expectedError: procedure.ErrProcedureStepConflict,
 		},
 		{
 			name:        "db_error_on_update",
@@ -1136,7 +1135,7 @@ func TestRepository_DeleteProcedureStep(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0))
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrProcedureStepNotFound,
+			expectedError: procedure.ErrProcedureStepNotFound,
 		},
 		{
 			name:        "db_error",
@@ -1231,7 +1230,7 @@ func TestRepository_DeleteProcedure(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 0))
 				mock.ExpectCommit()
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name: "db_error",
@@ -1320,7 +1319,7 @@ func TestRepository_GetProcStepsByProcID(t *testing.T) {
 					WithArgs(procedureID, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name:        "db_error_while_checking_procedure",
@@ -1336,7 +1335,7 @@ func TestRepository_GetProcStepsByProcID(t *testing.T) {
 			checkError: func(t *testing.T, err error) {
 				assert.Error(t, err)
 				assert.ErrorIs(t, err, assert.AnError)
-				assert.NotErrorIs(t, err, constant.ErrProcedureNotFound)
+				assert.NotErrorIs(t, err, procedure.ErrProcedureNotFound)
 			},
 		},
 		{

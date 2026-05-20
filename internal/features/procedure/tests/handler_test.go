@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"nh-be/internal/constant"
 	"nh-be/internal/features/procedure"
 	proceduremocks "nh-be/internal/features/procedure/mocks"
 	"nh-be/internal/utils/testutil"
@@ -47,7 +46,7 @@ func TestHandler_GetAllProcedures(t *testing.T) {
 			queryParams: "?page=1&pageSize=10",
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetAllProcedures", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, int64(0), constant.ErrForbidViewProcedure)
+					Return(nil, int64(0), procedure.ErrForbidViewProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -106,7 +105,7 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetProcedureByID", mock.Anything, validID).
-					Return(nil, constant.ErrProcedureNotFound)
+					Return(nil, procedure.ErrProcedureNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -115,7 +114,7 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetProcedureByID", mock.Anything, validID).
-					Return(nil, constant.ErrForbidViewProcedure)
+					Return(nil, procedure.ErrForbidViewProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -124,7 +123,7 @@ func TestHandler_GetProcedureByID(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetProcedureByID", mock.Anything, validID).
-					Return(nil, constant.ErrProcedureConflict)
+					Return(nil, procedure.ErrProcedureConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -205,7 +204,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":null,"is_optional":false,"wait_time":null,"type":"action"}]}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
-					Return(constant.ErrForbidCreateProcedure)
+					Return(procedure.ErrForbidCreateProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -214,7 +213,7 @@ func TestHandler_CreateProcedure(t *testing.T) {
 			requestBody: `{"title":"Test Procedure","description":"Test Description","steps":[{"step_order":1,"title":"Step 1","description":null,"is_optional":false,"wait_time":null,"type":"action"}]}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("CreateProcedure", mock.Anything, mock.AnythingOfType("*procedure.CreateProcedureDto")).
-					Return(constant.ErrProcedureAlreadyExists)
+					Return(procedure.ErrProcedureAlreadyExists)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -294,7 +293,7 @@ func TestHandler_UpdateProcedure(t *testing.T) {
 			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
-					Return(constant.ErrForbidUpdateProcedure)
+					Return(procedure.ErrForbidUpdateProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -304,7 +303,7 @@ func TestHandler_UpdateProcedure(t *testing.T) {
 			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
-					Return(constant.ErrProcedureNotFound)
+					Return(procedure.ErrProcedureNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -314,7 +313,7 @@ func TestHandler_UpdateProcedure(t *testing.T) {
 			requestBody: `{"title":"Updated Title","description":"Updated Description","version":1}`,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedure", mock.Anything, validID, mock.AnythingOfType("*procedure.UpdateProcedureDto")).
-					Return(constant.ErrProcedureConflict)
+					Return(procedure.ErrProcedureConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -397,7 +396,7 @@ func TestHandler_UpdateProcedureStep(t *testing.T) {
 			requestBody: validStepBody,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
-					Return(constant.ErrForbidUpdateProcedure)
+					Return(procedure.ErrForbidUpdateProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -407,7 +406,7 @@ func TestHandler_UpdateProcedureStep(t *testing.T) {
 			requestBody: validStepBody,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
-					Return(constant.ErrProcedureNotFound)
+					Return(procedure.ErrProcedureNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -417,7 +416,7 @@ func TestHandler_UpdateProcedureStep(t *testing.T) {
 			requestBody: validStepBody,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
-					Return(constant.ErrProcedureConflict)
+					Return(procedure.ErrProcedureConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -427,7 +426,7 @@ func TestHandler_UpdateProcedureStep(t *testing.T) {
 			requestBody: validStepBody,
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("UpdateProcedureStep", mock.Anything, validID, mock.AnythingOfType("[]procedure.UpdateProcedureStepInput")).
-					Return(constant.ErrProcedureStepNotFound)
+					Return(procedure.ErrProcedureStepNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -505,7 +504,7 @@ func TestHandler_DeleteProcedure(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("DeleteProcedure", mock.Anything, validID).
-					Return(constant.ErrForbidDeleteProcedure)
+					Return(procedure.ErrForbidDeleteProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -514,7 +513,7 @@ func TestHandler_DeleteProcedure(t *testing.T) {
 			procedureID: validID.String(),
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("DeleteProcedure", mock.Anything, validID).
-					Return(constant.ErrProcedureNotFound)
+					Return(procedure.ErrProcedureNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -585,7 +584,7 @@ func TestHandler_GetProcedureSteps(t *testing.T) {
 			queryParams: "",
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
-					Return(nil, int64(0), constant.ErrForbidViewProcedure)
+					Return(nil, int64(0), procedure.ErrForbidViewProcedure)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -595,7 +594,7 @@ func TestHandler_GetProcedureSteps(t *testing.T) {
 			queryParams: "",
 			setupMocks: func(svc *proceduremocks.Service) {
 				svc.On("GetProcedureSteps", mock.Anything, validID, mock.Anything, mock.Anything).
-					Return(nil, int64(0), constant.ErrProcedureNotFound)
+					Return(nil, int64(0), procedure.ErrProcedureNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},

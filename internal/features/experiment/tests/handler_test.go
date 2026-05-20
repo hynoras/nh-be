@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"nh-be/internal/constant"
 	"nh-be/internal/features/experiment"
 	experimentmocks "nh-be/internal/features/experiment/mocks"
 	"nh-be/internal/utils/testutil"
@@ -77,7 +76,7 @@ func TestHandler_AssignProcedureToExperiment(t *testing.T) {
 			requestBody:  `{"version":1}`,
 			setupMocks: func(svc *experimentmocks.Service) {
 				svc.On("AssignProcedureToExperiment", mock.Anything, validExpID, validProcID, 1).
-					Return(constant.ErrForbidUpdateExperiment)
+					Return(experiment.ErrForbidUpdateExperiment)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -88,7 +87,7 @@ func TestHandler_AssignProcedureToExperiment(t *testing.T) {
 			requestBody:  `{"version":1}`,
 			setupMocks: func(svc *experimentmocks.Service) {
 				svc.On("AssignProcedureToExperiment", mock.Anything, validExpID, validProcID, 1).
-					Return(constant.ErrDuplicateProcedureAssignment)
+					Return(experiment.ErrDuplicateProcedureAssignment)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -99,7 +98,7 @@ func TestHandler_AssignProcedureToExperiment(t *testing.T) {
 			requestBody:  `{"version":1}`,
 			setupMocks: func(svc *experimentmocks.Service) {
 				svc.On("AssignProcedureToExperiment", mock.Anything, validExpID, validProcID, 1).
-					Return(constant.ErrExperimentConflict)
+					Return(experiment.ErrExperimentConflict)
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -110,7 +109,7 @@ func TestHandler_AssignProcedureToExperiment(t *testing.T) {
 			requestBody:  `{"version":1}`,
 			setupMocks: func(svc *experimentmocks.Service) {
 				svc.On("AssignProcedureToExperiment", mock.Anything, validExpID, validProcID, 1).
-					Return(constant.ErrExperimentNotFound)
+					Return(experiment.ErrExperimentNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},

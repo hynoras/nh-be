@@ -7,6 +7,7 @@ import (
 
 	"nh-be/internal/constant"
 	"nh-be/internal/features/experiment"
+	"nh-be/internal/features/procedure"
 	"nh-be/internal/features/experiment/mocks"
 	permmocks "nh-be/internal/features/permission/mocks"
 	procmocks "nh-be/internal/features/procedure/mocks"
@@ -62,7 +63,7 @@ func TestService_AssignProcedureToExperiment(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{}, nil)
 			},
-			expectedError: constant.ErrForbidUpdateExperiment,
+			expectedError: experiment.ErrForbidUpdateExperiment,
 		},
 		{
 			name:         "get_user_id_error",
@@ -101,9 +102,9 @@ func TestService_AssignProcedureToExperiment(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				procSvc.On("GetProcedureByID", mock.Anything, procedureID).
-					Return(nil, constant.ErrProcedureNotFound)
+					Return(nil, procedure.ErrProcedureNotFound)
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name:         "experiment_not_found",
@@ -117,9 +118,9 @@ func TestService_AssignProcedureToExperiment(t *testing.T) {
 				procSvc.On("GetProcedureByID", mock.Anything, procedureID).
 					Return(nil, nil)
 				repo.On("GetProcedureIDByID", mock.Anything, experimentID).
-					Return(uuid.Nil, constant.ErrExperimentNotFound)
+					Return(uuid.Nil, experiment.ErrExperimentNotFound)
 			},
-			expectedError: constant.ErrExperimentNotFound,
+			expectedError: experiment.ErrExperimentNotFound,
 		},
 		{
 			name:         "duplicate_assignment",
@@ -135,7 +136,7 @@ func TestService_AssignProcedureToExperiment(t *testing.T) {
 				repo.On("GetProcedureIDByID", mock.Anything, experimentID).
 					Return(procedureID, nil)
 			},
-			expectedError: constant.ErrDuplicateProcedureAssignment,
+			expectedError: experiment.ErrDuplicateProcedureAssignment,
 		},
 		{
 			name:         "version_conflict",
@@ -151,9 +152,9 @@ func TestService_AssignProcedureToExperiment(t *testing.T) {
 				repo.On("GetProcedureIDByID", mock.Anything, experimentID).
 					Return(existingProcedureID, nil)
 				repo.On("UpdateProcedureID", mock.Anything, experimentID, procedureID, version).
-					Return(constant.ErrExperimentConflict)
+					Return(experiment.ErrExperimentConflict)
 			},
-			expectedError: constant.ErrExperimentConflict,
+			expectedError: experiment.ErrExperimentConflict,
 		},
 		{
 			name:         "update_db_error",
