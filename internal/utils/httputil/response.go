@@ -142,154 +142,118 @@ func ValidateRequestFormat(c *gin.Context, dto interface{}) error {
 	return nil
 }
 
+// HTTPErrorMapping maps a domain error to an HTTP status code and user-facing message.
+type HTTPErrorMapping struct {
+	Error      error
+	StatusCode int
+	Message    string
+}
+
+// registry holds all registered error-to-HTTP mappings.
+// Populated during init() and read-only at runtime.
+var registry []HTTPErrorMapping
+
+// RegisterError adds a domain error mapping to the global registry.
+// Must only be called during package initialization (init blocks).
+func RegisterError(err error, statusCode int, message string) {
+	registry = append(registry, HTTPErrorMapping{
+		Error:      err,
+		StatusCode: statusCode,
+		Message:    message,
+	})
+}
+
+func init() {
+	// auth
+	RegisterError(constant.ErrInvalidCredentials, http.StatusUnauthorized, "Invalid credentials")
+	RegisterError(constant.ErrVerificationTokenNotFound, http.StatusNotFound, "Verification token not found")
+	RegisterError(constant.ErrUnauthenticated, http.StatusUnauthorized, "Unauthenticated")
+	RegisterError(constant.ErrEmailAlreadyExists, http.StatusConflict, "Email already exists")
+	RegisterError(constant.ErrVerificationTokenExpired, http.StatusUnauthorized, "Verification token expired")
+	RegisterError(constant.ErrInvalidVerificationToken, http.StatusUnauthorized, "Invalid verification token")
+	RegisterError(constant.ErrSessionNotFound, http.StatusUnauthorized, "Session not found")
+	RegisterError(constant.ErrNewPasswordAndConfirmPasswordDoNotMatch, http.StatusBadRequest, "Passwords do not match")
+	RegisterError(constant.ErrNewPasswordIsTheSameAsOldPassword, http.StatusBadRequest, "Password must be different")
+
+	// permission
+	RegisterError(constant.ErrPermissionNotFound, http.StatusNotFound, "Permission not found")
+	RegisterError(constant.ErrPermissionGroupNotFound, http.StatusNotFound, "Permission group not found")
+	RegisterError(constant.ErrNotNullPermissions, http.StatusBadRequest, "Permissions can not be null")
+	RegisterError(constant.ErrCannotDeleteSuperAdmin, http.StatusForbidden, constant.ErrDeletePermissionFailed)
+	RegisterError(constant.ErrForbidViewPermissions, http.StatusForbidden, constant.ErrGetAllPermissionFailed)
+	RegisterError(constant.ErrPermissionGroupNameAlreadyExists, http.StatusConflict, constant.ErrCreatePermissionGroupFailed)
+	RegisterError(constant.ErrForbidViewPermissionGroups, http.StatusForbidden, constant.ErrGetAllPermissionGroupFailed)
+	RegisterError(constant.ErrForbidViewPermissionGroup, http.StatusForbidden, constant.ErrGetPermissionGroupDetailFailed)
+	RegisterError(constant.ErrForbidCreatePermissionGroup, http.StatusForbidden, constant.ErrCreatePermissionGroupFailed)
+	RegisterError(constant.ErrForbidUpdatePermissionGroup, http.StatusForbidden, constant.ErrUpdatePermissionGroupFailed)
+	RegisterError(constant.ErrForbidDeletePermissionGroup, http.StatusForbidden, constant.ErrDeletePermissionGroupFailed)
+
+	// user
+	RegisterError(constant.ErrUserNotFound, http.StatusNotFound, "User not found")
+	RegisterError(constant.ErrForbidViewUsers, http.StatusForbidden, constant.ErrGetAllUsersFailed)
+	RegisterError(constant.ErrForbidViewUser, http.StatusForbidden, constant.ErrGetUserDetailFailed)
+	RegisterError(constant.ErrForbidUpdateUser, http.StatusForbidden, constant.ErrUpdateUserFailed)
+	RegisterError(constant.ErrForbidDeleteUser, http.StatusForbidden, constant.ErrDeleteUserFailed)
+	RegisterError(constant.ErrDuplicateUsername, http.StatusConflict, "Invalid username")
+	RegisterError(constant.ErrDuplicateEmail, http.StatusConflict, "Invalid email")
+	RegisterError(constant.ErrUsernameMustStartWithLetter, http.StatusBadRequest, "Invalid username")
+	RegisterError(constant.ErrUsernameMustEndWithLetterOrNumber, http.StatusBadRequest, "Invalid username")
+	RegisterError(constant.ErrUsernameNoConsecutiveSpecialChars, http.StatusBadRequest, "Invalid username")
+	RegisterError(constant.ErrUsernameNoAdjacentSpecialChars, http.StatusBadRequest, "Invalid username")
+	RegisterError(constant.ErrReservedUsername, http.StatusBadRequest, "Invalid username")
+
+	// experiment
+	RegisterError(constant.ErrForbidViewExperiments, http.StatusForbidden, constant.ErrGetAllExperimentFailed)
+	RegisterError(constant.ErrForbidViewExperiment, http.StatusForbidden, constant.ErrGetExperimentDetailFailed)
+	RegisterError(constant.ErrForbidUpdateExperiment, http.StatusForbidden, constant.ErrUpdateExperimentFailed)
+	RegisterError(constant.ErrForbidDeleteExperiment, http.StatusForbidden, constant.ErrAuthorizationFailed)
+	RegisterError(constant.ErrStatusTransitionFromDraftToPlanning, http.StatusBadRequest, constant.ErrInvalidStatusTransition)
+	RegisterError(constant.ErrStatusTransitionFromPlanningToRunning, http.StatusBadRequest, constant.ErrInvalidStatusTransition)
+	RegisterError(constant.ErrStatusTransitionFromRunningToCompletedOrAborted, http.StatusBadRequest, constant.ErrInvalidStatusTransition)
+	RegisterError(constant.ErrExperimentConflict, http.StatusConflict, constant.ErrUpdateExperimentFailed)
+	RegisterError(constant.ErrExperimentAlreadyInTargetState, http.StatusBadRequest, constant.ErrUpdateExperimentFailed)
+	RegisterError(constant.ErrExperimentNotFound, http.StatusNotFound, "Experiment not found")
+	RegisterError(constant.ErrDuplicateProcedureAssignment, http.StatusConflict, constant.ErrAssignProcedureToExperimentFailed)
+
+	// experiment result
+	RegisterError(constant.ErrExperimentResultNotFound, http.StatusNotFound, "Experiment result not found")
+	RegisterError(constant.ErrExperimentResultAlreadyExists, http.StatusConflict, "Experiment result already exists")
+	RegisterError(constant.ErrForbidCreateExperimentResult, http.StatusForbidden, constant.ErrCreateExperimentFailed)
+	RegisterError(constant.ErrForbidViewExperimentResult, http.StatusForbidden, constant.ErrGetExperimentDetailFailed)
+	RegisterError(constant.ErrForbidUpdateExperimentResult, http.StatusForbidden, constant.ErrUpdateExperimentFailed)
+	RegisterError(constant.ErrInvalidOutcome, http.StatusBadRequest, "Invalid outcome value")
+	RegisterError(constant.ErrInvalidConfidenceLevel, http.StatusBadRequest, "Invalid confidence level value")
+	RegisterError(constant.ErrExperimentResultConflict, http.StatusConflict, constant.ErrUpdateExperimentFailed)
+
+	// procedure
+	RegisterError(constant.ErrForbidViewProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
+	RegisterError(constant.ErrForbidCreateProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
+	RegisterError(constant.ErrForbidUpdateProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
+	RegisterError(constant.ErrForbidDeleteProcedure, http.StatusForbidden, constant.ErrAuthorizationFailed)
+	RegisterError(constant.ErrProcedureNotFound, http.StatusNotFound, "Procedure not found")
+	RegisterError(constant.ErrProcedureAlreadyExists, http.StatusConflict, "Procedure already exists")
+	RegisterError(constant.ErrProcedureConflict, http.StatusConflict, constant.ErrUpdateProcedureFailed)
+	RegisterError(constant.ErrProcedureStepNotFound, http.StatusNotFound, "Procedure step not found")
+	RegisterError(constant.ErrProcedureStepConflict, http.StatusConflict, constant.ErrUpdateProcedureStepFailed)
+
+	// observation
+	RegisterError(constant.ErrObservationNotFound, http.StatusNotFound, "Observation not found")
+	RegisterError(constant.ErrForbidViewObservation, http.StatusForbidden, constant.ErrAuthorizationFailed)
+	RegisterError(constant.ErrForbidCreateObservation, http.StatusForbidden, constant.ErrAuthorizationFailed)
+}
+
 func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 	if err == nil {
 		return false
 	}
 
-	switch err {
-	//auth
-	case constant.ErrInvalidCredentials:
-		MakeErrorResponse(c, http.StatusUnauthorized, "Invalid credentials", err.Error())
-	case constant.ErrVerificationTokenNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Verification token not found", err.Error())
-	case constant.ErrUnauthenticated:
-		MakeErrorResponse(c, http.StatusUnauthorized, "Unauthenticated", err.Error())
-	case constant.ErrEmailAlreadyExists:
-		MakeErrorResponse(c, http.StatusConflict, "Email already exists", err.Error())
-	case constant.ErrVerificationTokenExpired:
-		MakeErrorResponse(c, http.StatusUnauthorized, "Verification token expired", err.Error())
-	case constant.ErrInvalidVerificationToken:
-		MakeErrorResponse(c, http.StatusUnauthorized, "Invalid verification token", err.Error())
-	case constant.ErrSessionNotFound:
-		MakeErrorResponse(c, http.StatusUnauthorized, "Session not found", err.Error())
-	case constant.ErrNewPasswordAndConfirmPasswordDoNotMatch:
-		MakeErrorResponse(c, http.StatusBadRequest, "Passwords do not match", err.Error())
-	case constant.ErrNewPasswordIsTheSameAsOldPassword:
-		MakeErrorResponse(c, http.StatusBadRequest, "Password must be different", err.Error())
-
-	//permission
-	case constant.ErrPermissionNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Permission not found", err.Error())
-	case constant.ErrPermissionGroupNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Permission group not found", err.Error())
-	case constant.ErrNotNullPermissions:
-		MakeErrorResponse(c, http.StatusBadRequest, "Permissions can not be null", err.Error())
-	case constant.ErrCannotDeleteSuperAdmin:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrDeletePermissionFailed, err.Error())
-	case constant.ErrForbidViewPermissions:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetAllPermissionFailed, err.Error())
-	case constant.ErrPermissionGroupNameAlreadyExists:
-		MakeErrorResponse(c, http.StatusConflict, constant.ErrCreatePermissionGroupFailed, err.Error())
-	case constant.ErrForbidViewPermissionGroups:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetAllPermissionGroupFailed, err.Error())
-	case constant.ErrForbidViewPermissionGroup:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetPermissionGroupDetailFailed, err.Error())
-	case constant.ErrForbidCreatePermissionGroup:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrCreatePermissionGroupFailed, err.Error())
-	case constant.ErrForbidUpdatePermissionGroup:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrUpdatePermissionGroupFailed, err.Error())
-	case constant.ErrForbidDeletePermissionGroup:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrDeletePermissionGroupFailed, err.Error())
-
-	//user
-	case constant.ErrUserNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "User not found", err.Error())
-	case constant.ErrForbidViewUsers:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetAllUsersFailed, err.Error())
-	case constant.ErrForbidViewUser:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetUserDetailFailed, err.Error())
-	case constant.ErrForbidUpdateUser:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrUpdateUserFailed, err.Error())
-	case constant.ErrForbidDeleteUser:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrDeleteUserFailed, err.Error())
-	case constant.ErrDuplicateUsername:
-		MakeErrorResponse(c, http.StatusConflict, "Invalid username", err.Error())
-	case constant.ErrDuplicateEmail:
-		MakeErrorResponse(c, http.StatusConflict, "Invalid email", err.Error())
-	case constant.ErrUsernameMustStartWithLetter:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
-	case constant.ErrUsernameMustEndWithLetterOrNumber:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
-	case constant.ErrUsernameNoConsecutiveSpecialChars:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
-	case constant.ErrUsernameNoAdjacentSpecialChars:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
-	case constant.ErrReservedUsername:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid username", err.Error())
-
-	//experiment
-	case constant.ErrForbidViewExperiments:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetAllExperimentFailed, err.Error())
-	case constant.ErrForbidViewExperiment:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetExperimentDetailFailed, err.Error())
-	case constant.ErrForbidUpdateExperiment:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrUpdateExperimentFailed, err.Error())
-	case constant.ErrForbidDeleteExperiment:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, err.Error())
-	case constant.ErrStatusTransitionFromDraftToPlanning:
-		MakeErrorResponse(c, http.StatusBadRequest, constant.ErrInvalidStatusTransition, err.Error())
-	case constant.ErrStatusTransitionFromPlanningToRunning:
-		MakeErrorResponse(c, http.StatusBadRequest, constant.ErrInvalidStatusTransition, err.Error())
-	case constant.ErrStatusTransitionFromRunningToCompletedOrAborted:
-		MakeErrorResponse(c, http.StatusBadRequest, constant.ErrInvalidStatusTransition, err.Error())
-	case constant.ErrExperimentConflict:
-		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateExperimentFailed, err.Error())
-	case constant.ErrExperimentAlreadyInTargetState:
-		MakeErrorResponse(c, http.StatusBadRequest, constant.ErrUpdateExperimentFailed, err.Error())
-	case constant.ErrExperimentNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Experiment not found", err.Error())
-	case constant.ErrDuplicateProcedureAssignment:
-		MakeErrorResponse(c, http.StatusConflict, constant.ErrAssignProcedureToExperimentFailed, err.Error())
-
-	//experiment result
-	case constant.ErrExperimentResultNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Experiment result not found", err.Error())
-	case constant.ErrExperimentResultAlreadyExists:
-		MakeErrorResponse(c, http.StatusConflict, "Experiment result already exists", err.Error())
-	case constant.ErrForbidCreateExperimentResult:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrCreateExperimentFailed, err.Error())
-	case constant.ErrForbidViewExperimentResult:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrGetExperimentDetailFailed, err.Error())
-	case constant.ErrForbidUpdateExperimentResult:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrUpdateExperimentFailed, err.Error())
-	case constant.ErrInvalidOutcome:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid outcome value", err.Error())
-	case constant.ErrInvalidConfidenceLevel:
-		MakeErrorResponse(c, http.StatusBadRequest, "Invalid confidence level value", err.Error())
-	case constant.ErrExperimentResultConflict:
-		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateExperimentFailed, err.Error())
-
-	//procedure
-	case constant.ErrForbidViewProcedure,
-		constant.ErrForbidCreateProcedure,
-		constant.ErrForbidUpdateProcedure,
-		constant.ErrForbidDeleteProcedure:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, err.Error())
-	case constant.ErrProcedureNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Procedure not found", err.Error())
-	case constant.ErrProcedureAlreadyExists:
-		MakeErrorResponse(c, http.StatusConflict, "Procedure already exists", err.Error())
-	case constant.ErrProcedureConflict:
-		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureFailed, err.Error())
-	case constant.ErrProcedureStepNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Procedure step not found", err.Error())
-	case constant.ErrProcedureStepConflict:
-		MakeErrorResponse(c, http.StatusConflict, constant.ErrUpdateProcedureStepFailed, err.Error())
-
-	//observation
-	case constant.ErrObservationNotFound:
-		MakeErrorResponse(c, http.StatusNotFound, "Observation not found", err.Error())
-	// case constant.ErrObservationAlreadyExists:
-	// 	MakeErrorResponse(c, http.StatusConflict, "Observation already exists", err.Error())
-	case constant.ErrForbidViewObservation,
-		constant.ErrForbidCreateObservation:
-		MakeErrorResponse(c, http.StatusForbidden, constant.ErrAuthorizationFailed, err.Error())
-
-	//add other domain error here
-
-	default:
-		MakeErrorResponse(c, http.StatusInternalServerError, msg, err.Error())
+	for _, mapping := range registry {
+		if errors.Is(err, mapping.Error) {
+			MakeErrorResponse(c, mapping.StatusCode, mapping.Message, err.Error())
+			return true
+		}
 	}
+
+	MakeErrorResponse(c, http.StatusInternalServerError, msg, err.Error())
 	return true
 }
