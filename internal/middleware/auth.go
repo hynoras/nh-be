@@ -17,6 +17,8 @@ func RequireAuth(sessionStore session.SessionStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Request.Cookie("auth_session")
 		if err != nil {
+			//send empty cookie if unauthorized for frontend to clear cookie
+			http.SetCookie(c.Writer, httputil.GetEmptyAuthSessionCookie())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error":   "unauthorized",
@@ -29,6 +31,8 @@ func RequireAuth(sessionStore session.SessionStore) gin.HandlerFunc {
 
 		if err != nil {
 			if errors.Is(err, redis.Nil) {
+				//send empty cookie if unauthorized for frontend to clear cookie
+				http.SetCookie(c.Writer, httputil.GetEmptyAuthSessionCookie())
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"success": false,
 					"error":   "session_expired",
@@ -47,6 +51,8 @@ func RequireAuth(sessionStore session.SessionStore) gin.HandlerFunc {
 
 		parsedUserId, err := httputil.ParseStringToUUID(userID)
 		if err != nil {
+			//send empty cookie if unauthorized for frontend to clear cookie
+			http.SetCookie(c.Writer, httputil.GetEmptyAuthSessionCookie())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error":   "Failed to parse user ID",
