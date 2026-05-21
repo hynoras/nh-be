@@ -29,3 +29,25 @@ func GetAuthSessionCookie(sessionId string) *http.Cookie {
 	}
 }
 
+//GetEmptyAuthSessionCookie returns a new http.Cookie configured for authentication sessions
+//with an empty session ID to clear the cookie.
+func GetEmptyAuthSessionCookie() *http.Cookie {
+	sameSite := http.SameSiteLaxMode
+	secure := false
+
+	// If in production, enable cross-site cookie support
+	if env.GetEnvOrDefault("APP_ENV", "dev") == "prod" {
+		sameSite = http.SameSiteNoneMode
+		secure = true
+	}
+
+	return &http.Cookie{
+		Name:     constant.AuthSessionCookieName,
+		Value:    "",
+		Path:     constant.AuthSessionCookiePath,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   0,
+	}
+}

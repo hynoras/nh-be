@@ -98,6 +98,8 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrLogoutFailed) {
 			return
 		}
+		//set empty cookie upon logging out for frontend
+		http.SetCookie(c.Writer, httputil.GetEmptyAuthSessionCookie())
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged out successfully", nil)
 	}
 }
