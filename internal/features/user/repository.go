@@ -66,11 +66,13 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&u)
-	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, result.Error
-	}
+	
+	//replace gorm error with domain error
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, constant.ErrUserNotFound
+	}
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, result.Error
 	}
 	return &u, nil
 }
@@ -78,11 +80,13 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 func (r *repository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("username = ?", username).First(&u)
-	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, result.Error
-	}
+
+	//replace gorm error with domain error
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, constant.ErrUserNotFound
+	}
+	if result.Error != nil {
+		return nil, result.Error
 	}
 	return &u, nil
 }

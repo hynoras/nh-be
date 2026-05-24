@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type Service interface {
@@ -82,7 +81,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 
 	// Check for duplicate username
 	existingUser, err := s.userRepo.FindByUsername(ctx, userInput.Username)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
 		return err
 	}
 	if existingUser != nil {
@@ -91,7 +90,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 
 	// Check for duplicate email
 	existingUser, err = s.userRepo.FindByEmail(ctx, userInput.Email)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
 		return err
 	}
 	if existingUser != nil {
