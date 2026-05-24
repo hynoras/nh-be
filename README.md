@@ -12,10 +12,10 @@ The system is designed as a **modular, production-ready API** with built-in obse
 
 Noheir backend is built with a focus on:
 
-* **Modular architecture** — feature-based organization inside a structured monolith
-* **Observability-first** — tracing, metrics, and health checks are first-class
-* **Scalable infrastructure** — Redis, RabbitMQ, and containerized deployment
-* **Production mindset** — CI/CD, health-based rollout, and rollback mechanisms
+- **Modular architecture** — feature-based organization inside a structured monolith
+- **Observability-first** — tracing, metrics, and health checks are first-class
+- **Scalable infrastructure** — Redis, RabbitMQ, and containerized deployment
+- **Production mindset** — CI/CD, health-based rollout, and rollback mechanisms
 
 ---
 
@@ -23,66 +23,61 @@ Noheir backend is built with a focus on:
 
 ### Core Modules
 
-* **Authentication**
+- **Authentication**
+  - Session-based authentication using cookies (`auth_session`)
+  - Redis-backed session store
+  - Email verification via Resend
+  - Password change support
 
-  * Session-based authentication using cookies (`auth_session`)
-  * Redis-backed session store
-  * Email verification via Resend
-  * Password change support
+- **Users**
+  - User registration and login
+  - Account management
 
-* **Users**
+- **Experiments**
+  - Experiment lifecycle management
+  - Experiment result tracking
 
-  * User registration and login
-  * Account management
+- **Procedures**
+  - Define and manage experimental procedures
 
-* **Experiments**
-
-  * Experiment lifecycle management
-  * Experiment result tracking
-
-* **Procedures**
-
-  * Define and manage experimental procedures
-
-* **Permissions**
-
-  * Granular access control system
+- **Permissions**
+  - Granular access control system
 
 ---
 
 ### Infrastructure Capabilities
 
-* Redis for session storage and rate limiting
-* RabbitMQ for asynchronous messaging
-* **Full Grafana Stack:**
-    * **Prometheus:** Metrics collection and alerting
-    * **Grafana Tempo:** Distributed tracing
-    * **Grafana Loki:** Log aggregation
-    * **OpenTelemetry Collector:** Observability pipeline
-    * **Grafana Alloy:** Agent for observability data
-    * **Grafana Dashboards:** Unified visualization
-* Optional Nginx reverse proxy for routing, SSL termination, and service exposure
-* Optional Secure secret management via HashiCorp Vault (Raft persistent storage)
-* Swagger API documentation
+- Redis for session storage and rate limiting
+- RabbitMQ for asynchronous messaging
+- **Full Grafana Stack:**
+  - **Prometheus:** Metrics collection and alerting
+  - **Grafana Tempo:** Distributed tracing
+  - **Grafana Loki:** Log aggregation
+  - **OpenTelemetry Collector:** Observability pipeline
+  - **Grafana Alloy:** Agent for observability data
+  - **Grafana Dashboards:** Unified visualization
+- Optional Nginx reverse proxy for routing, SSL termination, and service exposure
+- Optional Secure secret management via HashiCorp Vault (Raft persistent storage)
+- Swagger API documentation
 
 ---
 
 ## Tech Stack
 
-| Category         | Technology                           |
-| ---------------- | ------------------------------------ |
-| Language         | Go 1.25.3                            |
-| Framework        | Gin                                  |
-| ORM              | GORM                                 |
-| Database         | PostgreSQL                           |
-| Cache            | Redis                                |
-| Messaging        | RabbitMQ                             |
-| Observability    | Prometheus + Grafana + Loki + Tempo  |
-| API Docs         | Swagger                              |
-| Email Service    | Resend                               |
-| Secrets          | HashiCorp Vault                      |
-| Reverse Proxy    | Nginx                                |
-| Containerization | Docker + Docker Compose              |
+| Category         | Technology                          |
+| ---------------- | ----------------------------------- |
+| Language         | Go 1.25.3                           |
+| Framework        | Gin                                 |
+| ORM              | GORM                                |
+| Database         | PostgreSQL                          |
+| Cache            | Redis                               |
+| Messaging        | RabbitMQ                            |
+| Observability    | Prometheus + Grafana + Loki + Tempo |
+| API Docs         | Swagger                             |
+| Email Service    | Resend                              |
+| Secrets          | HashiCorp Vault                     |
+| Reverse Proxy    | Nginx                               |
+| Containerization | Docker + Docker Compose             |
 
 ---
 
@@ -90,15 +85,26 @@ Noheir backend is built with a focus on:
 
 The system follows a modular monolith design:
 
-Client → Nginx → API (Gin)
-                ├── PostgreSQL (primary data store)
-                ├── Redis (sessions, caching)
-                ├── RabbitMQ (async messaging)
-                └── Observability pipeline
-                     ├── OpenTelemetry Collector
-                     ├── Prometheus (metrics)
-                     ├── Tempo (tracing)
-                     └── Loki (logs)
+```text
+   Browser
+      │
+      ▼
+Next.js (App Router) <───> Next.js Middleware (auth, redirects, headers)
+      │
+      ▼
+ Nginx Proxy
+      │
+      ▼
+  API (Gin)
+      ├── PostgreSQL (primary data store)
+      ├── Redis (sessions, caching)
+      ├── RabbitMQ (async messaging)
+      └── Observability Pipeline
+           ├── OpenTelemetry Collector
+           ├── Prometheus (metrics)
+           ├── Tempo (tracing)
+           └── Loki (logs)
+```
 
 ---
 
@@ -106,32 +112,41 @@ Client → Nginx → API (Gin)
 
 ```mermaid
 flowchart LR
-    Client["Client Browser"] --> Nginx["Nginx Proxy"]
-    
+    Browser["Browser"] --> NextJS["Next.js App Router"]
+
+    subgraph "Frontend (Next.js)"
+        NextJS --> MW["Next.js Middleware"]
+        MW -->|"Auth Guards / Redirects / Headers"| NextJS
+    end
+
+    NextJS -->|"API Requests"| Nginx["Nginx Proxy"]
+
     subgraph "Noheir Backend"
         Nginx --> API["API (Gin)"]
-        
+
         subgraph "Core Services"
             API -->|"Primary Storage"| DB[("PostgreSQL")]
             API -->|"Sessions/Cache"| Redis[("Redis")]
             API -->|"Async Tasks"| MQ[("RabbitMQ")]
             API -->|"Secrets"| Vault[("HashiCorp Vault")]
         end
-        
+
         subgraph "Observability Stack"
             API -.->|"Pushes Traces"| OTel["OTel Collector"]
             Prometheus[("Prometheus")] -.->|"Scrapes Metrics"| API
             Alloy["Grafana Alloy"] -.->|"Collects Logs"| API
-            
+
             OTel -->|"Traces"| Tempo[("Grafana Tempo")]
             Alloy -->|"Logs"| Loki[("Grafana Loki")]
-            
+
             Prometheus --> Grafana["Grafana"]
             Tempo --> Grafana
             Loki --> Grafana
         end
     end
-    
+
+    style NextJS fill:#0070f3,stroke:#333,stroke-width:2px,color:#fff
+    style MW fill:#0070f3,stroke:#333,stroke-width:1px,color:#fff
     style DB fill:#9f9,stroke:#333,stroke-width:2px
     style Redis fill:#f9f,stroke:#333,stroke-width:2px
     style MQ fill:#f99,stroke:#333,stroke-width:2px
@@ -165,9 +180,9 @@ flowchart LR
 
 ### Prerequisites
 
-* Docker & Docker Compose
-* Go 1.25+ (Required if not running the API via Docker)
-* (Optional) Air for hot reload
+- Docker & Docker Compose
+- Go 1.25+ (Required if not running the API via Docker)
+- (Optional) Air for hot reload
 
 > **Note on Managed Infrastructure:** The application is designed to be flexible. You can use your own managed infrastructure (such as **Supabase** for PostgreSQL or **Redis Cloud**) by updating the `.env` variables, or spin up local instances using the provided `docker-compose.yml`. By default, the local PostgreSQL and Redis services in the compose file are commented out, assuming the use of a managed database like Supabase.
 
@@ -224,9 +239,9 @@ go run cmd/main.go
 
 ### Notes
 
-* PostgreSQL and Redis may be external (e.g., Supabase, Redis Cloud) depending on your `.env` configuration
-* Vault requires manual initialization and unsealing before use
-* Ensure `.env` is correctly configured before starting
+- PostgreSQL and Redis may be external (e.g., Supabase, Redis Cloud) depending on your `.env` configuration
+- Vault requires manual initialization and unsealing before use
+- Ensure `.env` is correctly configured before starting
 
 ---
 
@@ -299,19 +314,20 @@ GET /swagger/*any   # Swagger documentation
 
 Noheir features a comprehensive observability stack:
 
-* **Tracing:** OpenTelemetry + Grafana Tempo
-* **Metrics:** Prometheus (`/metrics`)
-* **Logging:** Grafana Loki
-* **Dashboards:** Pre-configured Grafana instance
-* **Health Checks:**
-  * `/health/live` — container is running
-  * `/health/ready` — dependencies are ready
+- **Tracing:** OpenTelemetry + Grafana Tempo
+- **Metrics:** Prometheus (`/metrics`)
+- **Logging:** Grafana Loki
+- **Dashboards:** Pre-configured Grafana instance
+- **Health Checks:**
+  - `/health/live` — container is running
+  - `/health/ready` — dependencies are ready
 
 This enables:
-* End-to-end request visibility
-* Real-time performance monitoring
-* Log-trace correlation
-* Health-based automated deployments
+
+- End-to-end request visibility
+- Real-time performance monitoring
+- Log-trace correlation
+- Health-based automated deployments
 
 ---
 
@@ -321,18 +337,18 @@ Deployment is handled via **GitLab CI/CD**.
 
 ### Pipeline Stages
 
-* `lint`
-* `test`
-* `build`
-* `deploy`
+- `lint`
+- `test`
+- `build`
+- `deploy`
 
 ### Strategy
 
-* Docker image is built per commit
-* Tagged with commit SHA (not `latest` in production)
-* Pushed to GitLab Container Registry
-* Deployed via SSH to VPS
-* Updated using:
+- Docker image is built per commit
+- Tagged with commit SHA (not `latest` in production)
+- Pushed to GitLab Container Registry
+- Deployed via SSH to VPS
+- Updated using:
 
 ```bash
 docker compose -f deploy/docker/docker-compose.yml up -d
@@ -340,8 +356,8 @@ docker compose -f deploy/docker/docker-compose.yml up -d
 
 ### Reliability
 
-* Health-check-based rollout
-* Automatic rollback on failure
+- Health-check-based rollout
+- Automatic rollback on failure
 
 ---
 
@@ -349,35 +365,35 @@ docker compose -f deploy/docker/docker-compose.yml up -d
 
 Noheir backend is built with the following principles:
 
-* **Feature modularity**
+- **Feature modularity**
   Avoid tightly coupled layers by organizing logic per domain
 
-* **Operational visibility**
+- **Operational visibility**
   Metrics, tracing, and health checks are non-optional
 
-* **Production-first mindset**
+- **Production-first mindset**
   Deployment, reliability, and observability are considered early
 
-* **Scalable evolution**
+- **Scalable evolution**
   Designed to evolve from monolith → modular monolith → microservices
 
 ---
 
 ## Roadmap
 
-* Compound management module
-* File upload system (experiment assets)
-* Experiment branching and versioning
-* Microservices decomposition (Experiment domain)
-* Enhanced observability dashboards (e.g. Grafana)
+- Compound management module
+- File upload system (experiment assets)
+- Experiment branching and versioning
+- Microservices decomposition (Experiment domain)
+- Enhanced observability dashboards (e.g. Grafana)
 
 ---
 
 ## Notes
 
-* Redis is required for session management
-* RabbitMQ enables async workflows and future scaling
-* Vault integration is optional but recommended for production
+- Redis is required for session management
+- RabbitMQ enables async workflows and future scaling
+- Vault integration is optional but recommended for production
 
 ---
 
