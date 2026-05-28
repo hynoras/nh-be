@@ -1,5 +1,7 @@
 package constant
 
+import "time"
+
 const (
 	// AuthSessionCookieName is the name of the cookie used for authentication sessions.
 	AuthSessionCookieName = "auth_session"
@@ -7,4 +9,12 @@ const (
 	AuthSessionCookiePath = "/"
 	// AuthSessionCookieMaxAge is the maximum age of the authentication session cookie in seconds (8 hours).
 	AuthSessionCookieMaxAge = 8 * 60 * 60
+)
+
+var (
+	CorsAllowMethods     = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	CorsAllowHeaders     = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	CorsExposeHeaders    = []string{"Content-Length"}
+	CorsAllowCredentials = true
+	CorsMaxAge           = 12 * time.Hour
 )
