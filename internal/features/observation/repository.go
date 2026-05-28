@@ -17,7 +17,7 @@ type Repository interface {
 	GetAllObsByExpIDAndProcID(
 		ctx context.Context,
 		expId, procId uuid.UUID,
-		offset, limit int,
+		page, pageSize int,
 		sortBy *string,
 		sortOrder *constant.Order,
 	) ([]ObservationMetadata, int64, error)
@@ -38,7 +38,7 @@ func NewRepository(db *gorm.DB) Repository {
 func (r *repository) GetAllObsByExpIDAndProcID(
 	ctx context.Context,
 	expId, procId uuid.UUID,
-	offset, limit int,
+	page, pageSize int,
 	sortBy *string,
 	sortOrder *constant.Order,
 ) ([]ObservationMetadata, int64, error) {
@@ -84,7 +84,7 @@ func (r *repository) GetAllObsByExpIDAndProcID(
 
 	var observation []ObservationMetadata
 	findErr := baseQuery.
-		Scopes(dbutil.Paginate(offset, limit)).
+		Scopes(dbutil.Paginate(page, pageSize)).
 		Select("id, observed_at, title, notes, previous_observation_id, created_by, created_at").
 		Find(&observation).Error
 	if findErr != nil {

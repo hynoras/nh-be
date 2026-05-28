@@ -11,13 +11,13 @@ import (
 )
 
 type Repository interface {
-	FindAll(ctx context.Context, search string, offset, limit int) ([]Procedure, int64, error)
+	FindAll(ctx context.Context, search string, page, pageSize int) ([]Procedure, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID, withSteps bool) (*Procedure, error)
 	CreateProcedure(ctx context.Context, procedure *Procedure) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *Procedure) error
 	DeleteProcedure(ctx context.Context, id uuid.UUID) error
 
-	GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]ProcedureStep, int64, error)
+	GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, page, pageSize int) ([]ProcedureStep, int64, error)
 	GetStepIDsByProcID(ctx context.Context, procedureId uuid.UUID) ([]StepMetadata, error)
 	CreateProcedureStep(ctx context.Context, step *ProcedureStep) error
 	UpdateProcedureStep(ctx context.Context, stepId uuid.UUID, procedureId uuid.UUID, step *ProcedureStep) error
@@ -33,7 +33,7 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) FindAll(ctx context.Context, search string, offset, limit int) ([]Procedure, int64, error) {
+func (r *repository) FindAll(ctx context.Context, search string, page, pageSize int) ([]Procedure, int64, error) {
 	var procedures []Procedure
 	var length int64
 	query := r.db.WithContext(ctx).Model(&Procedure{})
@@ -47,7 +47,7 @@ func (r *repository) FindAll(ctx context.Context, search string, offset, limit i
 		return nil, 0, err
 	}
 
-	err = query.Scopes(dbutil.Paginate(offset, limit)).Find(&procedures).Error
+	err = query.Scopes(dbutil.Paginate(page, pageSize)).Find(&procedures).Error
 	return procedures, length, err
 }
 
@@ -113,7 +113,7 @@ func (r *repository) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *repository) GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]ProcedureStep, int64, error) {
+func (r *repository) GetProcStepsByProcID(ctx context.Context, procedureId uuid.UUID, page, pageSize int) ([]ProcedureStep, int64, error) {
 	var procedure Procedure
 	err := r.db.WithContext(ctx).
 		Select("id").
@@ -138,7 +138,7 @@ func (r *repository) GetProcStepsByProcID(ctx context.Context, procedureId uuid.
 	}
 
 	var procedureSteps []ProcedureStep
-	err = baseQuery.Order("index ASC").Scopes(dbutil.Paginate(offset, limit)).Find(&procedureSteps).Error
+	err = baseQuery.Order("index ASC").Scopes(dbutil.Paginate(page, pageSize)).Find(&procedureSteps).Error
 	if err != nil {
 		return nil, 0, err
 	}

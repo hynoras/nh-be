@@ -14,7 +14,7 @@ type Service interface {
 	GetAllObservations(
 		ctx context.Context,
 		expId, procId uuid.UUID,
-		offset, limit int,
+		page, pageSize int,
 		sortBy *string,
 		sortOrder *constant.Order,
 	) ([]ObservationsResponseDto, int64, error)
@@ -48,7 +48,7 @@ func (s *service) CanCreateObservation(ctx context.Context) error {
 func (s *service) GetAllObservations(
 	ctx context.Context,
 	expId, procId uuid.UUID,
-	offset, limit int,
+	page, pageSize int,
 	sortBy *string,
 	sortOrder *constant.Order,
 ) ([]ObservationsResponseDto, int64, error) {
@@ -57,7 +57,7 @@ func (s *service) GetAllObservations(
 		return nil, 0, permErr
 	}
 
-	obs, length, getObsErr := s.observationRepo.GetAllObsByExpIDAndProcID(ctx, expId, procId, offset, limit, sortBy, sortOrder)
+	obs, length, getObsErr := s.observationRepo.GetAllObsByExpIDAndProcID(ctx, expId, procId, page, pageSize, sortBy, sortOrder)
 	if getObsErr != nil {
 		return nil, 0, getObsErr
 	}

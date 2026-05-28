@@ -12,13 +12,13 @@ import (
 )
 
 type Service interface {
-	GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error)
+	GetAllProcedures(ctx context.Context, search string, page, pageSize int) ([]ProcedureListResponseDto, int64, error)
 	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
 	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error
 	DeleteProcedure(ctx context.Context, id uuid.UUID) error
 
-	GetProcedureSteps(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]StepsResponseDto, int64, error)
+	GetProcedureSteps(ctx context.Context, procedureId uuid.UUID, page, pageSize int) ([]StepsResponseDto, int64, error)
 	UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []UpdateProcedureStepInput) error
 }
 
@@ -51,12 +51,12 @@ func (s *service) CanManageProcedure(ctx context.Context, id uuid.UUID, action c
 	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
 }
 
-func (s *service) GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error) {
+func (s *service) GetAllProcedures(ctx context.Context, search string, page, pageSize int) ([]ProcedureListResponseDto, int64, error) {
 	permErr := s.CanViewProcedure(ctx, uuid.Nil)
 	if permErr != nil {
 		return nil, 0, permErr
 	}
-	procedures, length, repoErr := s.repository.FindAll(ctx, search, offset, limit)
+	procedures, length, repoErr := s.repository.FindAll(ctx, search, page, pageSize)
 	if repoErr != nil {
 		return nil, 0, repoErr
 	}
@@ -111,13 +111,13 @@ func (s *service) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
 func (s *service) GetProcedureSteps(
 	ctx context.Context,
 	procedureId uuid.UUID,
-	offset, limit int,
+	page, pageSize int,
 ) ([]StepsResponseDto, int64, error) {
 	permErr := s.CanViewProcedure(ctx, procedureId)
 	if permErr != nil {
 		return nil, 0, permErr
 	}
-	procedureSteps, length, repoErr := s.repository.GetProcStepsByProcID(ctx, procedureId, offset, limit)
+	procedureSteps, length, repoErr := s.repository.GetProcStepsByProcID(ctx, procedureId, page, pageSize)
 	if repoErr != nil {
 		return nil, 0, repoErr
 	}
