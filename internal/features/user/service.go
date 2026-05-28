@@ -16,7 +16,8 @@ type Service interface {
 	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
 	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error)
-	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error)
+	GetUserById(ctx context.Context, id uuid.UUID) (UserResponseDto, error)
+	GetMe(ctx context.Context, id uuid.UUID) (MeResponseDto, error)
 	CreateUser(ctx context.Context, userInput *UserInput) error
 	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
@@ -70,7 +71,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 
 	// Check for duplicate username
 	existingUser, err := s.userRepo.FindByUsername(ctx, userInput.Username)
-	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return err
 	}
 	if existingUser != nil {
@@ -79,7 +80,7 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 
 	// Check for duplicate email
 	existingUser, err = s.userRepo.FindByEmail(ctx, userInput.Email)
-	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return err
 	}
 	if existingUser != nil {
@@ -130,34 +131,31 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 	return mappedUser, length, nil
 }
 
-func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error) {
-	if !isMe {
-		if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewUser, constant.ViewUser, constant.ManageUser); err != nil {
-			return nil, err
-		}
+func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (UserResponseDto, error) {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewUser, constant.ViewUser, constant.ManageUser); err != nil {
+		return UserResponseDto{}, err
 	}
 
-	var user *User
-	var userErr error
-	var permissionCodes []string
-	var permCodeErr error
-	var mapperUser interface{}
-
-	user, userErr = s.userRepo.FindByID(ctx, id)
-	if userErr != nil {
-		return nil, userErr
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return UserResponseDto{}, err
 	}
 
-	if isMe {
-		permissionCodes, permCodeErr = s.permissionService.GetUserPermissionCodeNames(ctx, id)
-		if permCodeErr != nil {
-			return nil, permCodeErr
-		}
-		mapperUser = MapUserToMeDto(*user, permissionCodes)
-	} else {
-		mapperUser = MapUserToDto(*user)
+	return MapUserToDto(*user), nil
+}
+
+func (s *service) GetMe(ctx context.Context, id uuid.UUID) (MeResponseDto, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return MeResponseDto{}, err
 	}
-	return mapperUser, nil
+
+	permissionCodes, err := s.permissionService.GetUserPermissionCodeNames(ctx, id)
+	if err != nil {
+		return MeResponseDto{}, err
+	}
+
+	return MapUserToMeDto(*user, permissionCodes), nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {

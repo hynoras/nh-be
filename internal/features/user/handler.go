@@ -116,7 +116,7 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 		if idErr != nil {
 			return
 		}
-		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
+		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
 		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetUserDetailFailed) {
 			return
 		}
@@ -146,7 +146,7 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		user, serviceErr := s.GetUserById(c.Request.Context(), parsedUuid, true)
+		user, serviceErr := s.GetMe(c.Request.Context(), parsedUuid)
 		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetUserDetailFailed) {
 			return
 		}
