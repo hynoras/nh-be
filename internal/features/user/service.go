@@ -5,8 +5,7 @@ import (
 	"errors"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
-	"nh-be/internal/utils/ctxutil"
-	"slices"
+	"nh-be/internal/utils/authutil"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,7 +16,8 @@ type Service interface {
 	CheckExistingUser(ctx context.Context, userId uuid.UUID) (*User, error)
 	CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) ([]User, error)
 	GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error)
-	GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error)
+	GetUserById(ctx context.Context, id uuid.UUID) (UserResponseDto, error)
+	GetMe(ctx context.Context, id uuid.UUID) (MeResponseDto, error)
 	CreateUser(ctx context.Context, userInput *UserInput) error
 	UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error
 	DeleteUsers(ctx context.Context, ids []uuid.UUID) error
@@ -47,7 +47,7 @@ func (s *service) CheckExistingUser(ctx context.Context, userId uuid.UUID) (*Use
 		return nil, err
 	}
 	if assignedUser == nil {
-		return nil, errors.New("assigned users not found")
+		return nil, ErrAssignedUserNotFound
 	}
 	return assignedUser, nil
 }
@@ -58,43 +58,33 @@ func (s *service) CheckExistingUsers(ctx context.Context, userIds []uuid.UUID) (
 		return nil, err
 	}
 	if len(users) == 0 {
-		return nil, errors.New("users not found")
+		return nil, ErrUsersNotFound
 	}
 	return users, nil
 
 }
 
 func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidCreateUser, constant.ManageUser); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageUser) {
-		return constant.ErrForbidCreateUser
 	}
 
 	// Check for duplicate username
 	existingUser, err := s.userRepo.FindByUsername(ctx, userInput.Username)
-	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return err
 	}
 	if existingUser != nil {
-		return constant.ErrDuplicateUsername
+		return ErrDuplicateUsername
 	}
 
 	// Check for duplicate email
 	existingUser, err = s.userRepo.FindByEmail(ctx, userInput.Email)
-	if err != nil && !errors.Is(err, constant.ErrUserNotFound) {
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return err
 	}
 	if existingUser != nil {
-		return constant.ErrDuplicateEmail
+		return ErrDuplicateEmail
 	}
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
@@ -129,18 +119,8 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 }
 
 func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize int) ([]UserResponseDto, int64, error) {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewUsers, constant.ViewUser, constant.ManageUser); err != nil {
 		return nil, 0, err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	if !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, 0, constant.ErrForbidViewUsers
 	}
 
 	users, length, err := s.userRepo.FindAll(ctx, search, page, pageSize)
@@ -151,60 +131,40 @@ func (s *service) GetAllUsers(ctx context.Context, search string, page, pageSize
 	return mappedUser, length, nil
 }
 
-func (s *service) GetUserById(ctx context.Context, id uuid.UUID, isMe bool) (interface{}, error) {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
+func (s *service) GetUserById(ctx context.Context, id uuid.UUID) (UserResponseDto, error) {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewUser, constant.ViewUser, constant.ManageUser); err != nil {
+		return UserResponseDto{}, err
+	}
+
+	user, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return UserResponseDto{}, err
 	}
 
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
+	return MapUserToDto(*user), nil
+}
+
+func (s *service) GetMe(ctx context.Context, id uuid.UUID) (MeResponseDto, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return MeResponseDto{}, err
 	}
 
-	if !isMe && !slices.Contains(userPerm, constant.ViewUser) && !slices.Contains(userPerm, constant.ManageUser) {
-		return nil, constant.ErrForbidViewUser
+	permissionCodes, err := s.permissionService.GetUserPermissionCodeNames(ctx, id)
+	if err != nil {
+		return MeResponseDto{}, err
 	}
 
-	var user *User
-	var userErr error
-	var permissionCodes []string
-	var permCodeErr error
-	var mapperUser interface{}
-
-	user, userErr = s.userRepo.FindByID(ctx, id)
-	if userErr != nil {
-		return nil, userErr
-	}
-
-	if isMe {
-		permissionCodes, permCodeErr = s.permissionService.GetUserPermissionCodeNames(ctx, id)
-		if permCodeErr != nil {
-			return nil, permCodeErr
-		}
-		mapperUser = MapUserToMeDto(*user, permissionCodes)
-	} else {
-		mapperUser = MapUserToDto(*user)
-	}
-	return mapperUser, nil
+	return MapUserToMeDto(*user, permissionCodes), nil
 }
 
 func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserInput) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateUser, constant.ManageUser); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageUser) {
-		return constant.ErrForbidUpdateUser
 	}
 
 	var permissionGroups []permission.PermissionGroup
+	var err error
 	if len(userInput.Permissions) > 0 {
 		permissionGroups, err = s.permissionService.GetPermissionGroupsByIDs(ctx, userInput.Permissions)
 		if err != nil {
@@ -231,18 +191,8 @@ func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, userInput *UserI
 }
 
 func (s *service) DeleteUsers(ctx context.Context, ids []uuid.UUID) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidDeleteUser, constant.ManageUser); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageUser) {
-		return constant.ErrForbidDeleteUser
 	}
 
 	return s.userRepo.WithTransaction(ctx, func(txRepo Repository) error {

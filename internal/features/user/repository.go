@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"errors"
-	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/utils/dbutil"
 	"strings"
@@ -69,7 +68,7 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 	
 	//replace gorm error with domain error
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, constant.ErrUserNotFound
+		return nil, ErrUserNotFound
 	}
 	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, result.Error
@@ -83,7 +82,7 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 
 	//replace gorm error with domain error
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, constant.ErrUserNotFound
+		return nil, ErrUserNotFound
 	}
 	if result.Error != nil {
 		return nil, result.Error
@@ -98,7 +97,7 @@ func (r *repository) FindPasswordById(ctx context.Context, id uuid.UUID) (*strin
 		return nil, result.Error
 	}
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, constant.ErrUserNotFound
+		return nil, ErrUserNotFound
 	}
 	return &u.Password, nil
 }
@@ -113,7 +112,7 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) 
 		return nil, result.Error
 	}
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, constant.ErrUserNotFound
+		return nil, ErrUserNotFound
 	}
 	return &u, nil
 }

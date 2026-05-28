@@ -2,7 +2,6 @@ package user
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/ctxutil"
 	"nh-be/internal/utils/httputil"
 	"strings"
@@ -58,7 +57,7 @@ func CreateUserHandler(s Service) gin.HandlerFunc {
 			Permissions: parsedPermissions,
 		}
 		serviceErr := s.CreateUser(c.Request.Context(), &cleanInput)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateUserFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrCreateUserFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusCreated, "User created successfully", nil)
@@ -90,7 +89,7 @@ func GetAllUsersHandler(s Service) gin.HandlerFunc {
 		}
 
 		users, length, serviceErr := s.GetAllUsers(c.Request.Context(), search, pageInt, pageSizeInt)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllUsersFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllUsersFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Users fetched successfully", users, length)
@@ -117,8 +116,8 @@ func GetUserByIDHandler(s Service) gin.HandlerFunc {
 		if idErr != nil {
 			return
 		}
-		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId, false)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetUserDetailFailed) {
+		user, serviceErr := s.GetUserById(c.Request.Context(), *parsedId)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetUserDetailFailed) {
 			return
 		}
 
@@ -147,8 +146,8 @@ func GetMeHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		user, serviceErr := s.GetUserById(c.Request.Context(), parsedUuid, true)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetUserDetailFailed) {
+		user, serviceErr := s.GetMe(c.Request.Context(), parsedUuid)
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetUserDetailFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User fetched successfully", user)
@@ -209,7 +208,7 @@ func UpdateUserHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdateUser(c.Request.Context(), userID, &cleanInput)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateUserFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdateUserFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User updated successfully", nil)
@@ -246,7 +245,7 @@ func DeleteUsersHandler(s Service) gin.HandlerFunc {
 			ids[i] = parsedId
 		}
 		serviceErr := s.DeleteUsers(c.Request.Context(), ids)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeleteUserFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrDeleteUserFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Users deleted successfully", nil)

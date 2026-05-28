@@ -12,9 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"nh-be/internal/constant"
+	"nh-be/internal/features/experiment"
 	"nh-be/internal/features/observation"
 	observationmocks "nh-be/internal/features/observation/mocks"
+	"nh-be/internal/features/procedure"
 	"nh-be/internal/utils/testutil"
 )
 
@@ -98,7 +99,7 @@ func TestHandler_GetAllObservations(t *testing.T) {
 			queryParams:     "?page=1&pageSize=10",
 			setupMocks: func(svc *observationmocks.Service) {
 				svc.On("GetAllObservations", mock.Anything, validExpId, validProcStepId, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Return(nil, int64(0), constant.ErrForbidViewObservation)
+					Return(nil, int64(0), observation.ErrForbidViewObservation)
 			},
 			expectedStatus: http.StatusForbidden,
 		},
@@ -256,7 +257,7 @@ func TestHandler_CreateObservation(t *testing.T) {
 			requestBody:     validBody,
 			setupMocks: func(svc *observationmocks.Service) {
 				svc.On("CreateObservation", mock.Anything, validExpId, validProcStepId, mock.Anything).
-					Return(observation.CreatedObservationResponseDto{}, constant.ErrExperimentNotFound)
+					Return(observation.CreatedObservationResponseDto{}, experiment.ErrExperimentNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -267,7 +268,7 @@ func TestHandler_CreateObservation(t *testing.T) {
 			requestBody:     validBody,
 			setupMocks: func(svc *observationmocks.Service) {
 				svc.On("CreateObservation", mock.Anything, validExpId, validProcStepId, mock.Anything).
-					Return(observation.CreatedObservationResponseDto{}, constant.ErrProcedureStepNotFound)
+					Return(observation.CreatedObservationResponseDto{}, procedure.ErrProcedureStepNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -278,7 +279,7 @@ func TestHandler_CreateObservation(t *testing.T) {
 			requestBody:     validBody,
 			setupMocks: func(svc *observationmocks.Service) {
 				svc.On("CreateObservation", mock.Anything, validExpId, validProcStepId, mock.Anything).
-					Return(observation.CreatedObservationResponseDto{}, constant.ErrForbidCreateObservation)
+					Return(observation.CreatedObservationResponseDto{}, observation.ErrForbidCreateObservation)
 			},
 			expectedStatus: http.StatusForbidden,
 		},

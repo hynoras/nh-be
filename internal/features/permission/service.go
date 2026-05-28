@@ -51,7 +51,7 @@ func (s *service) GetPermissionGroupsByIDs(ctx context.Context, permissionGroupI
 		return nil, err
 	}
 	if len(permissionGroups) == 0 {
-		return nil, constant.ErrPermissionGroupNotFound
+		return nil, ErrPermissionGroupNotFound
 	}
 	return permissionGroups, nil
 }
@@ -69,7 +69,7 @@ func (s *service) GetAllPermissions(ctx context.Context, search string) ([]Permi
 	}
 
 	if !slices.Contains(userPerm, constant.ViewPermissionGroup) && !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return nil, 0, constant.ErrForbidViewPermissions
+		return nil, 0, ErrForbidViewPermissions
 	}
 
 	return s.permissionRepo.FindAllPermissions(ctx, search)
@@ -117,7 +117,7 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 	}
 
 	if !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return constant.ErrForbidCreatePermissionGroup
+		return ErrForbidCreatePermissionGroup
 	}
 
 	var permissions []Permission
@@ -131,7 +131,7 @@ func (s *service) CreatePermissionGroup(ctx context.Context, permissionGroup *Pe
 	// Check for duplicate name
 	existingGroup, err := s.permissionRepo.FindPermissionGroupByName(ctx, permissionGroup.Name)
 	if err == nil && existingGroup != nil {
-		return constant.ErrPermissionGroupNameAlreadyExists
+		return ErrPermissionGroupNameAlreadyExists
 	}
 
 	return s.permissionRepo.WithTransaction(ctx, func(txRepo Repository) error {
@@ -164,7 +164,7 @@ func (s *service) GetAllPermissionGroups(ctx context.Context, search string, per
 	}
 
 	if !slices.Contains(userPerm, constant.ViewPermissionGroup) && !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return nil, 0, constant.ErrForbidViewPermissionGroup
+		return nil, 0, ErrForbidViewPermissionGroup
 	}
 
 	offset := (page - 1) * pageSize
@@ -183,7 +183,7 @@ func (s *service) GetPermissionGroupByID(ctx context.Context, id uuid.UUID) (*Pe
 	}
 
 	if !slices.Contains(userPerm, constant.ViewPermissionGroup) && !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return nil, constant.ErrForbidViewPermissionGroup
+		return nil, ErrForbidViewPermissionGroup
 	}
 
 	permissionGroup, err := s.permissionRepo.FindPermissionGroupByID(ctx, id)
@@ -205,7 +205,7 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 	}
 
 	if !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return constant.ErrForbidUpdatePermissionGroup
+		return ErrForbidUpdatePermissionGroup
 	}
 
 	var permissions []Permission
@@ -224,7 +224,7 @@ func (s *service) UpdatePermissionGroup(ctx context.Context, id uuid.UUID, permi
 	// Check for duplicate name (excluding current group)
 	duplicateGroup, err := s.permissionRepo.FindPermissionGroupByName(ctx, permissionGroup.Name)
 	if err == nil && duplicateGroup != nil && duplicateGroup.ID != id {
-		return constant.ErrPermissionGroupNameAlreadyExists
+		return ErrPermissionGroupNameAlreadyExists
 	}
 
 	pg := &PermissionGroup{
@@ -256,7 +256,7 @@ func (s *service) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
 	}
 
 	if !slices.Contains(userPerm, constant.ManagePermissionGroup) {
-		return constant.ErrForbidDeletePermissionGroup
+		return ErrForbidDeletePermissionGroup
 	}
 
 	permissionGroup, err := s.permissionRepo.FindPermissionGroupByID(ctx, id)
@@ -265,7 +265,7 @@ func (s *service) DeletePermissionGroup(ctx context.Context, id uuid.UUID) error
 	}
 
 	if permissionGroup.Name == "Super Admin" {
-		return constant.ErrCannotDeleteSuperAdmin
+		return ErrCannotDeleteSuperAdmin
 	}
 
 	if err := s.permissionRepo.DeletePermissionGroup(ctx, id); err != nil {

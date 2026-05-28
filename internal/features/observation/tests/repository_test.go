@@ -4,6 +4,8 @@ import (
 	"context"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/observation"
+	"nh-be/internal/features/procedure"
+	"nh-be/internal/features/experiment"
 	"nh-be/internal/utils/testutil"
 	"testing"
 
@@ -44,7 +46,7 @@ func TestRepository_GetAllObsByExpIDAndProcID(t *testing.T) {
 					WithArgs(expId, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			expectedError: constant.ErrExperimentNotFound,
+			expectedError: experiment.ErrExperimentNotFound,
 		},
 		{
 			name:   "procedure_not_found",
@@ -62,7 +64,7 @@ func TestRepository_GetAllObsByExpIDAndProcID(t *testing.T) {
 					WithArgs(procId, 1).
 					WillReturnRows(sqlmock.NewRows([]string{"id"}))
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name:   "database_error_on_experiment_check",
@@ -446,7 +448,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 					})
 				mock.ExpectRollback()
 			},
-			expectedError: constant.ErrExperimentNotFound,
+			expectedError: experiment.ErrExperimentNotFound,
 		},
 		{
 			name: "procedure_step_not_found",
@@ -470,7 +472,7 @@ func TestRepository_CreateObservation(t *testing.T) {
 					})
 				mock.ExpectRollback()
 			},
-			expectedError: constant.ErrProcedureNotFound,
+			expectedError: procedure.ErrProcedureNotFound,
 		},
 		{
 			name: "database_error",

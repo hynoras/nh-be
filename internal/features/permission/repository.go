@@ -3,7 +3,6 @@ package permission
 import (
 	"context"
 	"errors"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/dbutil"
 	"strings"
 
@@ -61,7 +60,7 @@ func (r *repository) FindIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, e
 		return uuid.Nil, err
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return uuid.Nil, constant.ErrPermissionNotFound
+		return uuid.Nil, ErrPermissionNotFound
 	}
 	return p, nil
 }
@@ -81,7 +80,7 @@ func (r *repository) FindPermissionByID(ctx context.Context, id uuid.UUID) (*Per
 		return nil, err
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, constant.ErrPermissionNotFound
+		return nil, ErrPermissionNotFound
 	}
 	return &p, nil
 }

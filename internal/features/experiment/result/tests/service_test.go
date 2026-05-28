@@ -60,7 +60,7 @@ func TestService_GetResultByExperimentID(t *testing.T) {
 				// Repo should NOT be called
 			},
 			expectedResult: nil,
-			expectedError:  constant.ErrForbidViewExperimentResult,
+			expectedError:  result.ErrForbidViewExperimentResult,
 		},
 		{
 			name: "permission_service_error",
@@ -95,10 +95,10 @@ func TestService_GetResultByExperimentID(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ViewExperiment}, nil)
 				repo.On("FindByExperimentID", mock.Anything, experimentID).
-					Return(nil, constant.ErrExperimentResultNotFound)
+					Return(nil, result.ErrExperimentResultNotFound)
 			},
 			expectedResult: nil,
-			expectedError:  constant.ErrExperimentResultNotFound,
+			expectedError:  result.ErrExperimentResultNotFound,
 		},
 		{
 			name: "repo_error",
@@ -180,7 +180,7 @@ func TestService_CreateResult(t *testing.T) {
 					Return([]string{}, nil)
 				// Repo should NOT be called
 			},
-			expectedError: constant.ErrForbidCreateExperimentResult,
+			expectedError: result.ErrForbidCreateExperimentResult,
 		},
 		{
 			name: "permission_service_error",
@@ -213,9 +213,9 @@ func TestService_CreateResult(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("Create", mock.Anything, mock.AnythingOfType("*result.ExperimentResult")).
-					Return(constant.ErrExperimentResultAlreadyExists)
+					Return(result.ErrExperimentResultAlreadyExists)
 			},
-			expectedError: constant.ErrExperimentResultAlreadyExists,
+			expectedError: result.ErrExperimentResultAlreadyExists,
 		},
 		{
 			name: "repo_error",
@@ -292,7 +292,7 @@ func TestService_UpdateResult(t *testing.T) {
 					Return([]string{}, nil)
 				// Repo should NOT be called
 			},
-			expectedError: constant.ErrForbidUpdateExperimentResult,
+			expectedError: result.ErrForbidUpdateExperimentResult,
 		},
 		{
 			name: "permission_service_error",
@@ -328,10 +328,10 @@ func TestService_UpdateResult(t *testing.T) {
 				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
 					Return([]string{constant.ManageExperiment}, nil)
 				repo.On("FindByIDAndExperimentID", mock.Anything, resultID, experimentID).
-					Return(nil, constant.ErrExperimentResultNotFound)
+					Return(nil, result.ErrExperimentResultNotFound)
 				// Update should NOT be called
 			},
-			expectedError: constant.ErrExperimentResultNotFound,
+			expectedError: result.ErrExperimentResultNotFound,
 		},
 		{
 			name: "optimistic_lock_conflict",
@@ -343,9 +343,9 @@ func TestService_UpdateResult(t *testing.T) {
 				repo.On("FindByIDAndExperimentID", mock.Anything, resultID, experimentID).
 					Return(CreateTestResult(experimentID), nil)
 				repo.On("Update", mock.Anything, resultID, experimentID, mock.AnythingOfType("*result.UpdateFields"), 1).
-					Return(constant.ErrExperimentResultConflict)
+					Return(result.ErrExperimentResultConflict)
 			},
-			expectedError: constant.ErrExperimentResultConflict,
+			expectedError: result.ErrExperimentResultConflict,
 		},
 		{
 			name: "repo_update_error",

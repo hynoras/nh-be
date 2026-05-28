@@ -4,22 +4,21 @@ import (
 	"context"
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
-	"nh-be/internal/utils/ctxutil"
+	"nh-be/internal/utils/authutil"
 	"nh-be/internal/utils/timeutil"
-	"slices"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type Service interface {
-	GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error)
+	GetAllProcedures(ctx context.Context, search string, page, pageSize int) ([]ProcedureListResponseDto, int64, error)
 	GetProcedureByID(ctx context.Context, id uuid.UUID) (*ProcedureResponseDto, error)
 	CreateProcedure(ctx context.Context, procedure *CreateProcedureDto) error
 	UpdateProcedure(ctx context.Context, id uuid.UUID, procedure *UpdateProcedureDto) error
 	DeleteProcedure(ctx context.Context, id uuid.UUID) error
 
-	GetProcedureSteps(ctx context.Context, procedureId uuid.UUID, offset, limit int) ([]StepsResponseDto, int64, error)
+	GetProcedureSteps(ctx context.Context, procedureId uuid.UUID, page, pageSize int) ([]StepsResponseDto, int64, error)
 	UpdateProcedureStep(ctx context.Context, procedureId uuid.UUID, steps []UpdateProcedureStepInput) error
 }
 
@@ -33,54 +32,31 @@ func NewService(repository Repository, permissionService permission.Service) Ser
 }
 
 func (s *service) CanViewProcedure(ctx context.Context, id uuid.UUID) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidViewProcedure
-	}
-
-	return nil
+	return authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewProcedure, constant.ViewExperiment, constant.ManageExperiment)
 }
 
 func (s *service) CanManageProcedure(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
-		return err
+	var forbidErr error
+	switch action {
+	case constant.Create:
+		forbidErr = ErrForbidCreateProcedure
+	case constant.Update:
+		forbidErr = ErrForbidUpdateProcedure
+	case constant.Delete:
+		forbidErr = ErrForbidDeleteProcedure
+	default:
+		forbidErr = ErrForbidManageProcedure
 	}
 
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		switch action {
-		case constant.Create:
-			return constant.ErrForbidCreateProcedure
-		case constant.Update:
-			return constant.ErrForbidUpdateProcedure
-		case constant.Delete:
-			return constant.ErrForbidDeleteProcedure
-		}
-	}
-
-	return nil
+	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
 }
 
-func (s *service) GetAllProcedures(ctx context.Context, search string, offset, limit int) ([]ProcedureListResponseDto, int64, error) {
+func (s *service) GetAllProcedures(ctx context.Context, search string, page, pageSize int) ([]ProcedureListResponseDto, int64, error) {
 	permErr := s.CanViewProcedure(ctx, uuid.Nil)
 	if permErr != nil {
 		return nil, 0, permErr
 	}
-	procedures, length, repoErr := s.repository.FindAll(ctx, search, offset, limit)
+	procedures, length, repoErr := s.repository.FindAll(ctx, search, page, pageSize)
 	if repoErr != nil {
 		return nil, 0, repoErr
 	}
@@ -135,13 +111,13 @@ func (s *service) DeleteProcedure(ctx context.Context, id uuid.UUID) error {
 func (s *service) GetProcedureSteps(
 	ctx context.Context,
 	procedureId uuid.UUID,
-	offset, limit int,
+	page, pageSize int,
 ) ([]StepsResponseDto, int64, error) {
 	permErr := s.CanViewProcedure(ctx, procedureId)
 	if permErr != nil {
 		return nil, 0, permErr
 	}
-	procedureSteps, length, repoErr := s.repository.GetProcStepsByProcID(ctx, procedureId, offset, limit)
+	procedureSteps, length, repoErr := s.repository.GetProcStepsByProcID(ctx, procedureId, page, pageSize)
 	if repoErr != nil {
 		return nil, 0, repoErr
 	}
@@ -189,7 +165,7 @@ func (s *service) UpdateProcedureStep(
 
 			version, exists := existingStepIds[input.ID]
 			if !exists {
-				return constant.ErrProcedureStepNotFound
+				return ErrProcedureStepNotFound
 			}
 
 			step := MapUpdateProcStepInputToProcStep(&input, now)

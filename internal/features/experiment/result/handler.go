@@ -2,7 +2,6 @@ package result
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,7 @@ func GetResultByExperimentIDHandler(s Service) gin.HandlerFunc {
 		}
 
 		result, serviceErr := s.GetResultByExperimentID(c.Request.Context(), *experimentID)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetExperimentResultDetailFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetExperimentResultDetailFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment result fetched successfully", MapResultToDto(*result))
@@ -67,7 +66,7 @@ func CreateResultHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.CreateResult(c.Request.Context(), *experimentID, &dto)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreateExperimentResultFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrCreateExperimentResultFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusCreated, "Experiment result created successfully", nil)
@@ -110,7 +109,7 @@ func UpdateResultHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdateResult(c.Request.Context(), *resultID, *experimentID, &dto)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdateExperimentResultFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdateExperimentResultFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Experiment result updated successfully", nil)

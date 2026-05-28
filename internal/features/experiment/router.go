@@ -1,27 +1,22 @@
 package experiment
 
 import (
-	"nh-be/internal/features/permission"
+	"nh-be/internal/app"
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
+func RegisterRoutes(rg *gin.RouterGroup, deps *app.SharedDeps) {
 	experimentsGroup := rg.Group("/experiments")
 	experimentsGroup.Use(middleware.WithService("experiment-service"))
 
 	// Setup shared dependencies
-	experimentRepo := NewRepository(db)
-	permissionRepo := permission.NewRepository(db)
-	permissionCache := permission.NewPermissionCache(rdb)
-	permissionService := permission.NewService(permissionRepo, permissionCache)
-	procedureRepo := procedure.NewRepository(db)
-	procedureService := procedure.NewService(procedureRepo, permissionService)
-	experimentService := NewService(experimentRepo, permissionService, procedureService)
+	experimentRepo := NewRepository(deps.DB)
+	procedureRepo := procedure.NewRepository(deps.DB)
+	procedureService := procedure.NewService(procedureRepo, deps.PermissionService)
+	experimentService := NewService(experimentRepo, deps.PermissionService, procedureService)
 
 	// Experiment routes
 	experimentsGroup.GET("", GetAllExperimentsHandler(experimentService))

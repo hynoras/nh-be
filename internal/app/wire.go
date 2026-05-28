@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"nh-be/internal/config"
-	"nh-be/internal/features/auth"
-	"nh-be/internal/features/experiment"
-	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/features/permission"
-	"nh-be/internal/features/user"
 	"nh-be/internal/platform/email"
 	"nh-be/internal/platform/mq"
+	"nh-be/internal/platform/session"
 	"sync"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -20,6 +17,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// Service holds all infrastructure connections and background worker
+// lifecycle handles. It is created once at startup by InitializeServices
+// and passed through the application for dependency injection and cleanup.
 type Service struct {
 	DB        *gorm.DB
 	SQLDB     *sql.DB
@@ -31,25 +31,13 @@ type Service struct {
 	WG        *sync.WaitGroup
 }
 
-// InitializeServices initializes all the services and returns the database, redis, and rabbitmq publisher channel
+// InitializeServices connects to PostgreSQL, Redis, and RabbitMQ, declares
+// the message queue topology, and starts background consumers. It returns
+// a fully initialized Service or an error if any connection fails.
 func InitializeServices(cfg *config.Config) (*Service, error) {
 	db, err := config.ConnectDatabase(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("postgresql: %w", err)
-	}
-	if cfg.AppEnv == "dev" {
-		if err := db.AutoMigrate(
-			&auth.VerificationToken{},
-			&user.User{},
-			&permission.Permission{},
-			&permission.PermissionGroup{},
-			&user.UserPermission{},
-			&experiment.Experiment{},
-			&result.ExperimentResult{},
-		); err != nil {
-			return nil, fmt.Errorf("automigrate failed: %w", err)
-		}
-		slog.Info("Running AutoMigrate in dev mode")
 	}
 
 	rdb, err := config.NewRedisClient(cfg)
@@ -115,4 +103,76 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 		ConCancel: conCancel,
 		WG:        wg,
 	}, nil
+}
+
+// SharedDeps holds the shared dependencies that are injected into all
+// feature routers. It is created once from Service.NewSharedDeps() and
+// ensures a single instance of PermissionService and SessionStore.
+type SharedDeps struct {
+	DB                *gorm.DB
+	Redis             *redis.Client
+	PubCh             *amqp.Channel
+	SessionStore      session.SessionStore
+	PermissionService permission.Service
+}
+
+// NewSharedDeps constructs the SharedDeps struct by creating singletons
+// for SessionStore and PermissionService from the Service's connections.
+func (s *Service) NewSharedDeps() *SharedDeps {
+	sessionStore := session.NewSessionStore(s.Redis)
+	permissionRepo := permission.NewRepository(s.DB)
+	permissionCache := permission.NewPermissionCache(s.Redis)
+	permissionService := permission.NewService(permissionRepo, permissionCache)
+
+	return &SharedDeps{
+		DB:                s.DB,
+		Redis:             s.Redis,
+		PubCh:             s.PubCh,
+		SessionStore:      sessionStore,
+		PermissionService: permissionService,
+	}
+}
+
+
+// ShutdownServices performs an orderly teardown of all infrastructure resources.
+// It should be called via defer in main() after ListenAndServe returns,
+// ensuring the HTTP server has fully drained before connections are closed.
+//
+// Shutdown order:
+//  1. Flush OpenTelemetry traces
+//  2. Cancel background consumers and wait for goroutines to finish
+//  3. Close RabbitMQ channels and connection
+//  4. Close database connection
+//  5. Close Redis connection
+func (s *Service) ShutdownServices(tracerShutdown func(context.Context) error) {
+	if tracerShutdown != nil {
+		if err := tracerShutdown(context.Background()); err != nil {
+			slog.Error("failed to shutdown tracer", "error", err)
+		}
+		slog.Info("OpenTelemetry tracer shut down")
+	}
+
+	s.ConCancel()
+	s.WG.Wait()
+
+	if s.PubCh != nil {
+		s.PubCh.Close()
+		slog.Info("RabbitMQ publisher channel closed")
+	}
+	if s.ConCh != nil {
+		s.ConCh.Close()
+		slog.Info("RabbitMQ consumer channel closed")
+	}
+	if s.RabbitMQ != nil {
+		s.RabbitMQ.Close()
+		slog.Info("RabbitMQ connection closed")
+	}
+	if s.SQLDB != nil {
+		s.SQLDB.Close()
+		slog.Info("Database connection closed")
+	}
+	if s.Redis != nil {
+		s.Redis.Close()
+		slog.Info("Redis connection closed")
+	}
 }

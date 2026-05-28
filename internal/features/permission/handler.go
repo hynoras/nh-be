@@ -2,7 +2,6 @@ package permission
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 		search := c.Query("search")
 
 		permissions, count, serviceErr := s.GetAllPermissions(c.Request.Context(), search)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllPermissionFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllPermissionFailed) {
 			return
 		}
 
@@ -50,6 +49,7 @@ func GetAllPermissionsHandler(s Service) gin.HandlerFunc {
 // @Failure 500 {object} httputil.ErrorResponse "Failed to fetch permission"
 // @Security SessionAuth
 // @Router /permissions/{id} [get]
+// func GetPermissionHandler(s Service) gin.HandlerFunc {
 func GetPermissionHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		parsedId, idErr := httputil.ValidateUUID(c, c.Param("id"))
@@ -58,7 +58,7 @@ func GetPermissionHandler(s Service) gin.HandlerFunc {
 		}
 
 		permission, serviceErr := s.GetPermissionByID(c.Request.Context(), *parsedId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetPermissionDetailFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetPermissionDetailFailed) {
 			return
 		}
 
@@ -107,7 +107,7 @@ func CreatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.CreatePermissionGroup(c.Request.Context(), &cleanInput)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrCreatePermissionGroupFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrCreatePermissionGroupFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusCreated, "Permission group created successfully", nil)
@@ -149,7 +149,7 @@ func GetAllPermissionGroupsHandler(s Service) gin.HandlerFunc {
 		}
 
 		groups, count, serviceErr := s.GetAllPermissionGroups(c.Request.Context(), search, permissionIds, page, pageSize)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetAllPermissionGroupFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllPermissionGroupFailed) {
 			return
 		}
 
@@ -180,7 +180,7 @@ func GetPermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		permissionGroup, serviceErr := s.GetPermissionGroupByID(c.Request.Context(), *parsedId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrGetPermissionGroupDetailFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetPermissionGroupDetailFailed) {
 			return
 		}
 		resp := MapPermissionGroupToDto(*permissionGroup)
@@ -233,7 +233,7 @@ func UpdatePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.UpdatePermissionGroup(c.Request.Context(), *parsedId, &cleanInput)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrUpdatePermissionGroupFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrUpdatePermissionGroupFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group updated successfully", nil)
@@ -263,7 +263,7 @@ func DeletePermissionGroupHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.DeletePermissionGroup(c.Request.Context(), *parsedId)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrDeletePermissionGroupFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrDeletePermissionGroupFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "Permission group deleted successfully", nil)

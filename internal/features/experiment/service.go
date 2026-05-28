@@ -5,8 +5,8 @@ import (
 	"nh-be/internal/constant"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/procedure"
+	"nh-be/internal/utils/authutil"
 	"nh-be/internal/utils/ctxutil"
-	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,43 +37,24 @@ func NewService(experimentRepo Repository, permissionService permission.Service,
 }
 
 func (s *service) CanManageExperiment(ctx context.Context, id uuid.UUID, action constant.ManageAction) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
-		return err
+	var forbidErr error
+	switch action {
+	case constant.Create:
+		forbidErr = ErrForbidCreateExperiment
+	case constant.Update:
+		forbidErr = ErrForbidUpdateExperiment
+	case constant.Delete:
+		forbidErr = ErrForbidDeleteExperiment
+	default:
+		forbidErr = ErrForbidManageExperiment
 	}
 
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		switch action {
-		case constant.Create:
-			return constant.ErrForbidCreateExperiment
-		case constant.Update:
-			return constant.ErrForbidUpdateExperiment
-		case constant.Delete:
-			return constant.ErrForbidDeleteExperiment
-		}
-	}
-
-	return nil
+	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
 }
 
 func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error) {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperiments, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, 0, err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return nil, 0, constant.ErrForbidViewExperiments
 	}
 
 	experiments, length, err := s.experimentRepo.FindAll(ctx, search, page, pageSize)
@@ -87,18 +68,8 @@ func (s *service) GetAllExperiments(ctx context.Context, search string, page, pa
 }
 
 func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error) {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperiment, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !slices.Contains(userPerm, constant.ViewExperiment) && !slices.Contains(userPerm, constant.ManageExperiment) {
-		return nil, constant.ErrForbidViewExperiment
 	}
 
 	experiment, err := s.experimentRepo.FindByID(ctx, id)
@@ -116,13 +87,8 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 		return err
 	}
 
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidCreateExperiment, constant.ManageExperiment); err != nil {
 		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidCreateExperiment
 	}
 
 	experiment := &Experiment{
@@ -140,22 +106,12 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 }
 
 func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateExperiment, constant.ManageExperiment); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidUpdateExperiment
 	}
 
 	// Check if experiment exists
-	_, err = s.experimentRepo.FindByID(ctx, id)
+	_, err := s.experimentRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -171,40 +127,30 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 }
 
 func (s *service) UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidUpdateExperiment, constant.ManageExperiment); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidUpdateExperiment
 	}
 
 	// Check if experiment exists
 	var exp *Experiment
-	exp, err = s.experimentRepo.FindByID(ctx, id)
+	exp, err := s.experimentRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	if exp.Status == status {
-		return constant.ErrExperimentAlreadyInTargetState
+		return ErrExperimentAlreadyInTargetState
 	}
 
 	// validate status
 	if exp.Status == ExperimentDraft && status != ExperimentPlanning {
-		return constant.ErrStatusTransitionFromDraftToPlanning
+		return ErrStatusTransitionFromDraftToPlanning
 	}
 	if exp.Status == ExperimentPlanning && status != ExperimentRunning {
-		return constant.ErrStatusTransitionFromPlanningToRunning
+		return ErrStatusTransitionFromPlanningToRunning
 	}
 	if exp.Status == ExperimentRunning && (status != ExperimentCompleted && status != ExperimentAborted) {
-		return constant.ErrStatusTransitionFromRunningToCompletedOrAborted
+		return ErrStatusTransitionFromRunningToCompletedOrAborted
 	}
 
 	return s.experimentRepo.UpdateStatus(ctx, id, status, exp.Version)
@@ -229,29 +175,19 @@ func (s *service) AssignProcedureToExperiment(ctx context.Context, experimentId 
 	}
 
 	if assignedProcedureId == procedureId {
-		return constant.ErrDuplicateProcedureAssignment
+		return ErrDuplicateProcedureAssignment
 	}
 
 	return s.experimentRepo.UpdateProcedureID(ctx, experimentId, procedureId, version)
 }
 
 func (s *service) DeleteExperiment(ctx context.Context, id uuid.UUID) error {
-	userId, err := ctxutil.GetUserIdFromContext(ctx)
-	if err != nil {
+	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidDeleteExperiment, constant.ManageExperiment); err != nil {
 		return err
-	}
-
-	userPerm, err := s.permissionService.GetUserPermissionCodeNames(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(userPerm, constant.ManageExperiment) {
-		return constant.ErrForbidDeleteExperiment
 	}
 
 	// Check if experiment exists
-	_, err = s.experimentRepo.FindByID(ctx, id)
+	_, err := s.experimentRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}

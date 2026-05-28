@@ -1,24 +1,19 @@
 package procedure
 
 import (
-	"nh-be/internal/features/permission"
+	"nh-be/internal/app"
 	"nh-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 )
 
-func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
+func RegisterRoutes(rg *gin.RouterGroup, deps *app.SharedDeps) {
 	proceduresGroup := rg.Group("/procedures")
 	proceduresGroup.Use(middleware.WithService("procedure-service"))
 
 	// Setup shared dependencies
-	permissionRepo := permission.NewRepository(db)
-	permissionCache := permission.NewPermissionCache(rdb)
-	permissionService := permission.NewService(permissionRepo, permissionCache)
-	procedureRepo := NewRepository(db)
-	procedureService := NewService(procedureRepo, permissionService)
+	procedureRepo := NewRepository(deps.DB)
+	procedureService := NewService(procedureRepo, deps.PermissionService)
 
 	proceduresGroup.GET("", GetAllProceduresHandler(procedureService))
 	proceduresGroup.GET("/:procedureId", GetProcedureByIDHandler(procedureService))
@@ -28,5 +23,4 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	proceduresGroup.PUT("/:procedureId/procedure-steps", UpdateProcedureStepHandler(procedureService))
 	// proceduresGroup.PUT("/:procedureId/status", UpdateProcedureStatusHandler(experimentService))
 	proceduresGroup.DELETE("/:procedureId", DeleteProcedureHandler(procedureService))
-
 }

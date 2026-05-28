@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/http"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/httputil"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func VerifyTokenHandler(s Service) gin.HandlerFunc {
 			httputil.MakeErrorResponse(
 				c,
 				http.StatusUnauthorized,
-				constant.ErrVerifyTokenFailed,
+				ErrVerifyTokenFailed,
 				err.Error(),
 			)
 			return
@@ -60,7 +59,7 @@ func LoginHandler(s Service) gin.HandlerFunc {
 		}
 
 		userRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
-		if httputil.MakeServiceErrorResponse(c, err, constant.ErrLoginFailed) {
+		if httputil.MakeServiceErrorResponse(c, err, ErrLoginFailed) {
 			return
 		}
 
@@ -95,7 +94,7 @@ func LogoutHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.Logout(c.Request.Context(), cookie.Value)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrLogoutFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrLogoutFailed) {
 			return
 		}
 		//set empty cookie upon logging out for frontend
@@ -131,7 +130,7 @@ func ChangePasswordHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.ChangePassword(c.Request.Context(), userID, req)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrChangePasswordFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrChangePasswordFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User password changed successfully", nil)
@@ -159,7 +158,7 @@ func SignUpHandler(s Service) gin.HandlerFunc {
 		}
 
 		serviceErr := s.SignUp(c.Request.Context(), req)
-		if httputil.MakeServiceErrorResponse(c, serviceErr, constant.ErrSignUpFailed) {
+		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrSignUpFailed) {
 			return
 		}
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User signed up successfully", nil)

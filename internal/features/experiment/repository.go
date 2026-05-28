@@ -3,7 +3,6 @@ package experiment
 import (
 	"context"
 	"errors"
-	"nh-be/internal/constant"
 	"nh-be/internal/utils/dbutil"
 	"strings"
 
@@ -63,7 +62,7 @@ func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*Experiment, e
 		return nil, result.Error
 	}
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, constant.ErrExperimentNotFound
+		return nil, ErrExperimentNotFound
 	}
 	return &e, nil
 }
@@ -99,7 +98,7 @@ func (r *repository) UpdateStatus(ctx context.Context, id uuid.UUID, status Expe
 	}
 
 	if result.RowsAffected == 0 {
-		return constant.ErrExperimentConflict
+		return ErrExperimentConflict
 	}
 
 	return nil
@@ -116,7 +115,7 @@ func (r *repository) GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid
 		return uuid.Nil, result.Error
 	}
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return uuid.Nil, constant.ErrExperimentNotFound
+		return uuid.Nil, ErrExperimentNotFound
 	}
 	if e.ProcedureID == nil {
 		return uuid.Nil, nil
@@ -138,7 +137,7 @@ func (r *repository) UpdateProcedureID(ctx context.Context, id uuid.UUID, proced
 	}
 
 	if result.RowsAffected == 0 {
-		return constant.ErrExperimentConflict
+		return ErrExperimentConflict
 	}
 
 	return nil
