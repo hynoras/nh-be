@@ -3,13 +3,16 @@ package experiment
 import "time"
 
 type ExperimentsResponseDto struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Objective string    `json:"objective"`
-	Type      string    `json:"type"`
-	Status    string    `json:"status"`
-	CreatedBy string    `json:"created_by"`
-	CreatedAt time.Time `json:"created_at"`
+	Identifier    string    `json:"identifier"`
+	Title         string    `json:"title"`
+	Objective     string    `json:"objective"`
+	Status        string    `json:"status"`
+	Type          string    `json:"type"`
+	Creator       string    `json:"created_by"`
+	Updater       string    `json:"updated_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	ProcedureName string    `json:"procedure_name"`
 }
 
 type ExperimentResponseDto struct {
@@ -24,6 +27,19 @@ type ExperimentResponseDto struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 	StartedAt   *time.Time `json:"started_at"`
 	CompletedAt *time.Time `json:"completed_at"`
+}
+
+type ExperimentsQueryDto struct {
+	Identifier    string
+	Title         string
+	Objective     string
+	Status        ExperimentStatus
+	Type          ExperimentType
+	Creator       string
+	Updater       string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	ProcedureName string
 }
 
 type CreateExperimentDto struct {
