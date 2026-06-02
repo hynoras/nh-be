@@ -25,13 +25,45 @@ import (
 func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		search := c.Query("search")
+		experimentStatus := c.Query("status")
+		experimentType := c.Query("type")
+
+		sortBy, sortOrder, err := httputil.ParseSortParams(c, "updated_at", "DESC")
+		if err != nil {
+			return
+		}
 
 		pageInt, pageSizeInt, err := httputil.ParsePaginationParams(c)
 		if err != nil {
 			return
 		}
 
-		experiments, length, serviceErr := s.GetAllExperiments(c.Request.Context(), search, pageInt, pageSizeInt)
+		var status *ExperimentStatus
+		var expType *ExperimentType
+
+		if experimentStatus != "" {
+			switch ExperimentStatus(experimentStatus) {
+			case ExperimentDraft, ExperimentPlanning, ExperimentRunning, ExperimentCompleted, ExperimentAborted:
+				s := ExperimentStatus(experimentStatus)
+				status = &s
+			default:
+				httputil.MakeErrorResponse(c, http.StatusBadRequest, ErrInvalidExperimentStatus, ErrMustBeOneOfExperimentStatus)
+				return
+			}
+		}
+
+		if experimentType != "" {
+			switch ExperimentType(experimentType) {
+			case ExperimentExploratoryType, ExperimentConfirmatoryType:
+				t := ExperimentType(experimentType)
+				expType = &t
+			default:
+				httputil.MakeErrorResponse(c, http.StatusBadRequest, ErrInvalidExperimentType, ErrMustBeOneOfExperimentType)
+				return
+			}
+		}
+
+		experiments, length, serviceErr := s.GetAllExperiments(c.Request.Context(), sortBy, search, sortOrder, status, expType, pageInt, pageSizeInt)
 		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetAllExperimentFailed) {
 			return
 		}

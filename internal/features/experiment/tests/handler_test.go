@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"nh-be/internal/constant"
 	"nh-be/internal/features/experiment"
 	experimentmocks "nh-be/internal/features/experiment/mocks"
 	"nh-be/internal/utils/testutil"
@@ -144,6 +145,132 @@ func TestHandler_AssignProcedureToExperiment(t *testing.T) {
 			)
 			req.Header.Set("Content-Type", "application/json")
 
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestHandler_GetAllExperiments(t *testing.T) {
+	queryDtos := TestExperimentsQueryDto()
+	expectedResponseDtos := TestExperimentsResponseDto()
+	expectedCount := int64(len(queryDtos))
+
+	tests := []struct {
+		name           string
+		queryParams    string
+		setupMocks     func(svc *experimentmocks.Service)
+		expectedStatus int
+		checkBody      func(t *testing.T, body string)
+	}{
+		{
+			name:        "success_default_params",
+			queryParams: "",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.On("GetAllExperiments",
+					mock.Anything,
+					"updated_at",
+					"",
+					constant.DESC,
+					(*experiment.ExperimentStatus)(nil),
+					(*experiment.ExperimentType)(nil),
+					1,
+					10,
+				).Return(expectedResponseDtos, expectedCount, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "success_with_all_filters",
+			queryParams: "?search=test&status=draft&type=exploratory&sortBy=title&sortOrder=ASC&page=2&pageSize=5",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.On("GetAllExperiments",
+					mock.Anything,
+					"title",
+					"test",
+					constant.ASC,
+					mock.Anything, // *ExperimentStatus pointer created locally in handler
+					mock.Anything, // *ExperimentType pointer created locally in handler
+					2,
+					5,
+				).Return(expectedResponseDtos, expectedCount, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "invalid_page",
+			queryParams: "?page=invalid",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.AssertNotCalled(t, "GetAllExperiments")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_page_size",
+			queryParams: "?pageSize=invalid",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.AssertNotCalled(t, "GetAllExperiments")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_sort_order",
+			queryParams: "?sortOrder=invalid",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.AssertNotCalled(t, "GetAllExperiments")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_status",
+			queryParams: "?status=invalid",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.AssertNotCalled(t, "GetAllExperiments")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "invalid_type",
+			queryParams: "?type=invalid",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.AssertNotCalled(t, "GetAllExperiments")
+			},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "service_returns_forbidden",
+			queryParams: "",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.On("GetAllExperiments", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, int64(0), experiment.ErrForbidViewExperiments)
+			},
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:        "service_returns_internal_error",
+			queryParams: "",
+			setupMocks: func(svc *experimentmocks.Service) {
+				svc.On("GetAllExperiments", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, int64(0), errors.New("unexpected db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := experimentmocks.NewService(t)
+			tc.setupMocks(mockSvc)
+
+			router := testutil.SetupTestRouter(
+				http.MethodGet,
+				"/experiments",
+				experiment.GetAllExperimentsHandler(mockSvc),
+			)
+
+			req := httptest.NewRequest(http.MethodGet, "/experiments"+tc.queryParams, nil)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
