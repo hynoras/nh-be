@@ -13,7 +13,13 @@ import (
 )
 
 type Service interface {
-	GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error)
+	GetAllExperiments(ctx context.Context,
+		sortBy,
+		search string,
+		sortOrder constant.Order,
+		experimentStatus *ExperimentStatus,
+		experimentType *ExperimentType,
+		page, pageSize int) ([]ExperimentsResponseDto, int64, error)
 	GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error)
 	CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error
 	UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error
@@ -52,19 +58,38 @@ func (s *service) CanManageExperiment(ctx context.Context, id uuid.UUID, action 
 	return authutil.RequirePermission(ctx, s.permissionService, forbidErr, constant.ManageExperiment)
 }
 
-func (s *service) GetAllExperiments(ctx context.Context, search string, page, pageSize int) ([]ExperimentsResponseDto, int64, error) {
+func (s *service) GetAllExperiments(ctx context.Context,
+	sortBy, search string,
+	sortOrder constant.Order,
+	experimentStatus *ExperimentStatus,
+	experimentType *ExperimentType,
+	page, pageSize int) ([]ExperimentsResponseDto, int64, error) {
 	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperiments, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, 0, err
 	}
 
-	experiments, length, err := s.experimentRepo.FindAll(ctx, search, page, pageSize)
-	if err != nil {
-		return nil, 0, err
+	userId, getUserIdErr := ctxutil.GetUserIdFromContext(ctx)
+	if getUserIdErr != nil {
+		return nil, 0, getUserIdErr
 	}
 
-	experimentResp := MapExperimentsToDto(experiments)
+	var queryExperiments []ExperimentsQueryDto
+	var count int64
 
-	return experimentResp, length, nil
+	//NOTE: for now retrieve count that is belong to current logged in user
+	count, countErr := s.experimentRepo.CountExperiments(ctx, &userId)
+	if countErr != nil {
+		return nil, 0, countErr
+	}
+
+	//NOTE: for now retrieve experiments that is belong to current logged in user
+	queryExperiments, queryErr := s.experimentRepo.FindAllExperiments(ctx, sortBy, search, sortOrder, experimentStatus, experimentType, &userId, page, pageSize)
+	if queryErr != nil {
+		return nil, 0, queryErr
+	}
+
+	experiments := MapExperimentsQueryToDto(queryExperiments)
+	return experiments, count, nil
 }
 
 func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error) {

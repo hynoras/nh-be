@@ -15,6 +15,8 @@ const (
 	ErrInvalidStatusTransition           = "Invalid status transition"
 	ErrAssignProcedureToExperimentFailed = "Failed to assign procedure to experiment"
 	ErrAuthorizationFailed               = "Authorization failed"
+	ErrInvalidExperimentStatus           = "Invalid experiment status"
+	ErrInvalidExperimentType             = "Invalid experiment type"
 )
 
 var (
@@ -31,9 +33,9 @@ var (
 	ErrExperimentConflict                              = errors.New("the experiment was modified by another request, please retry")
 	ErrExperimentAlreadyInTargetState                  = errors.New("experiment is already in target state")
 	ErrDuplicateProcedureAssignment                    = errors.New("This procedure is already assigned to the experiment")
-
-	// Proactive named errors
-	ErrForbidManageExperiment = errors.New("you do not have permission to manage this experiment")
+	ErrMustBeOneOfExperimentStatus                     = errors.New("Status must be one of: draft, planning, running, completed, aborted")
+	ErrMustBeOneOfExperimentType                       = errors.New("Type must be one of: exploratory, confirmatory")
+	ErrForbidManageExperiment                          = errors.New("you do not have permission to manage this experiment")
 )
 
 func init() {
@@ -49,4 +51,6 @@ func init() {
 	httputil.RegisterError(ErrExperimentNotFound, http.StatusNotFound, "Experiment not found")
 	httputil.RegisterError(ErrDuplicateProcedureAssignment, http.StatusConflict, ErrAssignProcedureToExperimentFailed)
 	httputil.RegisterError(ErrForbidManageExperiment, http.StatusForbidden, "you do not have permission to manage this experiment")
+	httputil.RegisterError(ErrMustBeOneOfExperimentStatus, http.StatusBadRequest, ErrInvalidExperimentStatus)
+	httputil.RegisterError(ErrMustBeOneOfExperimentType, http.StatusBadRequest, ErrInvalidExperimentType)
 }
