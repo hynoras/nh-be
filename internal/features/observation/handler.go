@@ -43,7 +43,7 @@ func GetAllObservationsHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		sortBy, sortOrder, err := httputil.ParseSortParams(c)
+		sortBy, sortOrder, err := httputil.ParseSortParams(c, "created_at", "DESC")
 		if err != nil {
 			return
 		}

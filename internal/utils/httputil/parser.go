@@ -51,9 +51,9 @@ func ParsePaginationParams(c *gin.Context) (int, int, error) {
 	return page, pageSize, nil
 }
 
-func ParseSortParams(c *gin.Context) (string, constant.Order, error) {
-	sortBy := c.DefaultQuery("sortBy", "")
-	sortOrder := c.DefaultQuery("sortOrder", "")
+func ParseSortParams(c *gin.Context, defaultSortBy, defaultSortOrder string) (string, constant.Order, error) {
+	sortBy := c.DefaultQuery("sortBy", defaultSortBy)
+	sortOrder := c.DefaultQuery("sortOrder", defaultSortOrder)
 
 	if sortOrder != "" {
 		sortOrder = strings.ToUpper(sortOrder)
