@@ -26,9 +26,9 @@ func (_m *Repository) EXPECT() *Repository_Expecter {
 	return &Repository_Expecter{mock: &_m.Mock}
 }
 
-// CountExperiments provides a mock function with given fields: ctx
-func (_m *Repository) CountExperiments(ctx context.Context) (int64, error) {
-	ret := _m.Called(ctx)
+// CountExperiments provides a mock function with given fields: ctx, createdBy
+func (_m *Repository) CountExperiments(ctx context.Context, createdBy *uuid.UUID) (int64, error) {
+	ret := _m.Called(ctx, createdBy)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CountExperiments")
@@ -36,17 +36,17 @@ func (_m *Repository) CountExperiments(ctx context.Context) (int64, error) {
 
 	var r0 int64
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (int64, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, *uuid.UUID) (int64, error)); ok {
+		return rf(ctx, createdBy)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) int64); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, *uuid.UUID) int64); ok {
+		r0 = rf(ctx, createdBy)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, *uuid.UUID) error); ok {
+		r1 = rf(ctx, createdBy)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -61,13 +61,14 @@ type Repository_CountExperiments_Call struct {
 
 // CountExperiments is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *Repository_Expecter) CountExperiments(ctx interface{}) *Repository_CountExperiments_Call {
-	return &Repository_CountExperiments_Call{Call: _e.mock.On("CountExperiments", ctx)}
+//   - createdBy *uuid.UUID
+func (_e *Repository_Expecter) CountExperiments(ctx interface{}, createdBy interface{}) *Repository_CountExperiments_Call {
+	return &Repository_CountExperiments_Call{Call: _e.mock.On("CountExperiments", ctx, createdBy)}
 }
 
-func (_c *Repository_CountExperiments_Call) Run(run func(ctx context.Context)) *Repository_CountExperiments_Call {
+func (_c *Repository_CountExperiments_Call) Run(run func(ctx context.Context, createdBy *uuid.UUID)) *Repository_CountExperiments_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
+		run(args[0].(context.Context), args[1].(*uuid.UUID))
 	})
 	return _c
 }
@@ -77,7 +78,7 @@ func (_c *Repository_CountExperiments_Call) Return(_a0 int64, _a1 error) *Reposi
 	return _c
 }
 
-func (_c *Repository_CountExperiments_Call) RunAndReturn(run func(context.Context) (int64, error)) *Repository_CountExperiments_Call {
+func (_c *Repository_CountExperiments_Call) RunAndReturn(run func(context.Context, *uuid.UUID) (int64, error)) *Repository_CountExperiments_Call {
 	_c.Call.Return(run)
 	return _c
 }
