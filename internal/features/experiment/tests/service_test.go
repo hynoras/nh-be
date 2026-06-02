@@ -201,3 +201,129 @@ func TestService_AssignProcedureToExperiment(t *testing.T) {
 		})
 	}
 }
+
+func TestService_GetAllExperiments(t *testing.T) {
+	userID := uuid.New()
+
+	queryDtos := TestExperimentsQueryDto()
+	expectedDtos := TestExperimentsResponseDto()
+	expectedCount := int64(len(queryDtos))
+
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		setupMocks    func(repo *mocks.Repository, permSvc *permmocks.Service)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+		checkResult   func(t *testing.T, result []experiment.ExperimentsResponseDto, count int64)
+	}{
+		{
+			name: "permission_denied",
+			ctx:  testutil.ContextWithUser(userID),
+			setupMocks: func(repo *mocks.Repository, permSvc *permmocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{}, nil)
+			},
+			expectedError: experiment.ErrForbidViewExperiments,
+		},
+		{
+			name: "get_user_id_from_context_returns_error",
+			ctx:  context.Background(), // no user ID in context — RequirePermission short-circuits here
+			setupMocks: func(repo *mocks.Repository, permSvc *permmocks.Service) {
+				// no mock needed: RequirePermission reads the user ID from ctx before calling permSvc
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "user ID not found in context")
+			},
+		},
+		{
+			name: "count_experiments_returns_error",
+			ctx:  testutil.ContextWithUser(userID),
+			setupMocks: func(repo *mocks.Repository, permSvc *permmocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("CountExperiments", mock.Anything, &userID).
+					Return(int64(0), errors.New("db count error"))
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "db count error")
+			},
+		},
+		{
+			name: "find_all_experiments_returns_error",
+			ctx:  testutil.ContextWithUser(userID),
+			setupMocks: func(repo *mocks.Repository, permSvc *permmocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("CountExperiments", mock.Anything, &userID).
+					Return(expectedCount, nil)
+				repo.On("FindAllExperiments", mock.Anything,
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("constant.Order"),
+					mock.Anything, mock.Anything, &userID,
+					mock.AnythingOfType("int"),
+					mock.AnythingOfType("int"),
+				).Return(nil, errors.New("db find error"))
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "db find error")
+			},
+		},
+		{
+			name: "success",
+			ctx:  testutil.ContextWithUser(userID),
+			setupMocks: func(repo *mocks.Repository, permSvc *permmocks.Service) {
+				permSvc.On("GetUserPermissionCodeNames", mock.Anything, userID).
+					Return([]string{constant.ViewExperiment}, nil)
+				repo.On("CountExperiments", mock.Anything, &userID).
+					Return(expectedCount, nil)
+				repo.On("FindAllExperiments", mock.Anything,
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("string"),
+					mock.AnythingOfType("constant.Order"),
+					mock.Anything, mock.Anything, &userID,
+					mock.AnythingOfType("int"),
+					mock.AnythingOfType("int"),
+				).Return(queryDtos, nil)
+			},
+			checkResult: func(t *testing.T, result []experiment.ExperimentsResponseDto, count int64) {
+				assert.Equal(t, expectedDtos, result)
+				assert.Equal(t, expectedCount, count)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := mocks.NewRepository(t)
+			mockPermSvc := permmocks.NewService(t)
+			mockProcSvc := procmocks.NewService(t)
+
+			tc.setupMocks(mockRepo, mockPermSvc)
+
+			svc := experiment.NewService(mockRepo, mockPermSvc, mockProcSvc)
+
+			result, count, err := svc.GetAllExperiments(tc.ctx, "created_at", "", constant.DESC, nil, nil, 1, 10)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+				assert.Nil(t, result)
+				assert.Equal(t, int64(0), count)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+				assert.Nil(t, result)
+				assert.Equal(t, int64(0), count)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if tc.checkResult != nil {
+				tc.checkResult(t, result, count)
+			}
+		})
+	}
+}

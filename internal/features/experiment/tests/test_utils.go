@@ -40,3 +40,20 @@ func TestExperimentsQueryDto() []experiment.ExperimentsQueryDto {
 		},
 	}
 }
+
+func TestExperimentsResponseDto() []experiment.ExperimentsResponseDto {
+	return []experiment.ExperimentsResponseDto{
+		{
+			Identifier:    "EXP-0001",
+			Title:         "Test Experiment",
+			Objective:     "Test Objective",
+			Status:        string(experiment.ExperimentDraft),
+			Type:          string(experiment.ExperimentExploratoryType),
+			Creator:       "Test Creator",
+			Updater:       "Test Updater",
+			CreatedAt:     time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+			UpdatedAt:     time.Date(2026, 2, 3, 19, 15, 10, 0, time.UTC),
+			ProcedureName: "Test Procedure",
+		},
+	}
+}
