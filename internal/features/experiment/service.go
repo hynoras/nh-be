@@ -7,6 +7,7 @@ import (
 	"nh-be/internal/features/procedure"
 	"nh-be/internal/utils/authutil"
 	"nh-be/internal/utils/ctxutil"
+	"nh-be/internal/utils/timeutil"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ type Service interface {
 		experimentStatus *ExperimentStatus,
 		experimentType *ExperimentType,
 		page, pageSize int) ([]ExperimentsResponseDto, int64, error)
-	GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error)
+	GetExperimentDetail(ctx context.Context, identifier string) (*ExperimentResponseDto, error)
 	CreateExperiment(ctx context.Context, dto *CreateExperimentDto) error
 	UpdateExperiment(ctx context.Context, id uuid.UUID, dto *UpdateExperimentDto) error
 	UpdateExperimentStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus) error
@@ -92,12 +93,17 @@ func (s *service) GetAllExperiments(ctx context.Context,
 	return experiments, count, nil
 }
 
-func (s *service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*ExperimentResponseDto, error) {
+func (s *service) GetExperimentDetail(ctx context.Context, identifier string) (*ExperimentResponseDto, error) {
 	if err := authutil.RequirePermission(ctx, s.permissionService, ErrForbidViewExperiment, constant.ViewExperiment, constant.ManageExperiment); err != nil {
 		return nil, err
 	}
 
-	experiment, err := s.experimentRepo.FindByID(ctx, id)
+	userId, getUserIdErr := ctxutil.GetUserIdFromContext(ctx)
+	if getUserIdErr != nil {
+		return nil, getUserIdErr
+	}
+
+	experiment, err := s.experimentRepo.FindByIdentifierAndCreatedBy(ctx, identifier, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +130,6 @@ func (s *service) CreateExperiment(ctx context.Context, dto *CreateExperimentDto
 		Type:        ExperimentType(dto.Type),
 		CreatedByID: userId,
 		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 
 	return s.experimentRepo.Create(ctx, experiment)
@@ -145,7 +150,7 @@ func (s *service) UpdateExperiment(ctx context.Context, id uuid.UUID, dto *Updat
 		Title:     dto.Title,
 		Objective: dto.Objective,
 		Type:      ExperimentType(dto.Type),
-		UpdatedAt: time.Now(),
+		UpdatedAt: timeutil.TimePtr(time.Now()),
 	}
 
 	return s.experimentRepo.Update(ctx, id, experiment)

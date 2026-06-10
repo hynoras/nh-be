@@ -1,19 +1,32 @@
 package experiment
 
 func MapExperimentToDto(e Experiment) ExperimentResponseDto {
-	return ExperimentResponseDto{
-		ID:          e.ID.String(),
-		Title:       e.Title,
-		Objective:   e.Objective,
-		Status:      string(e.Status),
-		Type:        string(e.Type),
-		Version:     e.Version,
-		CreatedBy:   e.CreatedBy.ID.String(),
-		CreatedAt:   e.CreatedAt,
-		StartedAt:   e.StartedAt,
-		CompletedAt: e.CompletedAt,
-		UpdatedAt:   e.UpdatedAt,
+	dto := ExperimentResponseDto{
+		ID:             e.ID.String(),
+		Identifier:     e.Identifier,
+		Title:          e.Title,
+		Objective:      e.Objective,
+		Status:         string(e.Status),
+		Type:           string(e.Type),
+		Version:        e.Version,
+		CreatedAt:      e.CreatedAt,
+		UpdatedAt:      e.UpdatedAt,
+		StartedAt:      e.StartedAt,
+		CompletedAt:    e.CompletedAt,
+		CreatedByID:    e.CreatedByID.String(),
+		CreatedBy:      e.CreatedBy.ID.String(),
+		PlannedStartAt: e.PlannedStartAt,
+		PlannedEndAt:   e.PlannedEndAt,
 	}
+
+	if e.UpdatedByID != nil {
+		dto.UpdatedByID = e.UpdatedByID.String()
+	}
+	if e.UpdatedBy != nil {
+		dto.UpdatedBy = e.UpdatedBy.ID.String()
+	}
+
+	return dto
 }
 
 func MapExperimentsQueryToDto(experiments []ExperimentsQueryDto) []ExperimentsResponseDto {
