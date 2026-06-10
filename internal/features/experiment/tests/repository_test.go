@@ -453,3 +453,102 @@ func TestRepository_FindAllExperiments(t *testing.T) {
 		})
 	}
 }
+
+func TestRepository_FindByIdentifierAndCreatedBy(t *testing.T) {
+	exp := TestExperiment()
+
+	tests := []struct {
+		name          string
+		identifier    string
+		createdBy     uuid.UUID
+		setupMock     func(mock sqlmock.Sqlmock)
+		expectedError error
+		checkError    func(t *testing.T, err error)
+		checkResult   func(t *testing.T, result *experiment.Experiment)
+	}{
+		{
+			name:       "success",
+			identifier: exp.Identifier,
+			createdBy:  exp.CreatedByID,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{
+					"id", "identifier", "title", "objective", "status", "type", "version",
+					"created_by_id", "updated_by_id", "procedure_id", "created_at", "updated_at",
+				}).AddRow(
+					exp.ID, exp.Identifier, exp.Title, exp.Objective, exp.Status, exp.Type, exp.Version,
+					exp.CreatedByID, exp.UpdatedByID, exp.ProcedureID, exp.CreatedAt, exp.UpdatedAt,
+				)
+
+				mock.ExpectQuery(`^SELECT .+ FROM "experiments" WHERE identifier = \$1 AND created_by_id = \$2 ORDER BY "experiments"\."id" LIMIT \$3$`).
+					WithArgs(exp.Identifier, exp.CreatedByID, 1).
+					WillReturnRows(rows)
+
+				mock.ExpectQuery(`^SELECT .+ FROM "users" WHERE "users"\."id" = \$1$`).
+					WithArgs(exp.CreatedByID).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(exp.CreatedByID))
+			},
+			expectedError: nil,
+			checkResult: func(t *testing.T, result *experiment.Experiment) {
+				assert.NotNil(t, result)
+				assert.Equal(t, exp.ID, result.ID)
+				assert.Equal(t, exp.Identifier, result.Identifier)
+			},
+		},
+		{
+			name:       "not_found",
+			identifier: "non-existent",
+			createdBy:  uuid.New(),
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(`^SELECT .+ FROM "experiments" WHERE identifier = \$1 AND created_by_id = \$2 ORDER BY "experiments"\."id" LIMIT \$3$`).
+					WithArgs("non-existent", sqlmock.AnyArg(), 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id"})) // empty rows
+			},
+			expectedError: experiment.ErrExperimentNotFound,
+			checkResult: func(t *testing.T, result *experiment.Experiment) {
+				assert.Nil(t, result)
+			},
+		},
+		{
+			name:       "database_error",
+			identifier: exp.Identifier,
+			createdBy:  exp.CreatedByID,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(`^SELECT .+ FROM "experiments" WHERE identifier = \$1 AND created_by_id = \$2 ORDER BY "experiments"\."id" LIMIT \$3$`).
+					WithArgs(exp.Identifier, exp.CreatedByID, 1).
+					WillReturnError(assert.AnError)
+			},
+			checkError: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, assert.AnError)
+			},
+			checkResult: func(t *testing.T, result *experiment.Experiment) {
+				assert.Nil(t, result)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock := testutil.SetupMockDB(t)
+			tc.setupMock(mock)
+			repo := experiment.NewRepository(db)
+			ctx := context.Background()
+
+			result, err := repo.FindByIdentifierAndCreatedBy(ctx, tc.identifier, tc.createdBy)
+
+			if tc.expectedError != nil {
+				assert.ErrorIs(t, err, tc.expectedError)
+			} else if tc.checkError != nil {
+				tc.checkError(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if tc.checkResult != nil {
+				tc.checkResult(t, result)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
