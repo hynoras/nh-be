@@ -241,29 +241,29 @@ func (_c *Service_GetAllExperiments_Call) RunAndReturn(run func(context.Context,
 	return _c
 }
 
-// GetExperimentByID provides a mock function with given fields: ctx, id
-func (_m *Service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*experiment.ExperimentResponseDto, error) {
-	ret := _m.Called(ctx, id)
+// GetExperimentDetail provides a mock function with given fields: ctx, identifier
+func (_m *Service) GetExperimentDetail(ctx context.Context, identifier string) (*experiment.ExperimentResponseDto, error) {
+	ret := _m.Called(ctx, identifier)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetExperimentByID")
+		panic("no return value specified for GetExperimentDetail")
 	}
 
 	var r0 *experiment.ExperimentResponseDto
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*experiment.ExperimentResponseDto, error)); ok {
-		return rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*experiment.ExperimentResponseDto, error)); ok {
+		return rf(ctx, identifier)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *experiment.ExperimentResponseDto); ok {
-		r0 = rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *experiment.ExperimentResponseDto); ok {
+		r0 = rf(ctx, identifier)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*experiment.ExperimentResponseDto)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = rf(ctx, id)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, identifier)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -271,31 +271,31 @@ func (_m *Service) GetExperimentByID(ctx context.Context, id uuid.UUID) (*experi
 	return r0, r1
 }
 
-// Service_GetExperimentByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetExperimentByID'
-type Service_GetExperimentByID_Call struct {
+// Service_GetExperimentDetail_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetExperimentDetail'
+type Service_GetExperimentDetail_Call struct {
 	*mock.Call
 }
 
-// GetExperimentByID is a helper method to define mock.On call
+// GetExperimentDetail is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id uuid.UUID
-func (_e *Service_Expecter) GetExperimentByID(ctx interface{}, id interface{}) *Service_GetExperimentByID_Call {
-	return &Service_GetExperimentByID_Call{Call: _e.mock.On("GetExperimentByID", ctx, id)}
+//   - identifier string
+func (_e *Service_Expecter) GetExperimentDetail(ctx interface{}, identifier interface{}) *Service_GetExperimentDetail_Call {
+	return &Service_GetExperimentDetail_Call{Call: _e.mock.On("GetExperimentDetail", ctx, identifier)}
 }
 
-func (_c *Service_GetExperimentByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *Service_GetExperimentByID_Call {
+func (_c *Service_GetExperimentDetail_Call) Run(run func(ctx context.Context, identifier string)) *Service_GetExperimentDetail_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
 
-func (_c *Service_GetExperimentByID_Call) Return(_a0 *experiment.ExperimentResponseDto, _a1 error) *Service_GetExperimentByID_Call {
+func (_c *Service_GetExperimentDetail_Call) Return(_a0 *experiment.ExperimentResponseDto, _a1 error) *Service_GetExperimentDetail_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *Service_GetExperimentByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*experiment.ExperimentResponseDto, error)) *Service_GetExperimentByID_Call {
+func (_c *Service_GetExperimentDetail_Call) RunAndReturn(run func(context.Context, string) (*experiment.ExperimentResponseDto, error)) *Service_GetExperimentDetail_Call {
 	_c.Call.Return(run)
 	return _c
 }
