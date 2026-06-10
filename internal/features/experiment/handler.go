@@ -85,15 +85,12 @@ func GetAllExperimentsHandler(s Service) gin.HandlerFunc {
 // @Failure 404 {object} httputil.ErrorResponse "Experiment not found"
 // @Failure 500 {object} httputil.ErrorResponse "Failed to get experiment"
 // @Security SessionAuth
-// @Router /experiments/{experimentId} [get]
+// @Router /experiments/{identifier} [get]
 func GetExperimentByIDHandler(s Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		parsedId, idErr := httputil.ValidateUUID(c, c.Param("experimentId"))
-		if idErr != nil {
-			return
-		}
+		identifier := c.Param("identifier")
 
-		experiment, serviceErr := s.GetExperimentByID(c.Request.Context(), *parsedId)
+		experiment, serviceErr := s.GetExperimentDetail(c.Request.Context(), identifier)
 		if httputil.MakeServiceErrorResponse(c, serviceErr, ErrGetExperimentDetailFailed) {
 			return
 		}
