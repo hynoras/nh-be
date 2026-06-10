@@ -15,6 +15,7 @@ import (
 	"nh-be/internal/features/experiment/result"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
+	"nh-be/internal/utils/timeutil"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -153,7 +154,7 @@ func CreateTestExperiment(ctx context.Context, tx *gorm.DB, userID uuid.UUID) (*
 		Version:     1,
 		CreatedByID: userID,
 		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		UpdatedAt:   timeutil.TimePtr(time.Now()),
 	}
 	if err := tx.Create(exp).Error; err != nil {
 		return nil, fmt.Errorf("failed to create experiment: %w", err)

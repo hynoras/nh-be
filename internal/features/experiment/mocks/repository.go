@@ -302,6 +302,66 @@ func (_c *Repository_FindByID_Call) RunAndReturn(run func(context.Context, uuid.
 	return _c
 }
 
+// FindByIdentifierAndCreatedBy provides a mock function with given fields: ctx, identifier, createdBy
+func (_m *Repository) FindByIdentifierAndCreatedBy(ctx context.Context, identifier string, createdBy uuid.UUID) (*experiment.Experiment, error) {
+	ret := _m.Called(ctx, identifier, createdBy)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByIdentifierAndCreatedBy")
+	}
+
+	var r0 *experiment.Experiment
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, uuid.UUID) (*experiment.Experiment, error)); ok {
+		return rf(ctx, identifier, createdBy)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, uuid.UUID) *experiment.Experiment); ok {
+		r0 = rf(ctx, identifier, createdBy)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*experiment.Experiment)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, uuid.UUID) error); ok {
+		r1 = rf(ctx, identifier, createdBy)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Repository_FindByIdentifierAndCreatedBy_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByIdentifierAndCreatedBy'
+type Repository_FindByIdentifierAndCreatedBy_Call struct {
+	*mock.Call
+}
+
+// FindByIdentifierAndCreatedBy is a helper method to define mock.On call
+//   - ctx context.Context
+//   - identifier string
+//   - createdBy uuid.UUID
+func (_e *Repository_Expecter) FindByIdentifierAndCreatedBy(ctx interface{}, identifier interface{}, createdBy interface{}) *Repository_FindByIdentifierAndCreatedBy_Call {
+	return &Repository_FindByIdentifierAndCreatedBy_Call{Call: _e.mock.On("FindByIdentifierAndCreatedBy", ctx, identifier, createdBy)}
+}
+
+func (_c *Repository_FindByIdentifierAndCreatedBy_Call) Run(run func(ctx context.Context, identifier string, createdBy uuid.UUID)) *Repository_FindByIdentifierAndCreatedBy_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *Repository_FindByIdentifierAndCreatedBy_Call) Return(_a0 *experiment.Experiment, _a1 error) *Repository_FindByIdentifierAndCreatedBy_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *Repository_FindByIdentifierAndCreatedBy_Call) RunAndReturn(run func(context.Context, string, uuid.UUID) (*experiment.Experiment, error)) *Repository_FindByIdentifierAndCreatedBy_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetProcedureIDByID provides a mock function with given fields: ctx, id
 func (_m *Repository) GetProcedureIDByID(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
 	ret := _m.Called(ctx, id)
