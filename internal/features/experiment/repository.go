@@ -24,6 +24,7 @@ type Repository interface {
 		page, pageSize int,
 	) ([]ExperimentsQueryDto, error)
 	CountExperiments(ctx context.Context, createdBy *uuid.UUID) (int64, error)
+	FindByIdentifierAndCreatedBy(ctx context.Context, identifier string, createdBy uuid.UUID) (*Experiment, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*Experiment, error)
 	Update(ctx context.Context, id uuid.UUID, e *Experiment) error
 	UpdateStatus(ctx context.Context, id uuid.UUID, status ExperimentStatus, currentVersion int) error
@@ -124,6 +125,22 @@ func (r *repository) CountExperiments(ctx context.Context, createdBy *uuid.UUID)
 
 	result := query.Count(&count)
 	return count, result.Error
+}
+
+func (r *repository) FindByIdentifierAndCreatedBy(ctx context.Context, identifier string, createdBy uuid.UUID) (*Experiment, error) {
+	var e Experiment
+	result := r.db.WithContext(ctx).
+		Where("identifier = ? AND created_by_id = ?", identifier, createdBy).
+		Preload("CreatedBy").
+		Preload("UpdatedBy").
+		First(&e)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, result.Error
+	}
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, ErrExperimentNotFound
+	}
+	return &e, nil
 }
 
 func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*Experiment, error) {
