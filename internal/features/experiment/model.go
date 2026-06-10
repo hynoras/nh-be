@@ -13,10 +13,10 @@ type Experiment struct {
 	ID uuid.UUID `gorm:"type:uuid;primaryKey"`
 
 	// Human-readable identifier
-	Identifier string `gorm:"type:varchar(50);uniqueIndex;not null"`
+	Identifier string `gorm:"type:varchar(50);uniqueIndex:idx_user_experiment_identifier_title;not null"` //composite key with Title and CreatedByID
 
 	// Metadata
-	Title     string `gorm:"type:varchar(200);not null;uniqueIndex:idx_user_experiment_title"` //composite key with CreatedByID
+	Title     string `gorm:"type:varchar(200);not null;uniqueIndex:idx_user_experiment_identifier_title"` //composite key with Identifier and CreatedByID
 	Objective string `gorm:"type:text"`
 
 	// Workflow
@@ -27,7 +27,7 @@ type Experiment struct {
 	Version int `gorm:"not null;default:1"`
 
 	// Ownership
-	CreatedByID uuid.UUID `gorm:"not null;uniqueIndex:idx_user_experiment_title"` //composite key with Title
+	CreatedByID uuid.UUID `gorm:"not null;uniqueIndex:idx_user_experiment_identifier_title"` //composite key with Title and Identifier
 	CreatedBy   user.User
 
 	UpdatedByID *uuid.UUID `gorm:"type:uuid;index"`
@@ -46,5 +46,5 @@ type Experiment struct {
 	Procedure   proc.Procedure
 
 	CreatedAt time.Time
-	UpdatedAt time.Time
+	UpdatedAt *time.Time
 }
