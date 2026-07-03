@@ -2,10 +2,11 @@ package email
 
 import (
 	"bytes"
-	"text/template"
+	"html/template"
+
+	"nh-be/templates"
 
 	"github.com/resend/resend-go/v3"
-	"nh-be/templates"
 )
 
 var tmpl = template.Must(template.ParseFS(templates.FS, "*.html"))
