@@ -58,15 +58,15 @@ func LoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		userRes, sessionId, err := s.Login(c.Request.Context(), req.Email, req.Password)
+		userRes, sessionId, csrfToken, err := s.Login(c.Request.Context(), req.Email, req.Password)
 		if httputil.MakeServiceErrorResponse(c, err, ErrLoginFailed) {
 			return
 		}
 
 		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
+		http.SetCookie(c.Writer, httputil.GetCSRFTokenCookie(csrfToken))
 
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", userRes)
-
 	}
 }
 

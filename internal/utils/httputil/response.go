@@ -2,7 +2,9 @@ package httputil
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
+	"nh-be/internal/constant"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -162,8 +164,6 @@ func RegisterError(err error, statusCode int, message string) {
 	})
 }
 
-
-
 func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 	if err == nil {
 		return false
@@ -176,6 +176,8 @@ func MakeServiceErrorResponse(c *gin.Context, err error, msg string) bool {
 		}
 	}
 
-	MakeErrorResponse(c, http.StatusInternalServerError, msg, err.Error())
+	slog.Error("unhandled service error", "error", err.Error(),
+		"request_id", c.GetString(string(constant.CtxRequestId)))
+	MakeErrorResponse(c, http.StatusInternalServerError, msg, "An internal error occurred")
 	return true
 }

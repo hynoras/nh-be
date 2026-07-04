@@ -133,6 +133,10 @@ func loadConfigFromEnv(appEnv string) *Config {
 		RabbitMQPort:     env.MustEnvInt("RABBITMQ_PORT"),
 		RabbitMQUsername: env.MustEnv("RABBITMQ_USERNAME"),
 		RabbitMQPassword: env.MustEnv("RABBITMQ_PASSWORD"),
+
+		FrontendURL:          env.MustEnv("FRONTEND_URL"),
+		ResendAPIKey:         env.MustEnv("RESEND_API_KEY"),
+		VerifyEmailSuffixURL: env.MustEnv("VERIFY_EMAIL_SUFFIX_URL"),
 	}
 
 	if cfg.AppEnv == "prod" {
