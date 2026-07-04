@@ -17,6 +17,7 @@ import (
 func SetupRoutes(r *gin.Engine, deps *app.SharedDeps) {
 	// API version 1 group
 	v1 := r.Group("/api/v1")
+	v1.Use(middleware.SetCSRFToken())
 
 	// Register auth routes (public)
 	auth.RegisterRoutes(v1, deps)
@@ -24,6 +25,7 @@ func SetupRoutes(r *gin.Engine, deps *app.SharedDeps) {
 	// Protected routes group
 	protected := v1.Group("")
 	protected.Use(middleware.RequireAuth(deps.SessionStore))
+	protected.Use(middleware.CSRFProtection())
 
 	user.RegisterRoutes(protected, deps)
 	permission.RegisterRoutes(protected, deps.PermissionService)

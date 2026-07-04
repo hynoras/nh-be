@@ -18,7 +18,7 @@ import (
 type Service interface {
 	SignUp(ctx context.Context, req SignUpDto) error
 	VerifyEmail(ctx context.Context, token string) (string, error)
-	Login(ctx context.Context, email, password string) (*UserResponseDto, string, error)
+	Login(ctx context.Context, email, password string) (*UserResponseDto, string, string, error)
 	Logout(ctx context.Context, sessionId string) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 	CreateVerificationToken(ctx context.Context, userId uuid.UUID, tokenType VerificationTokenType) (CreatedTokenDto, error)
@@ -172,36 +172,41 @@ func (s *service) VerifyEmail(ctx context.Context, token string) (string, error)
 	return sessionId, nil
 }
 
-func (s *service) Login(ctx context.Context, email, password string) (*UserResponseDto, string, error) {
+func (s *service) Login(ctx context.Context, email, password string) (*UserResponseDto, string, string, error) {
 	u, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	if u == nil {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", "", ErrInvalidCredentials
 	}
 	if !crypto.CheckPasswordHash(password, u.Password) {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", "", ErrInvalidCredentials
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, u.ID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
-	sessionId, genErr := crypto.GenerateToken()
-	if genErr != nil {
-		return nil, "", genErr
+	sessionId, sessionIdErr := crypto.GenerateToken()
+	if sessionIdErr != nil {
+		return nil, "", "", sessionIdErr
 	}
 
 	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, u.ID.String())
 	if sessionErr != nil {
-		return nil, "", sessionErr
+		return nil, "", "", sessionErr
+	}
+
+	csrfToken, genCSRFTokenErr := crypto.GenerateToken()
+	if genCSRFTokenErr != nil {
+		return nil, "", "", genCSRFTokenErr
 	}
 
 	mappedUser := MapUserDtoToLoginResponse(*u, permissions)
 
-	return &mappedUser, sessionId, nil
+	return &mappedUser, sessionId, csrfToken, nil
 }
 
 func (s *service) Logout(ctx context.Context, sessionId string) error {
