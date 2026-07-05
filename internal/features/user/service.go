@@ -101,11 +101,13 @@ func (s *service) CreateUser(ctx context.Context, userInput *UserInput) error {
 		}
 	}
 
+	stringifiedPassword := string(hashedPassword)
+
 	return s.userRepo.WithTransaction(ctx, func(txRepo Repository) error {
 		userToCreate := &User{
 			Username:                 userInput.Username,
 			Email:                    userInput.Email,
-			Password:                 string(hashedPassword),
+			Password:                 &stringifiedPassword,
 			AssignedPermissionGroups: permissionGroups,
 			CreatedAt:                time.Now(),
 		}

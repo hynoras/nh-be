@@ -11,7 +11,7 @@ type User struct {
 	ID                       uuid.UUID                    `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	Username                 string                       `gorm:"type:varchar(255);unique;not null"`
 	Email                    string                       `gorm:"type:varchar(255);uniqueIndex;not null"`
-	Password                 string                       `gorm:"type:varchar(255);not null"`
+	Password                 *string                      `gorm:"type:varchar(255)"`
 	AssignedPermissionGroups []permission.PermissionGroup `gorm:"many2many:user_permissions;joinForeignKey:UserID;joinReferences:PermissionGroupID;constraint:OnDelete:CASCADE"`
 	IsVerified               bool                         `gorm:"type:boolean;not null;default:false"`
 	CreatedAt                time.Time                    `gorm:"type:timestamp;not null;default:now()"`

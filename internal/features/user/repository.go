@@ -65,7 +65,7 @@ func (r *repository) FindAll(ctx context.Context, search string, page, pageSize 
 func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	var u User
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&u)
-	
+
 	//replace gorm error with domain error
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrUserNotFound
@@ -99,7 +99,7 @@ func (r *repository) FindPasswordById(ctx context.Context, id uuid.UUID) (*strin
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrUserNotFound
 	}
-	return &u.Password, nil
+	return u.Password, nil
 }
 
 func (r *repository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) {
