@@ -105,6 +105,13 @@ func InitializeServices(cfg *config.Config) (*Service, error) {
 	}, nil
 }
 
+// OAuthProviderConfig holds credentials for a specific OAuth provider.
+type OAuthProviderConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
 // SharedDeps holds the shared dependencies that are injected into all
 // feature routers. It is created once from Service.NewSharedDeps() and
 // ensures a single instance of PermissionService and SessionStore.
@@ -114,11 +121,12 @@ type SharedDeps struct {
 	PubCh             *amqp.Channel
 	SessionStore      session.SessionStore
 	PermissionService permission.Service
+	OAuthProviders    map[string]*OAuthProviderConfig
 }
 
 // NewSharedDeps constructs the SharedDeps struct by creating singletons
 // for SessionStore and PermissionService from the Service's connections.
-func (s *Service) NewSharedDeps() *SharedDeps {
+func (s *Service) NewSharedDeps(cfg *config.Config) *SharedDeps {
 	sessionStore := session.NewSessionStore(s.Redis)
 	permissionRepo := permission.NewRepository(s.DB)
 	permissionCache := permission.NewPermissionCache(s.Redis)
@@ -130,6 +138,13 @@ func (s *Service) NewSharedDeps() *SharedDeps {
 		PubCh:             s.PubCh,
 		SessionStore:      sessionStore,
 		PermissionService: permissionService,
+		OAuthProviders: map[string]*OAuthProviderConfig{
+			"google": {
+				ClientID:     cfg.GoogleClientID,
+				ClientSecret: cfg.GoogleClientSecret,
+				RedirectURL:  cfg.GoogleRedirectURL,
+			},
+		},
 	}
 }
 

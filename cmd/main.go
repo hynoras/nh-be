@@ -71,7 +71,7 @@ func main() {
 
 	r := app.NewRouter(cfg)
 
-	deps := service.NewSharedDeps()
+	deps := service.NewSharedDeps(cfg)
 	router.SetupRoutes(r, deps)
 
 	app.ListenAndServe(cfg, r, service)
