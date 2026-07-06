@@ -190,7 +190,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*UserRespo
 	if u == nil {
 		return nil, "", "", ErrInvalidCredentials
 	}
-	if !crypto.CheckPasswordHash(password, *u.Password) {
+	if u.Password == nil || !crypto.CheckPasswordHash(password, *u.Password) {
 		return nil, "", "", ErrInvalidCredentials
 	}
 
@@ -318,7 +318,7 @@ func (s *service) ProviderCallback(ctx context.Context, provider string, code st
 	if existingUser == nil {
 		username := stringutil.ExtractUsernameFromEmail(userInfo["email"].(string))
 
-		_, createUserErr := s.userRepo.Create(ctx, &user.User{
+		createdUser, createUserErr := s.userRepo.Create(ctx, &user.User{
 			Email:      userInfo["email"].(string),
 			Username:   username,
 			IsVerified: true,
@@ -327,6 +327,7 @@ func (s *service) ProviderCallback(ctx context.Context, provider string, code st
 		if createUserErr != nil {
 			return nil, "", "", createUserErr
 		}
+		existingUser = &createdUser
 	}
 
 	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, existingUser.ID)
