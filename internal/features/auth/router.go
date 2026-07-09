@@ -24,5 +24,5 @@ func RegisterRoutes(rg *gin.RouterGroup, deps *app.SharedDeps) {
 	authGroup.PUT("change-password/:id", middleware.RequireAuth(deps.SessionStore), ChangePasswordHandler(authService))
 	authGroup.GET("verify/:token", VerifyTokenHandler(authService))
 	authGroup.GET("/:provider/login", ProviderLoginHandler(authService))
-	authGroup.GET("/:provider/callback", ProviderCallbackHandler(authService))
+	authGroup.GET("/:provider/callback", ProviderCallbackHandler(authService, deps.FrontendURL))
 }

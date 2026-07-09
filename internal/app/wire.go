@@ -121,6 +121,7 @@ type SharedDeps struct {
 	PubCh             *amqp.Channel
 	SessionStore      session.SessionStore
 	PermissionService permission.Service
+	FrontendURL       string
 	OAuthProviders    map[string]*OAuthProviderConfig
 }
 
@@ -138,6 +139,7 @@ func (s *Service) NewSharedDeps(cfg *config.Config) *SharedDeps {
 		PubCh:             s.PubCh,
 		SessionStore:      sessionStore,
 		PermissionService: permissionService,
+		FrontendURL:       cfg.FrontendURL,
 		OAuthProviders: map[string]*OAuthProviderConfig{
 			"google": {
 				ClientID:     cfg.GoogleClientID,
@@ -147,7 +149,6 @@ func (s *Service) NewSharedDeps(cfg *config.Config) *SharedDeps {
 		},
 	}
 }
-
 
 // ShutdownServices performs an orderly teardown of all infrastructure resources.
 // It should be called via defer in main() after ListenAndServe returns,

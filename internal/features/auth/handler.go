@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"html/template"
 	"net/http"
 	"nh-be/internal/utils/httputil"
 	"time"
@@ -96,7 +97,7 @@ func ProviderLoginHandler(s Service) gin.HandlerFunc {
 }
 
 // @Router /auth/:provider/callback [get]
-func ProviderCallbackHandler(s Service) gin.HandlerFunc {
+func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		provider := c.Param("provider")
 		code := c.Query("code")
@@ -116,7 +117,7 @@ func ProviderCallbackHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		userRes, sessionId, csrfToken, err := s.ProviderCallback(c.Request.Context(), provider, code, cookieVerifier)
+		_, sessionId, csrfToken, err := s.ProviderCallback(c.Request.Context(), provider, code, cookieVerifier)
 		if err != nil {
 			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to complete login", err.Error())
 			return
@@ -130,8 +131,17 @@ func ProviderCallbackHandler(s Service) gin.HandlerFunc {
 		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
 		http.SetCookie(c.Writer, httputil.GetCSRFTokenCookie(csrfToken))
 
-		// For now, just return the user info as requested
-		httputil.MakeSuccessResponse(c, http.StatusOK, "Logged in with provider successfully", userRes)
+		tmpl, parseErr := template.ParseFiles("templates/provider_login.html")
+		if parseErr != nil {
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to load template", parseErr.Error())
+			return
+		}
+
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		if execErr := tmpl.Execute(c.Writer, map[string]string{"FrontendURL": frontendURL}); execErr != nil {
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to render template", execErr.Error())
+			return
+		}
 	}
 }
 
