@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"net/http"
 	"nh-be/internal/utils/httputil"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -88,9 +87,10 @@ func ProviderLoginHandler(s Service) gin.HandlerFunc {
 			return
 		}
 
-		// Store state and verifier temporarily (e.g., in encrypted cookies) to verify later in the callback
-		c.SetCookie("oauth_state", state, int(10*time.Minute.Seconds()), "/", "localhost", false, true)
-		c.SetCookie("oauth_verifier", verifier, int(10*time.Minute.Seconds()), "/", "localhost", false, true)
+		// Store state and verifier temporarily in cookies to verify in the callback.
+		// Attributes (Secure, SameSite) are set based on APP_ENV.
+		http.SetCookie(c.Writer, httputil.GetOAuthStateCookie(state))
+		http.SetCookie(c.Writer, httputil.GetOAuthVerifierCookie(verifier))
 
 		// Handler executes the redirect
 		c.Redirect(http.StatusTemporaryRedirect, url)
@@ -126,9 +126,10 @@ func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
 			return
 		}
 
-		// Clear cookies
-		c.SetCookie("oauth_state", "", -1, "/", "localhost", false, true)
-		c.SetCookie("oauth_verifier", "", -1, "/", "localhost", false, true)
+		// Clear OAuth cookies
+		for _, cookie := range httputil.GetClearOAuthCookies() {
+			http.SetCookie(c.Writer, cookie)
+		}
 
 		// Set login cookie
 		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
