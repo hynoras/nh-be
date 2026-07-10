@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"nh-be/internal/utils/httputil"
@@ -105,6 +106,8 @@ func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
 
 		// Validate state
 		cookieState, err := c.Cookie("oauth_state")
+		fmt.Println("cookieState", cookieState)
+		fmt.Println("state", state)
 		if err != nil || state != cookieState {
 			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid state parameter", "State validation failed")
 			return
