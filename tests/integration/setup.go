@@ -94,11 +94,12 @@ func (tc *TestContext) Teardown(ctx context.Context) {
 }
 
 func CreateTestUserWithoutPermission(ctx context.Context, tx *gorm.DB) (*user.User, error) {
+	testPassword := "hashedpassword"
 	testUser := &user.User{
 		ID:       uuid.New(),
 		Username: fmt.Sprintf("noperm_%s", uuid.New().String()[:8]),
 		Email:    fmt.Sprintf("noperm_%s@example.com", uuid.New().String()[:8]),
-		Password: "hashedpassword",
+		Password: &testPassword,
 	}
 	if err := tx.Create(testUser).Error; err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
@@ -129,11 +130,13 @@ func CreateTestUser(ctx context.Context, tx *gorm.DB) (*user.User, error) {
 		return nil, fmt.Errorf("failed to create permission group: %w", err)
 	}
 
+	testPassword := "hashedpassword"
+
 	testUser := &user.User{
 		ID:                       uuid.New(),
 		Username:                 fmt.Sprintf("testuser_%s", uuid.New().String()[:8]),
 		Email:                    fmt.Sprintf("test_%s@example.com", uuid.New().String()[:8]),
-		Password:                 "hashedpassword",
+		Password:                 &testPassword,
 		AssignedPermissionGroups: []permission.PermissionGroup{*permGroup},
 	}
 	if err := tx.Create(testUser).Error; err != nil {

@@ -16,11 +16,13 @@ func RegisterRoutes(rg *gin.RouterGroup, deps *app.SharedDeps) {
 	authRepo := NewRepository(deps.DB)
 	userRepo := user.NewRepository(deps.DB)
 	emailPublisher := email.NewEmailPublisher(deps.PubCh)
-	authService := NewService(deps.SessionStore, authRepo, userRepo, deps.PermissionService, emailPublisher)
+	authService := NewService(deps.SessionStore, authRepo, userRepo, deps.PermissionService, emailPublisher, deps.OAuthProviders)
 
 	authGroup.POST("/signup", SignUpHandler(authService))
 	authGroup.POST("/login", LoginHandler(authService))
 	authGroup.POST("/logout", LogoutHandler(authService))
-	authGroup.Use(middleware.RequireAuth(deps.SessionStore)).PUT("change-password/:id", ChangePasswordHandler((authService)))
+	authGroup.PUT("change-password/:id", middleware.RequireAuth(deps.SessionStore), ChangePasswordHandler(authService))
 	authGroup.GET("verify/:token", VerifyTokenHandler(authService))
+	authGroup.GET("/:provider/login", ProviderLoginHandler(authService))
+	authGroup.GET("/:provider/callback", ProviderCallbackHandler(authService, deps.FrontendURL))
 }

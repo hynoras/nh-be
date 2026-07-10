@@ -2,9 +2,12 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"time"
 
+	"nh-be/internal/app"
 	"nh-be/internal/features/permission"
 	"nh-be/internal/features/user"
 	"nh-be/internal/platform/email"
@@ -13,12 +16,16 @@ import (
 	"nh-be/internal/utils/stringutil"
 
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 type Service interface {
 	SignUp(ctx context.Context, req SignUpDto) error
 	VerifyEmail(ctx context.Context, token string) (string, error)
 	Login(ctx context.Context, email, password string) (*UserResponseDto, string, string, error)
+	GenerateProviderLoginURL(ctx context.Context, provider string) (string, string, string, error)
+	ProviderCallback(ctx context.Context, provider string, code string, verifier string) (*UserResponseDto, string, string, error)
 	Logout(ctx context.Context, sessionId string) error
 	ChangePassword(ctx context.Context, id uuid.UUID, changePasswordDto ChangePasswordDto) error
 	CreateVerificationToken(ctx context.Context, userId uuid.UUID, tokenType VerificationTokenType) (CreatedTokenDto, error)
@@ -30,6 +37,7 @@ type service struct {
 	userRepo          user.Repository
 	permissionService permission.Service
 	emailPublisher    email.EmailPublisher
+	oauthProviders    map[string]*app.OAuthProviderConfig
 }
 
 func NewService(
@@ -38,6 +46,7 @@ func NewService(
 	userRepo user.Repository,
 	permissionService permission.Service,
 	emailPublisher email.EmailPublisher,
+	oauthProviders map[string]*app.OAuthProviderConfig,
 ) Service {
 	return &service{
 		sessionStore:      sessionStore,
@@ -45,6 +54,7 @@ func NewService(
 		userRepo:          userRepo,
 		permissionService: permissionService,
 		emailPublisher:    emailPublisher,
+		oauthProviders:    oauthProviders,
 	}
 }
 
@@ -180,7 +190,7 @@ func (s *service) Login(ctx context.Context, email, password string) (*UserRespo
 	if u == nil {
 		return nil, "", "", ErrInvalidCredentials
 	}
-	if !crypto.CheckPasswordHash(password, u.Password) {
+	if u.Password == nil || !crypto.CheckPasswordHash(password, *u.Password) {
 		return nil, "", "", ErrInvalidCredentials
 	}
 
@@ -205,6 +215,142 @@ func (s *service) Login(ctx context.Context, email, password string) (*UserRespo
 	}
 
 	mappedUser := MapUserDtoToLoginResponse(*u, permissions)
+
+	return &mappedUser, sessionId, csrfToken, nil
+}
+
+func (s *service) GenerateProviderLoginURL(ctx context.Context, provider string) (string, string, string, error) {
+	providerCfg, ok := s.oauthProviders[provider]
+	if !ok {
+		return "", "", "", errors.New("unsupported oauth provider")
+	}
+
+	// 1. Generate state (for CSRF protection)
+	state, stateErr := crypto.GenerateRandomString(32)
+	if stateErr != nil {
+		return "", "", "", stateErr
+	}
+
+	// 2. Generate PKCE verifier and challenge
+	verifier := oauth2.GenerateVerifier()
+
+	var endpoint oauth2.Endpoint
+	switch provider {
+	case "google":
+		endpoint = google.Endpoint
+	default:
+		return "", "", "", errors.New("unsupported oauth provider endpoint")
+	}
+
+	oauthConfig := &oauth2.Config{
+		ClientID:     providerCfg.ClientID,
+		ClientSecret: providerCfg.ClientSecret,
+		RedirectURL:  providerCfg.RedirectURL,
+		Scopes: []string{
+			"openid",
+			"profile",
+			"email",
+		},
+		Endpoint: endpoint,
+	}
+
+	url := oauthConfig.AuthCodeURL(
+		state,
+		oauth2.AccessTypeOffline,
+		oauth2.S256ChallengeOption(verifier),
+	)
+
+	return url, state, verifier, nil
+}
+
+func (s *service) ProviderCallback(ctx context.Context, provider string, code string, verifier string) (*UserResponseDto, string, string, error) {
+	providerCfg, ok := s.oauthProviders[provider]
+	if !ok {
+		return nil, "", "", errors.New("unsupported oauth provider")
+	}
+
+	var endpoint oauth2.Endpoint
+	var userInfoURL string
+
+	switch provider {
+	case "google":
+		endpoint = google.Endpoint
+		userInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
+	default:
+		return nil, "", "", errors.New("unsupported oauth provider endpoint")
+	}
+
+	oauthConfig := &oauth2.Config{
+		ClientID:     providerCfg.ClientID,
+		ClientSecret: providerCfg.ClientSecret,
+		RedirectURL:  providerCfg.RedirectURL,
+		Endpoint:     endpoint,
+	}
+
+	token, err := oauthConfig.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	client := oauthConfig.Client(ctx, token)
+	resp, err := client.Get(userInfoURL)
+	if err != nil {
+		return nil, "", "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	var userInfo map[string]any
+
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		return nil, "", "", err
+	}
+
+	existingUser, findUserErr := s.userRepo.FindByEmail(ctx, userInfo["email"].(string))
+	if findUserErr != nil && !errors.Is(findUserErr, user.ErrUserNotFound) {
+		return nil, "", "", findUserErr
+	}
+
+	if existingUser == nil {
+		username := stringutil.ExtractUsernameFromEmail(userInfo["email"].(string))
+
+		createdUser, createUserErr := s.userRepo.Create(ctx, &user.User{
+			Email:      userInfo["email"].(string),
+			Username:   username,
+			IsVerified: true,
+		})
+
+		if createUserErr != nil {
+			return nil, "", "", createUserErr
+		}
+		existingUser = &createdUser
+	}
+
+	permissions, err := s.permissionService.GetUserPermissionCodeNames(ctx, existingUser.ID)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	sessionId, sessionIdErr := crypto.GenerateToken()
+	if sessionIdErr != nil {
+		return nil, "", "", sessionIdErr
+	}
+
+	sessionErr := s.sessionStore.CreateUserSession(ctx, sessionId, existingUser.ID.String())
+	if sessionErr != nil {
+		return nil, "", "", sessionErr
+	}
+
+	csrfToken, genCSRFTokenErr := crypto.GenerateToken()
+	if genCSRFTokenErr != nil {
+		return nil, "", "", genCSRFTokenErr
+	}
+
+	mappedUser := MapUserDtoToLoginResponse(*existingUser, permissions)
 
 	return &mappedUser, sessionId, csrfToken, nil
 }
@@ -240,8 +386,10 @@ func (s *service) ChangePassword(ctx context.Context, id uuid.UUID, changePasswo
 		return ErrNewPasswordIsTheSameAsOldPassword
 	}
 
+	stringifiedPassword := string(newHashedPassword)
+
 	err = s.userRepo.Update(ctx, id, &user.User{
-		Password: newHashedPassword,
+		Password: &stringifiedPassword,
 	})
 
 	if err != nil {

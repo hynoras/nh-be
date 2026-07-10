@@ -33,6 +33,11 @@ type Config struct {
 	FrontendURL          string
 	ResendAPIKey         string
 	VerifyEmailSuffixURL string
+
+	// OAuth
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
 }
 
 func LoadConfig() *Config {
@@ -94,6 +99,11 @@ func loadConfigFromVault(appEnv string) *Config {
 		RabbitMQPort:     env.MustEnvInt("RABBITMQ_PORT"),
 		RabbitMQUsername: env.MustEnv("RABBITMQ_USERNAME"),
 		RabbitMQPassword: vault.MustGetSecretValue(rabbitmqSecrets, "RABBITMQ_PASSWORD"),
+
+		// OAuth
+		GoogleClientID:     env.MustEnv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: env.MustEnv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURL:  env.MustEnv("GOOGLE_REDIRECT_URL"),
 	}
 
 	if cfg.AppEnv == "prod" {
@@ -137,6 +147,10 @@ func loadConfigFromEnv(appEnv string) *Config {
 		FrontendURL:          env.MustEnv("FRONTEND_URL"),
 		ResendAPIKey:         env.MustEnv("RESEND_API_KEY"),
 		VerifyEmailSuffixURL: env.MustEnv("VERIFY_EMAIL_SUFFIX_URL"),
+
+		GoogleClientID:     env.MustEnv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: env.MustEnv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURL:  env.MustEnv("GOOGLE_REDIRECT_URL"),
 	}
 
 	if cfg.AppEnv == "prod" {

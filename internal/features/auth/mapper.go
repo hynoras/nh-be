@@ -32,7 +32,7 @@ func MapSignUpDtoToUser(username, email, password string) user.User {
 	return user.User{
 		Username: username,
 		Email:    email,
-		Password: password,
+		Password: &password,
 	}
 }
 

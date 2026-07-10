@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"html/template"
 	"net/http"
 	"nh-be/internal/utils/httputil"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -67,6 +69,79 @@ func LoginHandler(s Service) gin.HandlerFunc {
 		http.SetCookie(c.Writer, httputil.GetCSRFTokenCookie(csrfToken))
 
 		httputil.MakeSuccessResponse(c, http.StatusOK, "User logged in successfully", userRes)
+	}
+}
+
+// @Router /auth/:provider/login [get]
+func ProviderLoginHandler(s Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		provider := c.Param("provider")
+		if provider != "google" {
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid provider", "Provider not supported")
+			return
+		}
+
+		url, state, verifier, err := s.GenerateProviderLoginURL(c.Request.Context(), provider)
+		if err != nil {
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to generate login URL", err.Error())
+			return
+		}
+
+		// Store state and verifier temporarily (e.g., in encrypted cookies) to verify later in the callback
+		c.SetCookie("oauth_state", state, int(10*time.Minute.Seconds()), "/", "localhost", false, true)
+		c.SetCookie("oauth_verifier", verifier, int(10*time.Minute.Seconds()), "/", "localhost", false, true)
+
+		// Handler executes the redirect
+		c.Redirect(http.StatusTemporaryRedirect, url)
+	}
+}
+
+// @Router /auth/:provider/callback [get]
+func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		provider := c.Param("provider")
+		code := c.Query("code")
+		state := c.Query("state")
+
+		// Validate state
+		cookieState, err := c.Cookie("oauth_state")
+		if err != nil || state != cookieState {
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid state parameter", "State validation failed")
+			return
+		}
+
+		// Get verifier
+		cookieVerifier, err := c.Cookie("oauth_verifier")
+		if err != nil {
+			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Missing verifier", "PKCE verifier cookie not found")
+			return
+		}
+
+		_, sessionId, csrfToken, err := s.ProviderCallback(c.Request.Context(), provider, code, cookieVerifier)
+		if err != nil {
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to complete login", err.Error())
+			return
+		}
+
+		// Clear cookies
+		c.SetCookie("oauth_state", "", -1, "/", "localhost", false, true)
+		c.SetCookie("oauth_verifier", "", -1, "/", "localhost", false, true)
+
+		// Set login cookie
+		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
+		http.SetCookie(c.Writer, httputil.GetCSRFTokenCookie(csrfToken))
+
+		tmpl, parseErr := template.ParseFiles("templates/provider_login.html")
+		if parseErr != nil {
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to load template", parseErr.Error())
+			return
+		}
+
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		if execErr := tmpl.Execute(c.Writer, map[string]string{"FrontendURL": frontendURL}); execErr != nil {
+			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to render template", execErr.Error())
+			return
+		}
 	}
 }
 
