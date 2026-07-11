@@ -105,8 +105,6 @@ func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
 
 		// Validate state
 		cookieState, err := c.Cookie("oauth_state")
-		fmt.Println("cookieState 2", cookieState)
-		fmt.Println("state 2", state)
 		if err != nil || state != cookieState {
 			httputil.MakeErrorResponse(c, http.StatusBadRequest, "Invalid state parameter", "State validation failed")
 			return
