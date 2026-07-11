@@ -135,6 +135,10 @@ func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
 		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
 		http.SetCookie(c.Writer, httputil.GetCSRFTokenCookie(csrfToken))
 
+		fmt.Println("sessionId: ", sessionId)
+		auth_session, _ := c.Cookie("auth_session")
+		fmt.Println("auth_session: ", auth_session)
+
 		tmpl, parseErr := template.ParseFiles("templates/provider_login.html")
 		if parseErr != nil {
 			httputil.MakeErrorResponse(c, http.StatusInternalServerError, "Failed to load template", parseErr.Error())
