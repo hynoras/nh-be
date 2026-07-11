@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"nh-be/internal/utils/httputil"
@@ -131,6 +132,10 @@ func ProviderCallbackHandler(s Service, frontendURL string) gin.HandlerFunc {
 		// Set login cookie
 		http.SetCookie(c.Writer, httputil.GetAuthSessionCookie(sessionId))
 		http.SetCookie(c.Writer, httputil.GetCSRFTokenCookie(csrfToken))
+
+		fmt.Println("sessionId: ", sessionId)
+		auth_session, _ := c.Cookie("auth_session")
+		fmt.Println("auth_session: ", auth_session)
 
 		tmpl, parseErr := template.ParseFiles("templates/provider_login.html")
 		if parseErr != nil {
