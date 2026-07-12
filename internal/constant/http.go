@@ -34,7 +34,7 @@ const (
 
 var (
 	CorsAllowMethods     = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	CorsAllowHeaders     = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	CorsAllowHeaders     = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-CSRF-Token"}
 	CorsExposeHeaders    = []string{"Content-Length"}
 	CorsAllowCredentials = true
 	CorsMaxAge           = 12 * time.Hour
